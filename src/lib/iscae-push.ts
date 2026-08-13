@@ -99,7 +99,8 @@ export async function readVapidEnv(): Promise<VapidKeys | null> {
   if (!publicKey || !privateKey) {
     // بيئة Cloudflare Workers: الأسرار متاحة عبر ربط env
     try {
-      const mod = (await import(/* @vite-ignore */ "cloudflare:workers")) as {
+      const specifier = "cloudflare:workers";
+      const mod = (await import(/* @vite-ignore */ specifier)) as {
         env?: Record<string, string | undefined>;
       };
       const cfEnv = mod.env;
