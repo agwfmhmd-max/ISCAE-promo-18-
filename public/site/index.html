@@ -2921,6 +2921,21 @@ function urlBase64ToUint8Array(base64String) {
   return out;
 }
 
+/* هل أُنشئ الاشتراك الحالي بنفس المفتاح العمومي الذي يستعمله الخادم؟ */
+function subMatchesKey(sub, publicKey) {
+  try {
+    const current = sub.options && sub.options.applicationServerKey;
+    if (!current) return true; /* لا يمكن التحقق — لا نلغي الاشتراك بلا داعٍ */
+    const a = new Uint8Array(current);
+    const b = urlBase64ToUint8Array(publicKey);
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  } catch (e) { return true; }
+}
+
+
+
 function subKey(sub, name) {
   const raw = sub.getKey ? sub.getKey(name) : null;
   if (!raw) return null;
