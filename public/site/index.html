@@ -2984,11 +2984,20 @@ async function enablePush() {
     const reg = await swRegistration();
     if (!reg || !reg.pushManager) { toast(t("err_notif_unsupported"), "err"); return; }
 
+    const serverKey = await loadVapidPublicKey();
     let sub = await reg.pushManager.getSubscription();
+    /* إن كان الاشتراك الحالي مُنشأً بمفتاح VAPID مختلف عن مفتاح الخادم، فالإرسال سيفشل دائماً:
+       نلغي الاشتراك القديم وننشئ اشتراكاً جديداً بالمفتاح الصحيح. */
+    if (sub && !subMatchesKey(sub, serverKey)) {
+      console.warn("[Push] applicationServerKey mismatch — resubscribing");
+      try { await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint); } catch (e) {}
+      try { await sub.unsubscribe(); } catch (e) {}
+      sub = null;
+    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(await loadVapidPublicKey())
+        applicationServerKey: urlBase64ToUint8Array(serverKey)
       });
     }
 
