@@ -3182,10 +3182,17 @@ async function renderNotifsTab(panel) {
       });
       let data = null;
       try { data = await res.json(); } catch (_) { data = null; }
-      if (!res.ok || !data || data.error) {
+      if (!res.ok || !data || data.ok === false || data.error) {
+        console.error("[Push] server response:", res.status, data);
         throw new Error((data && data.error) || t("err_notif_send"));
       }
-      toast(t("notif_sent_ok", { n: (data && data.sent) ?? 0 }));
+      /* نتيجة حقيقية: الأجهزة المستهدفة / المرسل / الفاشل / المحذوف */
+      const total = data.total ?? data.sent ?? 0;
+      toast(
+        t("notif_sent_ok", { n: data.sent ?? 0 }) +
+        " — " + total + " / " + (data.sent ?? 0) + " ✓ / " + (data.failed ?? 0) + " ✗ / " + (data.removed ?? 0) + " ⌫"
+      );
+      if (data.errors && data.errors.length) console.warn("[Push] errors:", data.errors);
       renderDash();
     } catch (err) {
       console.error("[Push] send failed:", err);
