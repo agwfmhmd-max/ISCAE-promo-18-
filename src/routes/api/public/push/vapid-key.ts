@@ -4,13 +4,13 @@ import { readVapidEnv } from "@/lib/iscae-push";
 
 /**
  * المفتاح العمومي لـ VAPID فقط (ليس سرّاً) — تستعمله الواجهة
- * في PushManager.subscribe() حتى لا يبقى مكتوباً يدوياً داخل index.html.
+ * في PushManager.subscribe() حتى يبقى مطابقاً تماماً للمفتاح السري في الخادم.
  */
 export const Route = createFileRoute("/api/public/push/vapid-key")({
   server: {
     handlers: {
-      GET: () => {
-        const vapid = readVapidEnv();
+      GET: async () => {
+        const vapid = await readVapidEnv();
         return json({ publicKey: vapid ? vapid.publicKey : null });
       },
     },
