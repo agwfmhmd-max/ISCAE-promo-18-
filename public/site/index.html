@@ -556,22 +556,47 @@ html.dark .result-card-new .congrats-msg p { color: var(--violet-300); }
 .student-thumb{width:38px;height:46px;border-radius:9px;object-fit:cover;border:1px solid var(--stroke);display:block}
 .result-card-new .avatar-inner img{width:100%;height:100%;object-fit:cover;border-radius:20px;display:block}
 
-.cards-block{margin-top:18px;border:1px solid var(--stroke);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-solid)}
-.cards-block .cb-head{padding:12px 16px;font-weight:900;background:var(--violet-50);color:var(--violet-600);border-bottom:1px solid var(--stroke)}
-.cards-cer{padding:14px 16px;border-bottom:1px solid var(--stroke)}
+.cards-block{margin-top:18px;border:1px solid var(--stroke);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-solid);box-shadow:var(--shadow-sm)}
+.cards-block .cb-head{padding:14px 18px;font-weight:900;font-size:15px;background:var(--grad-primary);color:#fff;display:flex;align-items:center;gap:8px;letter-spacing:.2px}
+.cards-cer{padding:16px 18px;border-bottom:1px solid var(--stroke);position:relative;transition:.2s}
 .cards-cer:last-child{border-bottom:none}
-.cards-cer h4{font-size:15px;font-weight:900;margin-bottom:10px}
-.cards-line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-weight:700;font-size:14px}
+.cards-cer::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px;background:var(--cer-accent,var(--violet-500));opacity:.85}
+.cards-cer h4{font-size:15px;font-weight:900;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.cards-cer h4 .cer-emoji{font-size:17px}
+.cards-line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;font-weight:700;font-size:14px;border-radius:12px;background:var(--bg);margin-bottom:6px;transition:.15s}
+.cards-line:hover{transform:translateX(2px);box-shadow:var(--shadow-sm)}
+[dir="rtl"] .cards-line:hover{transform:translateX(-2px)}
 .cards-line .cl-name{display:flex;align-items:center;gap:9px}
-.cards-dot{width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.05);flex:0 0 auto}
-.cards-line.total{border-top:1px dashed var(--stroke);margin-top:6px;padding-top:10px;color:var(--violet-600);font-weight:900}
-.cards-qty{background:var(--violet-50);color:var(--violet-600);border-radius:10px;padding:3px 12px;font-weight:900;min-width:44px;text-align:center}
-.cards-empty{color:var(--muted);font-size:13px}
+.cards-dot{width:15px;height:15px;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.15);flex:0 0 auto}
+.cards-line.total{border-top:1px dashed var(--stroke);margin-top:10px;padding-top:14px;background:transparent;color:var(--violet-600);font-weight:900;font-size:15px}
+.cards-qty{background:var(--grad-emerald);color:#fff;border-radius:999px;padding:4px 14px;font-weight:900;min-width:44px;text-align:center;box-shadow:0 2px 8px rgba(16,185,129,.35)}
+.cards-line.total .cards-qty{background:var(--grad-primary);box-shadow:0 2px 8px rgba(124,58,237,.35);font-size:15px;padding:5px 16px}
+.cards-empty{color:var(--muted);font-size:13px;padding:8px 4px}
 .cer-admin-card{border:1px solid var(--stroke);border-radius:var(--radius-sm);padding:16px;background:var(--surface-solid);margin-bottom:16px}
 .cer-admin-card .cer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .cer-badge{display:inline-flex;gap:6px;align-items:center;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:800;background:var(--violet-50);color:var(--violet-600)}
 .cer-ok{color:var(--emerald-dark);font-weight:900}
 .cer-bad{color:#e11d48;font-weight:900}
+
+/* --- معالج إضافة البطاقات (المشرف) / Assistant d'ajout des cartes --- */
+.cards-wizard-intro{font-size:13px;color:var(--muted);background:var(--violet-50);border:1px solid var(--stroke);border-radius:14px;padding:12px 14px;line-height:1.7}
+.color-row{border:1px solid var(--stroke);border-radius:16px;padding:10px;background:var(--bg)}
+.color-row-grid{display:grid;grid-template-columns:46px 1fr 1fr 96px 38px;gap:8px;align-items:center}
+.color-row-grid input[type="color"]{padding:2px;height:44px;cursor:pointer}
+.color-row-grid input[type="number"]{text-align:center}
+.cr-remove{border:none;background:rgba(225,29,72,.1);color:#e11d48;border-radius:10px;height:44px;width:38px;font-weight:900;cursor:pointer;transition:.15s}
+.cr-remove:hover{background:rgba(225,29,72,.2)}
+.cards-sum-box{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:12px 16px;border-radius:14px;font-weight:800;font-size:14px;background:var(--violet-50);color:var(--violet-600);border:1px solid var(--stroke);transition:.2s}
+.cards-sum-box.ok{background:rgba(16,185,129,.12);color:var(--emerald-dark)}
+.cards-sum-box.bad{background:rgba(225,29,72,.1);color:#e11d48}
+@media (max-width:640px){
+  .color-row-grid{grid-template-columns:40px 1fr 38px;grid-template-areas:"color name remove" "color namefr remove" "count count count"}
+  .color-row-grid input.cr-color{grid-area:color}
+  .color-row-grid input.cr-name{grid-area:name}
+  .color-row-grid input.cr-name-fr{grid-area:namefr}
+  .color-row-grid input.cr-count{grid-area:count}
+  .color-row-grid .cr-remove{grid-area:remove}
+}
 @media (max-width:620px){
   .cards-line{font-size:13px}
   .photo-thumb{width:72px;height:90px}
@@ -1084,6 +1109,8 @@ const I18N = {
   ceremony_type:{ar:"نوع الحفل",fr:"Type de cérémonie"},
   cards_students_total:{ar:"إجمالي الطلاب",fr:"Total des étudiants"},
   cards_total:{ar:"إجمالي البطاقات",fr:"Total des cartes"},
+  cards_total_auto:{ar:"يُحسب تلقائياً من مجموع أعداد الألوان",fr:"Calculé automatiquement à partir du total des couleurs"},
+  cards_total_after:{ar:"إجمالي الحفل بعد الحفظ",fr:"Total de la cérémonie après enregistrement"},
   cards_status:{ar:"الحالة",fr:"Statut"},
   cards_colors_title:{ar:"ألوان البطاقات",fr:"Couleurs des cartes"},
   cards_no_colors_note:{ar:"الحفل الليلي لا يحتوي على ألوان — يُستخدم إجمالي البطاقات مباشرة.",fr:"La soirée n'a pas de couleurs — le total des cartes est utilisé directement."},
@@ -1100,6 +1127,16 @@ const I18N = {
   th_color:{ar:"اللون",fr:"Couleur"},
   th_cards_count:{ar:"عدد البطاقات",fr:"Nombre de cartes"},
   err_cards_mismatch:{ar:"مجموع بطاقات الألوان ({sum}) لا يساوي إجمالي بطاقات الحفل ({total}). صحّح الأرقام قبل الحفظ.",fr:"La somme des cartes par couleur ({sum}) ne correspond pas au total de la cérémonie ({total}). Corrigez les nombres avant d'enregistrer."},
+  err_cards_need_one_color:{ar:"أضف لوناً واحداً على الأقل مع اسمه وعدد بطاقاته.",fr:"Ajoutez au moins une couleur avec son nom et son nombre de cartes."},
+  cards_wizard_intro:{ar:"اختر نوع الحفل وضع إجمالي البطاقات، ثم وزّع هذا الإجمالي على الألوان — يجب أن يساوي مجموع الألوان الإجمالي قبل الحفظ.",fr:"Choisissez le type de cérémonie et saisissez le total des cartes, puis répartissez ce total entre les couleurs — la somme des couleurs doit être égale au total avant l'enregistrement."},
+  cards_running_sum:{ar:"مجموع الألوان الحالي",fr:"Somme actuelle des couleurs"},
+  btn_add_color_row:{ar:"+ إضافة لون آخر",fr:"+ Ajouter une autre couleur"},
+  cards_row_color:{ar:"اللون",fr:"Couleur"},
+  cards_row_name_ar:{ar:"اسم اللون (عربي)",fr:"Nom (arabe)"},
+  cards_row_name_fr:{ar:"اسم اللون (فرنسي)",fr:"Nom (français)"},
+  cards_row_count:{ar:"العدد",fr:"Nombre"},
+  cards_sum_match:{ar:"المجموع مطابق ✓",fr:"Somme correcte ✓"},
+  cards_sum_mismatch:{ar:"المجموع غير مطابق للإجمالي",fr:"La somme ne correspond pas au total"},
   confirm_redistribute_title:{ar:"إعادة توزيع البطاقات",fr:"Redistribution des cartes"},
   confirm_redistribute_text:{ar:"سيؤدي تغيير إعدادات البطاقات إلى إعادة توزيع البطاقات على الطلاب. هل تريد المتابعة؟",fr:"La modification des paramètres des cartes entraînera une redistribution des cartes aux étudiants. Voulez-vous continuer ?"},
   msg_cards_saved:{ar:"تم حفظ إعدادات البطاقات",fr:"Paramètres des cartes enregistrés"},
@@ -2471,20 +2508,23 @@ function studentCardsHTML(rows) {
     const total = mine.reduce((a, r) => a + (Number(r.quantity) || 0), 0);
     const notSet = Number(cer.total_cards) === 0;
 
+    const accent = cer.type === "night" ? "#6366f1" : "#8b5cf6";
+    const emoji = cer.type === "night" ? "🌙" : "🎓";
+
     if (cer.type === "night") {
-      return `<div class="cards-cer">
-        <h4>${esc(ceremonyLabel(cer))}</h4>
+      return `<div class="cards-cer" style="--cer-accent:${accent}">
+        <h4><span class="cer-emoji">${emoji}</span>${esc(ceremonyLabel(cer))}</h4>
         ${notSet
           ? `<div class="cards-empty">${esc(t("cards_not_set"))}</div>`
           : total > 0
-            ? `<div class="cards-line"><span class="cl-name">🎟️ ${esc(t("cards_total"))}</span><span class="cards-qty">${total}</span></div>`
+            ? `<div class="cards-line total"><span class="cl-name">🎟️ ${esc(t("cards_total"))}</span><span class="cards-qty">${total}</span></div>`
             : `<div class="cards-empty">${esc(t("cards_none_student"))}</div>`}
       </div>`;
     }
 
     if (notSet) {
-      return `<div class="cards-cer">
-        <h4>${esc(ceremonyLabel(cer))}</h4>
+      return `<div class="cards-cer" style="--cer-accent:${accent}">
+        <h4><span class="cer-emoji">${emoji}</span>${esc(ceremonyLabel(cer))}</h4>
         <div class="cards-empty">${esc(t("cards_not_set"))}</div>
       </div>`;
     }
@@ -2494,14 +2534,14 @@ function studentCardsHTML(rows) {
       const qty = found ? Number(found.quantity) || 0 : 0;
       return `<div class="cards-line">
         <span class="cl-name"><span class="cards-dot" style="background:${esc(ct.color || "#7c3aed")}"></span>${esc(cardTypeLabel(ct))}</span>
-        <span class="cards-qty">${qty}</span>
+        <span class="cards-qty">${qty} ${esc(t("cards_unit"))}</span>
       </div>`;
     }).join("");
 
-    return `<div class="cards-cer">
-      <h4>${esc(ceremonyLabel(cer))}</h4>
+    return `<div class="cards-cer" style="--cer-accent:${accent}">
+      <h4><span class="cer-emoji">${emoji}</span>${esc(ceremonyLabel(cer))}</h4>
       ${lines || `<div class="cards-empty">${esc(t("cards_none_student"))}</div>`}
-      ${lines ? `<div class="cards-line total"><span>${esc(t("cards_student_total"))}</span><span class="cards-qty">${total}</span></div>` : ""}
+      ${lines ? `<div class="cards-line total"><span>🎟️ ${esc(t("cards_student_total"))}</span><span class="cards-qty">${total}</span></div>` : ""}
     </div>`;
   }).join("");
 
@@ -2533,7 +2573,7 @@ function renderCardsTab(panel) {
     ${cers.map(cer => cerAdminCard(cer, N)).join("") || `<div class="empty">${t("no_data")}</div>`}
   `;
 
-  $("#addCer").onclick = () => ceremonyModal(null);
+  $("#addCer").onclick = () => ceremonyCreateModal();
   $$("[data-cer-edit]").forEach(b => b.onclick = () => ceremonyModal(state.ceremonies.find(c => c.id === b.dataset.cerEdit)));
   $$("[data-cer-del]").forEach(b => b.onclick = () => deleteCeremony(b.dataset.cerDel));
   $$("[data-cer-redist]").forEach(b => b.onclick = () => redistributeCeremony(b.dataset.cerRedist));
@@ -2605,7 +2645,151 @@ function cerAdminCard(cer, N) {
   </div>`;
 }
 
-/* ------------------ حفل : إضافة / تعديل / حذف ------------------ */
+/* ------------------ معالج إضافة حفل جديد + بطاقاته دفعة واحدة ------------------
+   يختار المشرف نوع الحفل، يضع إجمالي البطاقات، ثم يوزّعه على الألوان (لحفل
+   التخرج) في نفس النافذة، وعند الضغط على "حفظ" يتم إنشاء الحفل وكل الألوان
+   ثم إعادة توزيع البطاقات على الطلاب دفعة واحدة (بدون أي تأكيد متكرر). */
+const CARD_ROW_PALETTE = ["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#14b8a6", "#64748b"];
+
+function ceremonyCreateModal() {
+  const m = openModal(`
+    <div class="modal modal-lg">
+      <div class="modal-head"><h3>${t("btn_add_ceremony")} — ${t("cards_title")}</h3></div>
+      <form class="modal-body" id="cerCreateForm">
+        <p class="cards-wizard-intro">${t("cards_wizard_intro")}</p>
+        <div class="grid-2">
+          <div class="field"><label>${t("field_ceremony_name_ar")}</label><input name="name" required /></div>
+          <div class="field"><label>${t("field_ceremony_name_fr")}</label><input name="name_fr" /></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>${t("ceremony_type")}</label>
+            <select name="type" id="wzType">
+              <option value="graduation">${t("ceremony_graduation")}</option>
+              <option value="night">${t("ceremony_night")}</option>
+            </select>
+          </div>
+          <div class="field"><label>${t("cards_total")}</label>
+            <input name="total_cards" id="wzTotal" type="number" min="0" required value="0" />
+          </div>
+        </div>
+
+        <div id="wzColorsSection">
+          <div class="row" style="justify-content:space-between;margin-top:4px;flex-wrap:wrap;gap:8px">
+            <h3 style="font-weight:900;font-size:15px">${t("cards_colors_title")}</h3>
+            <button type="button" class="btn btn-primary btn-sm" id="wzAddColor">${t("btn_add_color_row")}</button>
+          </div>
+          <div id="wzColorRows" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+          <div id="wzSumBox" class="cards-sum-box">
+            <span>${t("cards_running_sum")}</span>
+            <b id="wzSumVal">0 / 0</b>
+          </div>
+        </div>
+        <p class="muted" id="wzNightNote" style="display:none;font-size:13px">${t("cards_no_colors_note")}</p>
+
+        <button class="btn btn-primary btn-block" type="submit">${t("btn_save")}</button>
+      </form>
+      <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div>
+    </div>`);
+  m.querySelector("[data-close]").onclick = closeModals;
+
+  const typeSel   = m.querySelector("#wzType");
+  const totalInp  = m.querySelector("#wzTotal");
+  const rowsWrap  = m.querySelector("#wzColorRows");
+  const colorsSec = m.querySelector("#wzColorsSection");
+  const nightNote = m.querySelector("#wzNightNote");
+  const sumBox    = m.querySelector("#wzSumBox");
+  const sumVal    = m.querySelector("#wzSumVal");
+  let rowSeq = 0;
+
+  function rowHTML(id, color) {
+    return `<div class="color-row" data-row="${id}">
+      <div class="color-row-grid">
+        <input type="color" class="cr-color" value="${esc(color)}" title="${esc(t("cards_row_color"))}" />
+        <input type="text" class="cr-name" placeholder="${esc(t("cards_row_name_ar"))}" required />
+        <input type="text" class="cr-name-fr" placeholder="${esc(t("cards_row_name_fr"))}" />
+        <input type="number" min="0" class="cr-count" placeholder="${esc(t("cards_row_count"))}" value="0" required />
+        <button type="button" class="cr-remove" data-remove="${id}" title="${esc(t("btn_delete"))}">✕</button>
+      </div>
+    </div>`;
+  }
+
+  function addRow() {
+    const id = ++rowSeq;
+    const color = CARD_ROW_PALETTE[(id - 1) % CARD_ROW_PALETTE.length];
+    rowsWrap.insertAdjacentHTML("beforeend", rowHTML(id, color));
+    const row = rowsWrap.querySelector(`[data-row="${id}"]`);
+    row.querySelector(".cr-count").addEventListener("input", recalcSum);
+    row.querySelector(".cr-remove").onclick = () => { row.remove(); recalcSum(); };
+    recalcSum();
+  }
+
+  function recalcSum() {
+    const sum = $$(".cr-count", rowsWrap).reduce((a, inp) => a + (Number(inp.value) || 0), 0);
+    const total = Number(totalInp.value) || 0;
+    sumVal.textContent = `${sum} / ${total}`;
+    const match = sum === total && total > 0;
+    sumBox.classList.toggle("ok", match);
+    sumBox.classList.toggle("bad", !match);
+    sumBox.querySelector("span").textContent = match ? `${t("cards_running_sum")} — ${t("cards_sum_match")}` : `${t("cards_running_sum")} — ${t("cards_sum_mismatch")}`;
+  }
+
+  function applyType() {
+    const isGrad = typeSel.value === "graduation";
+    colorsSec.style.display = isGrad ? "" : "none";
+    nightNote.style.display = isGrad ? "none" : "";
+    totalInp.readOnly = false;
+    if (isGrad && !rowsWrap.children.length) addRow();
+    recalcSum();
+  }
+
+  typeSel.addEventListener("change", applyType);
+  totalInp.addEventListener("input", recalcSum);
+  m.querySelector("#wzAddColor").onclick = addRow;
+  applyType();
+
+  m.querySelector("#cerCreateForm").onsubmit = async e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    const type = f.type;
+    const total = Number(f.total_cards) || 0;
+    let colorsPayload = [];
+
+    if (type === "graduation") {
+      colorsPayload = $$(".color-row", rowsWrap).map(r => ({
+        name: r.querySelector(".cr-name").value.trim(),
+        name_fr: r.querySelector(".cr-name-fr").value.trim() || null,
+        color: r.querySelector(".cr-color").value || "#7c3aed",
+        total_cards: Number(r.querySelector(".cr-count").value) || 0,
+      })).filter(c => c.name);
+
+      if (!colorsPayload.length) { toast(t("err_cards_need_one_color"), "err"); return; }
+
+      const sum = colorsPayload.reduce((a, c) => a + c.total_cards, 0);
+      if (sum !== total) { toast(t("err_cards_mismatch", { sum, total }), "err"); return; }
+    }
+
+    const payload = {
+      name: f.name.trim(), name_fr: (f.name_fr || "").trim() || null,
+      type, total_cards: total, updated_at: new Date().toISOString(),
+    };
+    const r = await db.from("ceremonies").insert(payload).select("id").maybeSingle();
+    if (r.error) { toast(t("err_save_failed", { msg: r.error.message }), "err"); return; }
+    const newId = r.data?.id;
+
+    if (type === "graduation" && newId && colorsPayload.length) {
+      const ctPayload = colorsPayload.map(c => ({ ...c, ceremony_id: newId, updated_at: new Date().toISOString() }));
+      const { error: ctErr } = await db.from("ceremony_card_types").insert(ctPayload);
+      if (ctErr) { toast(t("err_save_failed", { msg: ctErr.message }), "err"); return; }
+    }
+
+    closeModals(); toast(t("msg_cards_saved"));
+    await loadCeremonies();
+    if (newId) await redistributeCeremony(newId, true);
+    renderDash();
+  };
+}
+
+/* ------------------ حفل : تعديل / حذف ------------------ */
 function ceremonyModal(cer) {
   const isEdit = !!cer;
   const m = openModal(`
@@ -2622,7 +2806,12 @@ function ceremonyModal(cer) {
             <option value="night" ${cer?.type === "night" ? "selected" : ""}>${t("ceremony_night")}</option>
           </select>
         </div>
-        <div class="field"><label>${t("cards_total")}</label><input name="total_cards" type="number" min="0" required value="${Number(cer?.total_cards) || 0}" /></div>
+        <div class="field"><label>${t("cards_total")}</label>
+          <input name="total_cards" type="number" min="0" required
+            value="${cer?.type === "graduation" ? sumCardTypes(cer) : (Number(cer?.total_cards) || 0)}"
+            ${cer?.type === "graduation" ? "readonly" : ""} />
+          ${cer?.type === "graduation" ? `<p class="muted" style="font-size:12px;margin-top:6px">${t("cards_total_auto")}</p>` : ""}
+        </div>
         ${cer?.type === "night" ? `<p class="muted" style="font-size:12px">${t("cards_no_colors_note")}</p>` : ""}
         <button class="btn btn-primary btn-block" type="submit">${t("btn_save")}</button>
       </form>
@@ -2633,13 +2822,13 @@ function ceremonyModal(cer) {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
     const type = isEdit ? cer.type : f.type;
-    const total = Number(f.total_cards) || 0;
 
-    /* التحقق : في حفل التخرج يجب أن يساوي مجموع الألوان إجمالي البطاقات */
-    if (isEdit && type === "graduation" && (cer.card_types || []).length) {
-      const sum = sumCardTypes(cer);
-      if (sum !== total) { toast(t("err_cards_mismatch", { sum, total }), "err"); return; }
-    }
+    /* في حفل التخرج لا يُدخل المشرف إجمالي البطاقات يدوياً:
+       الإجمالي = مجموع أعداد جميع الألوان. */
+    const total = type === "graduation"
+      ? sumCardTypes(cer || { card_types: [] })
+      : (Number(f.total_cards) || 0);
+
     const changed = !isEdit || total !== (Number(cer.total_cards) || 0);
     if (changed && isEdit && !await confirmDialog(t("confirm_redistribute_title"), t("confirm_redistribute_text"))) return;
 
@@ -2685,22 +2874,33 @@ function cardTypeModal(ceremonyId, ct) {
           <div class="field"><label>${t("field_color_hex")}</label><input name="color" type="color" value="${esc(ct?.color || "#ef4444")}" /></div>
           <div class="field"><label>${t("field_color_cards")}</label><input name="total_cards" type="number" min="0" required value="${Number(ct?.total_cards) || 0}" /></div>
         </div>
+        <div class="field">
+          <label>${t("cards_total_after")}</label>
+          <input id="ctTotalPreview" type="number" readonly value="${sumCardTypes(cer) - (isEdit ? (Number(ct?.total_cards) || 0) : 0) + (Number(ct?.total_cards) || 0)}" />
+          <p class="muted" style="font-size:12px;margin-top:6px">${t("cards_total_auto")}</p>
+        </div>
         <button class="btn btn-primary btn-block" type="submit">${t("btn_save")}</button>
       </form>
       <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div>
     </div>`);
   m.querySelector("[data-close]").onclick = closeModals;
+
+  /* تحديث إجمالي الحفل فوراً أثناء إدخال عدد بطاقات اللون. */
+  const colorCardsInput = m.querySelector('input[name="total_cards"]');
+  const totalPreview = m.querySelector("#ctTotalPreview");
+  const updateTotalPreview = () => {
+    const others = (cer.card_types || [])
+      .filter(x => !isEdit || x.id !== ct.id)
+      .reduce((a, x) => a + (Number(x.total_cards) || 0), 0);
+    totalPreview.value = String(others + (Number(colorCardsInput.value) || 0));
+  };
+  colorCardsInput.addEventListener("input", updateTotalPreview);
+  updateTotalPreview();
+
   m.querySelector("#ctForm").onsubmit = async e => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
     const value = Number(f.total_cards) || 0;
-
-    /* التحقق : المجموع الجديد لكل الألوان يجب أن يساوي إجمالي بطاقات الحفل */
-    const others = (cer.card_types || []).filter(x => !isEdit || x.id !== ct.id)
-      .reduce((a, x) => a + (Number(x.total_cards) || 0), 0);
-    const sum = others + value;
-    const total = Number(cer.total_cards) || 0;
-    if (sum !== total) { toast(t("err_cards_mismatch", { sum, total }), "err"); return; }
 
     if (!await confirmDialog(t("confirm_redistribute_title"), t("confirm_redistribute_text"))) return;
 
@@ -2712,6 +2912,19 @@ function cardTypeModal(ceremonyId, ct) {
     if (isEdit) ({ error } = await db.from("ceremony_card_types").update(payload).eq("id", ct.id));
     else ({ error } = await db.from("ceremony_card_types").insert(payload));
     if (error) { toast(t("err_save_failed", { msg: error.message }), "err"); return; }
+
+    /* الإجمالي يُحدّث مباشرةً ليصبح مجموع أعداد جميع الألوان. */
+    await loadCeremonies();
+    const fresh = state.ceremonies.find(c => c.id === cer.id);
+    const newTotal = sumCardTypes(fresh || { card_types: [] });
+    const { error: totalError } = await db.from("ceremonies")
+      .update({ total_cards: newTotal, updated_at: new Date().toISOString() })
+      .eq("id", cer.id);
+    if (totalError) {
+      toast(t("err_save_failed", { msg: totalError.message }), "err");
+      return;
+    }
+
     closeModals(); toast(t("msg_cards_saved"));
     await loadCeremonies();
     await redistributeCeremony(cer.id, true);
@@ -2728,10 +2941,16 @@ async function deleteCardType(id) {
   if (error) { toast(t("err_delete_failed", { msg: error.message }), "err"); return; }
   await loadCeremonies();
   const fresh = state.ceremonies.find(c => c.id === cer.id);
-  /* بعد الحذف قد يصبح المجموع مختلفاً : نُحدّث إجمالي الحفل ليبقى متوافقاً */
+  /* بعد حذف اللون، يصبح إجمالي حفل التخرج مجموع الألوان المتبقية مباشرةً. */
   const sum = sumCardTypes(fresh || { card_types: [] });
-  if (fresh && sum !== (Number(fresh.total_cards) || 0)) {
-    await db.from("ceremonies").update({ total_cards: sum, updated_at: new Date().toISOString() }).eq("id", fresh.id);
+  if (fresh) {
+    const { error: totalError } = await db.from("ceremonies")
+      .update({ total_cards: sum, updated_at: new Date().toISOString() })
+      .eq("id", fresh.id);
+    if (totalError) {
+      toast(t("err_save_failed", { msg: totalError.message }), "err");
+      return;
+    }
     await loadCeremonies();
   }
   await redistributeCeremony(cer.id, true);
@@ -2745,8 +2964,15 @@ async function redistributeCeremony(ceremonyId, silentConfirm) {
   if (!cer) return;
 
   if (cer.type === "graduation") {
-    const sum = sumCardTypes(cer), total = Number(cer.total_cards) || 0;
-    if (sum !== total) { toast(t("err_cards_mismatch", { sum, total }), "err"); return; }
+    const sum = sumCardTypes(cer), total = sum;
+    /* إجمالي حفل التخرج هو مجموع الألوان دائماً. */
+    if (Number(cer.total_cards) !== total) {
+      const { error: syncError } = await db.from("ceremonies")
+        .update({ total_cards: total, updated_at: new Date().toISOString() })
+        .eq("id", cer.id);
+      if (syncError) { toast(t("err_save_failed", { msg: syncError.message }), "err"); return; }
+      cer.total_cards = total;
+    }
   }
   if (!silentConfirm && !await confirmDialog(t("confirm_redistribute_title"), t("confirm_redistribute_text"))) return;
 
@@ -2921,21 +3147,6 @@ function urlBase64ToUint8Array(base64String) {
   return out;
 }
 
-/* هل أُنشئ الاشتراك الحالي بنفس المفتاح العمومي الذي يستعمله الخادم؟ */
-function subMatchesKey(sub, publicKey) {
-  try {
-    const current = sub.options && sub.options.applicationServerKey;
-    if (!current) return true; /* لا يمكن التحقق — لا نلغي الاشتراك بلا داعٍ */
-    const a = new Uint8Array(current);
-    const b = urlBase64ToUint8Array(publicKey);
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-    return true;
-  } catch (e) { return true; }
-}
-
-
-
 function subKey(sub, name) {
   const raw = sub.getKey ? sub.getKey(name) : null;
   if (!raw) return null;
@@ -2999,20 +3210,11 @@ async function enablePush() {
     const reg = await swRegistration();
     if (!reg || !reg.pushManager) { toast(t("err_notif_unsupported"), "err"); return; }
 
-    const serverKey = await loadVapidPublicKey();
     let sub = await reg.pushManager.getSubscription();
-    /* إن كان الاشتراك الحالي مُنشأً بمفتاح VAPID مختلف عن مفتاح الخادم، فالإرسال سيفشل دائماً:
-       نلغي الاشتراك القديم وننشئ اشتراكاً جديداً بالمفتاح الصحيح. */
-    if (sub && !subMatchesKey(sub, serverKey)) {
-      console.warn("[Push] applicationServerKey mismatch — resubscribing");
-      try { await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint); } catch (e) {}
-      try { await sub.unsubscribe(); } catch (e) {}
-      sub = null;
-    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(serverKey)
+        applicationServerKey: urlBase64ToUint8Array(await loadVapidPublicKey())
       });
     }
 
@@ -3182,17 +3384,10 @@ async function renderNotifsTab(panel) {
       });
       let data = null;
       try { data = await res.json(); } catch (_) { data = null; }
-      if (!res.ok || !data || data.ok === false || data.error) {
-        console.error("[Push] server response:", res.status, data);
+      if (!res.ok || !data || data.error) {
         throw new Error((data && data.error) || t("err_notif_send"));
       }
-      /* نتيجة حقيقية: الأجهزة المستهدفة / المرسل / الفاشل / المحذوف */
-      const total = data.total ?? data.sent ?? 0;
-      toast(
-        t("notif_sent_ok", { n: data.sent ?? 0 }) +
-        " — " + total + " / " + (data.sent ?? 0) + " ✓ / " + (data.failed ?? 0) + " ✗ / " + (data.removed ?? 0) + " ⌫"
-      );
-      if (data.errors && data.errors.length) console.warn("[Push] errors:", data.errors);
+      toast(t("notif_sent_ok", { n: (data && data.sent) ?? 0 }));
       renderDash();
     } catch (err) {
       console.error("[Push] send failed:", err);
