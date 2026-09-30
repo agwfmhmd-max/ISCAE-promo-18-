@@ -3469,6 +3469,13 @@ async function redistributeCeremony(ceremonyId, silentConfirm) {
 let deferredInstallPrompt = null;
 const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 const isStandaloneMode = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+/* حالة «التطبيق مثبَّت»: تبقى محفوظة في المتصفح كي يختفي زر التثبيت وشريطه حتى عند فتح الموقع من تبويب المتصفح. */
+const INSTALLED_FLAG = "iscae-app-installed";
+const readInstalledFlag = () => { try { return localStorage.getItem(INSTALLED_FLAG) === "1"; } catch (e) { return false; } };
+const setInstalledFlag = (on) => { try { on ? localStorage.setItem(INSTALLED_FLAG, "1") : localStorage.removeItem(INSTALLED_FLAG); } catch (e) {} };
+const isRunningAsApp = () => isStandaloneMode() || ["fullscreen", "minimal-ui", "window-controls-overlay"].some(m => window.matchMedia(`(display-mode: ${m})`).matches);
+const isAppInstalled = () => isRunningAsApp() || readInstalledFlag();
+if (isRunningAsApp()) setInstalledFlag(true);
 
 function installModal(generic) {
   const steps = generic
@@ -3496,7 +3503,7 @@ try { installBannerDismissed = sessionStorage.getItem("iscae-install-dismissed")
 
 /** زر التثبيت في الأعلى + الشريط السفلي يظهران لكل زائر ما لم يكن التطبيق مثبتاً. */
 function refreshInstallButton() {
-  const show = !isStandaloneMode();
+  const show = !isAppInstalled();
   const btn = $("#btnInstall");
   if (btn) btn.classList.toggle("hidden", !show);
   const heroBtn = $("#heroInstall");
@@ -3521,6 +3528,7 @@ async function triggerInstall() {
       const { outcome } = await deferredInstallPrompt.userChoice;
       console.log('[Install] Installation outcome:', outcome);
       if (outcome === "accepted") {
+        setInstalledFlag(true);
         toast(t("msg_app_installed"));
         deferredInstallPrompt = null;
         refreshInstallButton();
@@ -3540,6 +3548,8 @@ window.addEventListener("beforeinstallprompt", (e) => {
   console.log('[Install] beforeinstallprompt event fired');
   e.preventDefault();
   deferredInstallPrompt = e;
+  /* المتصفح يعرض التثبيت فقط إذا لم يكن التطبيق مثبَّتاً → نصحّح الحالة المحفوظة (مثلاً بعد إلغاء التثبيت). */
+  if (!isRunningAsApp()) setInstalledFlag(false);
   refreshInstallButton();
 });
 
@@ -3554,11 +3564,27 @@ $("#ibClose").onclick = () => {
 
 window.addEventListener("appinstalled", () => {
   console.log('[Install] App installed successfully');
+  setInstalledFlag(true);
   deferredInstallPrompt = null;
   installBannerDismissed = true;
   refreshInstallButton();
   toast(t("msg_app_installed"));
 });
+
+/* إن فُتح التطبيق/تبدّل وضع العرض أثناء الجلسة، حدّث الزر والشريط فوراً */
+try {
+  ["standalone", "fullscreen", "minimal-ui"].forEach(m => {
+    const mq = window.matchMedia(`(display-mode: ${m})`);
+    const h = () => { if (isRunningAsApp()) setInstalledFlag(true); refreshInstallButton(); };
+    mq.addEventListener ? mq.addEventListener("change", h) : mq.addListener && mq.addListener(h);
+  });
+} catch (e) {}
+/* كشف إضافي (كروم/أندرويد): هل التطبيق مثبَّت؟ إن أمكن التحقق من المتصفح مباشرة */
+try {
+  if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(apps => {
+    if (apps && apps.length) { setInstalledFlag(true); refreshInstallButton(); }
+  }).catch(() => {});
+} catch (e) {}
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
