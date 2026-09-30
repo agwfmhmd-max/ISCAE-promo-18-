@@ -7,6 +7,8 @@
 (function(){
   try{
     var lg = localStorage.getItem("iscae-lang");
+    var th = localStorage.getItem("iscae-theme");
+    if (th === "dark" || (!th && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark");
     if (lg === "fr") { document.documentElement.setAttribute("lang","fr"); document.documentElement.setAttribute("dir","ltr"); }
   }catch(e){}
 })();
@@ -740,6 +742,83 @@ html[dir=rtl] .hero2-num{font-size:clamp(34px,8.5vw,76px);line-height:1.25}
 html[dir=ltr] .topbar-inner{flex-direction:row-reverse}
 html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
 
+/* ---- v2: logos, signature, exact search, dark mode audit ---- */
+.hero2-logo{width:clamp(112px,26vw,148px);height:auto;aspect-ratio:1;border-radius:0;box-shadow:none;filter:drop-shadow(0 18px 30px rgba(0,0,0,.55));display:grid;place-items:center}
+.hero2-logo svg,.hero2-logo-img{width:100%;height:100%;object-fit:contain;display:block}
+.brand-logo-img{object-fit:contain;background:#fff;padding:2px}
+.ggrid.one{grid-template-columns:minmax(0,440px);justify-content:center}
+.logo-edit{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.logo-prev{width:96px;height:96px;flex:none;border-radius:16px;border:1px dashed var(--violet-300);display:grid;place-items:center;padding:6px;background:var(--surface-solid)}
+.logo-prev svg,.logo-prev img{width:100%;height:100%;object-fit:contain}
+.mda{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:4px 10px 4px 12px;min-height:30px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:11.5px;font-weight:600;text-decoration:none;transition:transform .2s var(--ease),border-color .2s,box-shadow .2s}
+.mda b{display:inline-grid;place-items:center;height:20px;padding:0 9px;border-radius:999px;background:linear-gradient(135deg,var(--ink-2),var(--primary));color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.2em;box-shadow:inset 0 0 0 1px rgba(201,162,74,.65)}
+.mda svg{color:#22a559}
+.mda:hover{transform:translateY(-1px);border-color:var(--gold);box-shadow:0 8px 20px -10px rgba(101,40,220,.5)}
+html.dark{color-scheme:dark;--primary-soft:#c4b4ff}
+html:not(.dark){color-scheme:light}
+html.dark .topbar.scrolled{box-shadow:0 8px 30px -12px rgba(0,0,0,.7)}
+html.dark .topnav a:hover{background:rgba(196,180,255,.1);color:var(--text)}
+html.dark .topnav a[aria-current="true"]{color:var(--primary-soft)}
+html.dark .brand-logo-img{box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+html.dark .finder-box{background:var(--surface-solid);border-color:rgba(148,163,184,.22);box-shadow:0 24px 50px -18px rgba(0,0,0,.7)}
+html.dark .finder-box:focus-within{border-color:var(--primary-soft);box-shadow:0 0 0 5px rgba(196,180,255,.16),0 24px 50px -18px rgba(0,0,0,.8)}
+html.dark .finder-box svg{color:var(--primary-soft)}
+html.dark .finder-clear{background:rgba(148,163,184,.14);color:var(--text)}
+html.dark .gcard{border-color:rgba(148,163,184,.16)}
+html.dark .gcard:hover{border-color:var(--primary-soft);box-shadow:0 22px 40px -22px rgba(124,77,240,.7)}
+html.dark .gcard-mat{background:rgba(196,180,255,.12);color:var(--primary-soft)}
+html.dark .gcard-btn{background:var(--primary)}html.dark .gcard-btn:hover{background:#7c4df0}
+html.dark .gempty{border-color:rgba(196,180,255,.3)}html.dark .gempty svg{color:var(--primary-soft)}
+html.dark .sk{background:linear-gradient(100deg,#1e293b 30%,#2a3650 50%,#1e293b 70%);background-size:220% 100%}
+html.dark .prof-sheet{border:1px solid rgba(148,163,184,.18)}
+html.dark .prof-av,html.dark .gav{border-color:var(--surface-solid)}
+html.dark .prof-meta .pm{border-color:rgba(148,163,184,.25)}
+html.dark .promo-admin{background:rgba(30,41,59,.6)}
+html.dark .logo-prev{border-color:rgba(196,180,255,.4)}
+html.dark .mda{background:rgba(30,41,59,.7)}
+html.dark .mda:hover{border-color:var(--gold)}
+html.dark .mda svg{color:#4ade80}
+html.dark .finder-hint,html.dark .search-hint{color:var(--muted)}
+html.dark .search-hint.err{color:#fda4af}
+
+/* ---- v2.1: WCAG AA tokens + spacing ---- */
+:root{--muted:#536178}
+html.dark{--muted:#a3b1c6}
+html.dark .brand-text span,html.dark .cd-box b,html.dark .ended,html.dark .mini b,html.dark .search-field .hash{color:var(--primary-soft)}
+html.dark .spec-card-num{color:color-mix(in oklab,var(--card-color) 45%,#fff)}
+html.dark .spec-card .badge{color:color-mix(in oklab,var(--card-color) 45%,#fff)!important}
+.finder-hint{margin:12px 0 22px}
+html.dark .hero2{border-bottom:1px solid rgba(255,255,255,.06)}
+body:has(#installBanner:not(.hidden)) footer,body:has(#notifBanner:not(.hidden)) footer{padding-bottom:120px}
+
+/* ---- v3: signature, congrats, profile logos ---- */
+.plate{background:rgba(255,255,255,.95);border-radius:22%;padding:6%;box-shadow:0 0 0 1px rgba(201,162,74,.5)}
+.hero2-logo-img{background:rgba(255,255,255,.95);border-radius:22%;padding:5%;box-shadow:0 0 0 1px rgba(201,162,74,.55)}
+.mda{position:relative;display:inline-flex;align-items:center;gap:10px;margin-top:14px;padding:0 4px;min-height:44px;background:none;border:0;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:.42em;padding-inline-start:calc(4px + .42em);
+  color:var(--muted);transition:color .25s var(--ease),letter-spacing .35s var(--ease),text-shadow .25s}
+.mda::before,.mda::after{content:"";width:22px;height:1px;background:linear-gradient(90deg,transparent,var(--gold));opacity:.75;transition:width .35s var(--ease)}
+.mda::after{transform:scaleX(-1)}
+.mda:hover,.mda:focus-visible{color:var(--primary);letter-spacing:.5em;text-shadow:0 0 18px rgba(201,162,74,.5)}
+.mda:hover::before,.mda:hover::after{width:32px}
+html.dark .mda:hover,html.dark .mda:focus-visible{color:var(--primary-soft)}
+.congrats{display:flex;align-items:center;gap:16px;max-width:440px;margin:26px auto 16px;padding:16px 18px;border-radius:20px;border:1px solid rgba(201,162,74,.6);
+  background:linear-gradient(135deg,rgba(101,40,220,.09),rgba(201,162,74,.12));position:relative;overflow:hidden;animation:rise .6s var(--ease) both}
+.congrats::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%);transform:translateX(-120%);animation:sheen 2.4s .5s var(--ease) 1 forwards;pointer-events:none}
+@keyframes sheen{to{transform:translateX(120%)}}
+.congrats-logo{width:64px;height:64px;flex:none}.congrats-logo svg,.congrats-logo img{width:100%;height:100%;object-fit:contain}
+.congrats b{display:block;font-size:17px;font-weight:800;color:var(--text);overflow-wrap:anywhere}
+.congrats p{margin-top:4px;font-size:13.5px;line-height:1.6;color:var(--muted)}
+html.dark .congrats{background:linear-gradient(135deg,rgba(124,77,240,.18),rgba(201,162,74,.12))}
+.prof-logos{position:relative;display:flex;align-items:center;justify-content:center;gap:18px}
+.prof-logos .pl-inst{width:60px;height:60px;border-radius:16px;object-fit:contain;background:#fff;padding:2px;box-shadow:0 0 0 1px rgba(255,255,255,.2),0 10px 24px -8px rgba(0,0,0,.6)}
+.pl-sep{width:1px;height:46px;background:linear-gradient(transparent,var(--gold),transparent)}
+.pl-promo{width:72px;height:72px}.pl-promo svg,.pl-promo img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))}
+.prof-head{padding-top:30px}.prof-inst{margin-top:14px}.prof-inst img{display:none}
+
+footer .mda,footer a.mda{background:none!important;border:0!important;box-shadow:none!important;border-radius:0;color:color-mix(in oklab,var(--text) 68%,transparent)}
+footer .mda:hover,footer .mda:focus-visible{color:var(--primary)}
+html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--primary-soft)}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
@@ -774,7 +853,7 @@ html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
       <div class="brand-text center" style="align-items:flex-end">
         <b>ISCAE</b><span id="brandPromoLabel">PROMOTION 18</span>
       </div>
-      <img class="brand-logo-img" src="icons/icon-192.png" alt="ISCAE" width="42" height="42" />
+      <img class="brand-logo-img" src="brand/logo-iscae.png" alt="ISCAE" width="42" height="42" />
     </a>
   </div>
 </header>
@@ -785,7 +864,7 @@ html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
     <header class="hero2">
       <div class="hero2-bg" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
       <div class="hero2-in">
-        <img class="hero2-logo" src="icons/icon-192.png" alt="ISCAE" width="76" height="76" />
+        <div class="hero2-logo" id="heroLogo"></div>
         <h1 id="heroTitle"><span class="hero2-num" id="heroNumber">18ème Promotion</span><span class="hero2-name" id="heroName" hidden></span></h1>
         <div><p class="hero2-inst" id="heroInst"></p><p class="hero2-country" id="heroCountry"></p><p class="hero2-soon" id="heroSoon" hidden></p></div>
         <a class="btn hero2-cta" id="heroCta" href="#search"></a>
@@ -802,7 +881,7 @@ html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
         <h2 class="finder-title" id="finderTitle"></h2>
         <div class="finder-box" role="search">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/></svg>
-          <input id="searchInput" type="search" autocomplete="off" spellcheck="false" enterkeyhint="search" />
+          <input id="searchInput" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="search" maxlength="6" dir="ltr" />
           <button type="button" class="finder-clear" id="searchClear" hidden>×</button>
           <button type="button" class="btn btn-primary" id="btnSearch" data-i18n="search_btn" style="min-height:48px">بحث</button>
         </div>
@@ -844,7 +923,8 @@ html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
 <footer>
   <div class="container footer-inner">
     <button class="btn btn-ghost btn-sm" id="btnFooterLogin" data-i18n="footer_login">دخول المشرفين ←</button>
-    <div class="foot2"><b>ISCAE — <span id="footerPromoLabel">18ème Promotion</span></b><span id="footerInst"></span><span>Mauritanie · © <span id="footerYear">2026</span> <span id="footerRights"></span></span></div>
+    <div class="foot2"><b>ISCAE — <span id="footerPromoLabel">18ème Promotion</span></b><span id="footerInst"></span><span>Mauritanie · © <span id="footerYear">2026</span> <span id="footerRights"></span></span>
+      <a class="mda" href="https://wa.me/22220479962" target="_blank" rel="noopener noreferrer" aria-label="MDA — WhatsApp">MDA</a></div>
   </div>
 </footer>
 
@@ -1318,12 +1398,43 @@ function brandName() {
    الرقم (18) واسم الدفعة (FR/AR، NULL حتى يحدده المشرف الرئيسي) يأتيان فقط من
    public.promotion_settings. كل واجهة تستعمل الدوال أدناه — لا نص مكرَّر. */
 const AR_ORD = {1:"الأولى",2:"الثانية",3:"الثالثة",4:"الرابعة",5:"الخامسة",6:"السادسة",7:"السابعة",8:"الثامنة",9:"التاسعة",10:"العاشرة",11:"الحادية عشر",12:"الثانية عشر",13:"الثالثة عشر",14:"الرابعة عشر",15:"الخامسة عشر",16:"السادسة عشر",17:"السابعة عشر",18:"الثامنة عشر",19:"التاسعة عشر",20:"العشرون"};
-state.promo = { number: 18, name_fr: null, name_ar: null };
+state.promo = { number: 18, name_fr: null, name_ar: null, logo: null };
 function promoNumberLabel(lang = state.lang, n = state.promo.number) {
   return lang === "fr" ? `${n}${n === 1 ? "ère" : "ème"} Promotion` : `الدفعة ${AR_ORD[n] || n}`;
 }
 function promoName(lang = state.lang) {
   return String((lang === "fr" ? state.promo.name_fr : state.promo.name_ar) || "").trim();
+}
+let logoUid = 0;
+/** شعار افتراضي (شارة الدفعة) يُستبدل تلقائياً بشعار يرفعه المشرف الرئيسي. */
+function defaultPromoLogo(n) {
+  const u = ++logoUid, fs = String(n).length > 2 ? 26 : 36;
+  const nodes = [0, 45, 90, 135, 180, 225, 270, 315].map(a => { const r = a * Math.PI / 180, x1 = 60 + 52.5 * Math.cos(r), y1 = 60 + 52.5 * Math.sin(r), x2 = 60 + 47 * Math.cos(r), y2 = 60 + 47 * Math.sin(r);
+    return `<line x1="${x2.toFixed(1)}" y1="${y2.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"/><circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="1.6"/>`; }).join("");
+  const bars = [6, 9, 12, 15].map((h, i) => `<rect x="${29.5 + i * 5.6}" y="${90 - h}" width="4" height="${h}" rx="1"/>`).join("");
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(promoNumberLabel())}">
+    <defs><linearGradient id="pg${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c4df0"/><stop offset=".55" stop-color="#3a1691"/><stop offset="1" stop-color="#1b0b4d"/></linearGradient>
+    <linearGradient id="gg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e0a0"/><stop offset="1" stop-color="#c9a24a"/></linearGradient>
+    <radialGradient id="sh${u}" cx=".35" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+    <circle cx="60" cy="60" r="58" fill="url(#gg${u})"/><circle cx="60" cy="60" r="55.5" fill="url(#pg${u})"/><circle cx="60" cy="60" r="55.5" fill="url(#sh${u})"/>
+    <circle cx="60" cy="60" r="44.5" fill="none" stroke="#f6e0a0" stroke-opacity=".38" stroke-width=".8"/>
+    <g stroke="#f6e0a0" stroke-opacity=".55" stroke-width=".9" fill="#f6e0a0" fill-opacity=".8">${nodes}</g>
+    <g fill="url(#gg${u})"><polygon points="60,13 80,21.5 60,30 40,21.5"/><path d="M48.5 25.5v6.5c0 2.6 5 4.8 11.5 4.8s11.5-2.2 11.5-4.8v-6.5L60 31z" opacity=".78"/><rect x="78.6" y="21.5" width="1.5" height="9.5"/><circle cx="79.4" cy="33" r="1.9"/></g>
+    <text x="60" y="${fs > 30 ? 64 : 62}" text-anchor="middle" font-family="'Plus Jakarta Sans',Tajawal,sans-serif" font-weight="800" font-size="${fs}" fill="url(#gg${u})">${esc(n)}</text>
+    <g><line x1="44" y1="69.5" x2="56" y2="69.5" stroke="#f6e0a0" stroke-opacity=".6" stroke-width=".8"/><line x1="64" y1="69.5" x2="76" y2="69.5" stroke="#f6e0a0" stroke-opacity=".6" stroke-width=".8"/><rect x="58" y="67.5" width="4" height="4" transform="rotate(45 60 69.5)" fill="#f6e0a0"/></g>
+    <g fill="url(#gg${u})">${bars}</g>
+    <polyline points="29,80 35,76 41,78 51,70" fill="none" stroke="#f6e0a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,68.6 47.6,69.4 51.6,73.4" fill="#f6e0a0"/>
+    <g fill="none" stroke="url(#gg${u})" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M76 76l-6 6.5 6 6.5"/><path d="M84 74.5l-4.5 16"/><path d="M87.5 76l6 6.5-6 6.5" transform="translate(-0.5 0)"/></g>
+    <text x="60" y="105" text-anchor="middle" font-family="'Plus Jakarta Sans',sans-serif" font-weight="800" font-size="8" letter-spacing="3.2" fill="#fff" fill-opacity=".9">ISCAE</text></svg>`;
+}
+function promoLogoHTML(url, n, cls) {
+  return url ? `<img class="${cls || ""}" src="${esc(url)}" alt="${esc(promoNumberLabel(state.lang, n))}" decoding="async" />` : defaultPromoLogo(n);
+}
+function renderHeroLogo() {
+  const el = $("#heroLogo"); if (!el) return;
+  const url = state.promo.logo || "", key = url + "|" + state.promo.number + "|" + state.lang;
+  if (el.dataset.key === key) return;
+  el.dataset.key = key; el.innerHTML = promoLogoHTML(url, state.promo.number, "hero2-logo-img");
 }
 function promoLabel() {
   const nm = promoName();
@@ -1333,7 +1444,7 @@ async function loadPromotion() {
   try {
     const { data, error } = await db.from("promotion_settings").select("*").eq("id", 1).maybeSingle();
     state.promoReady = !error && !!data;
-    if (state.promoReady) state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null };
+    if (state.promoReady) state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null, logo: data.promotion_logo_url || null };
   } catch (e) { state.promoReady = false; }
 }
 
@@ -1343,7 +1454,7 @@ Object.assign(I18N, {
   hero_cta:{ar:"البحث عن خريج",fr:"Rechercher un diplômé"},
   hero_soon:{ar:"سيُعلَن عن اسم الدفعة قريباً.",fr:"Le nom de la promotion sera annoncé prochainement."},
   finder_title:{ar:"ابحث عن خريجي {promo}",fr:"Retrouvez les diplômés de la {promo}"},
-  search_ph:{ar:"البحث بالاسم أو الرقم الجامعي...",fr:"Rechercher par nom ou matricule..."},
+  search_ph:{ar:"رقم التسجيل — مثال I21567",fr:"Numéro d'inscription — ex. I21567"},
   search_hint2:{ar:"اكتب حرفين على الأقل من الاسم أو الرقم الجامعي.",fr:"Saisissez au moins 2 caractères du nom ou du matricule."},
   search_clear:{ar:"مسح البحث",fr:"Effacer la recherche"},
   nav_home:{ar:"الرئيسية",fr:"Accueil"},nav_grads:{ar:"الخريجون",fr:"Diplômés"},
@@ -1351,6 +1462,8 @@ Object.assign(I18N, {
   show_more:{ar:"عرض المزيد",fr:"Afficher plus"},
   empty_title:{ar:"لم يتم العثور على الطالب",fr:"Aucun diplômé trouvé"},
   empty_text:{ar:"تحقق من الاسم أو الرقم الجامعي ثم حاول مرة أخرى.",fr:"Vérifiez le nom ou le matricule et essayez à nouveau."},
+  congrats_title:{ar:"تهانينا {name}! 🎓",fr:"Félicitations {name} ! 🎓"},
+  congrats_text:{ar:"يسعدنا أن نجدك ضمن خريجي {promo} من المعهد العالي للمحاسبة وإدارة المؤسسات. مسيرة مشرّفة وبداية مستقبل واعد.",fr:"Nous sommes fiers de vous compter parmi les diplômés de la {promo} de l'ISCAE. Un parcours d'excellence et un avenir prometteur."},
   view_profile:{ar:"عرض الملف",fr:"Voir le profil"},
   lbl_matricule:{ar:"الرقم الجامعي",fr:"Matricule"},
   share_profile:{ar:"مشاركة الملف",fr:"Partager le profil"},
@@ -1367,6 +1480,10 @@ Object.assign(I18N, {
   promo_saved:{ar:"تم حفظ هوية الدفعة",fr:"Identité de la promotion enregistrée"},
   promo_missing:{ar:"جدول promotion_settings غير موجود: نفّذ PROMOTION.sql في Supabase أولاً.",fr:"Table promotion_settings absente : exécutez d'abord PROMOTION.sql dans Supabase."},
   promo_denied:{ar:"غير مصرّح: للمشرف الرئيسي فقط.",fr:"Non autorisé : administrateur principal uniquement."},
+  promo_logo:{ar:"شعار الدفعة",fr:"Logo de la promotion"},
+  promo_logo_hint:{ar:"PNG أو JPG أو WebP (حتى 5 ميغابايت). يظهر بارزاً في الصفحة الرئيسية. بدون شعار يظهر الشعار الافتراضي.",fr:"PNG, JPG ou WebP (5 Mo max). Affiché en évidence sur l'accueil. Sans logo, l'emblème par défaut est utilisé."},
+  promo_logo_reset:{ar:"العودة للشعار الافتراضي",fr:"Revenir à l'emblème par défaut"},
+  promo_logo_fail:{ar:"تعذّر رفع الشعار: {msg}",fr:"Échec de l'envoi du logo : {msg}"},
   promo_hint:{ar:"اترك اسم الدفعة فارغاً إذا لم يُحدَّد بعد — لن يظهر أي اسم للزوار.",fr:"Laissez le nom vide s'il n'est pas encore défini — aucun nom ne sera affiché aux visiteurs."}
 });
 
@@ -1445,7 +1562,7 @@ function applyStaticI18n() {
   $$("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   $$("[data-i18n-title]").forEach(el => { el.setAttribute("title", t(el.dataset.i18nTitle)); });
   const hint = $("#searchHint");
-  if (hint && !($("#searchInput") && $("#searchInput").value)) hint.textContent = t("search_hint2");
+  if (hint) hint.innerHTML = `${t("search_hint_prefix")} <code>I</code> ${t("search_hint_suffix")} <code>I21567</code>`;
 }
 
 function setMeta(sel, val) { const m = document.querySelector(sel); if (m) m.setAttribute("content", val); }
@@ -1464,11 +1581,12 @@ function applyBranding() {
   set("#heroInst", t("hero_inst")); set("#heroCountry", t("hero_country")); set("#heroCta", t("hero_cta"));
   set("#finderTitle", t("finder_title", { promo: num }));
   set("#navHome", t("nav_home")); set("#navGrads", t("nav_grads"));
-  const inp = $("#searchInput"); if (inp) { inp.placeholder = t("search_ph"); inp.setAttribute("aria-label", t("search_ph")); }
+  const inp = $("#searchInput"); if (inp) { inp.dir = state.lang === "fr" ? "ltr" : "rtl"; inp.placeholder = t("search_ph"); inp.setAttribute("aria-label", t("search_ph")); }
   const clr = $("#searchClear"); if (clr) clr.setAttribute("aria-label", t("search_clear"));
   set("#eventsSubtitle", t("events_subtitle", { promo }));
   set("#footerPromoLabel", promo); set("#footerRights", t("foot_rights"));
   set("#footerInst", t("hero_inst"));
+  renderHeroLogo();
   set("#footerYear", new Date().getFullYear());
 }
 
@@ -1739,32 +1857,15 @@ setInterval(tickCountdowns, 1000);
 
 /* ------------------------- 8. PUBLIC SEARCH ------------------------- */
 /** Registration numbers must be the letter I followed by exactly 5 digits, e.g. I21567. */
-/* ------------------------- 8. SEARCH — annuaire des diplômés ------------------------- */
+/* ------------------------- 8. SEARCH — رقم التسجيل الدقيق فقط -------------------------
+   لا بحث بالاسم ولا نتائج جزئية: النتيجة تظهر فقط عند إدخال رقم تسجيل كامل وصحيح (I + 5 أرقام). */
 const REG_NUMBER_PATTERN = /^I\d{5}$/;
-const PAGE_SIZE = 24;
-let searchTimer = null, searchSeq = 0, shown = PAGE_SIZE, lastList = [];
-
-const norm = s => String(s || "").normalize("NFD")
-  .replace(/[\u0300-\u036f\u064B-\u065F\u0670\u0640]/g, "")
-  .replace(/[إأآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").toLowerCase().trim();
+let searchTimer = null, searchSeq = 0;
 
 function enrichStudent(st) {
   if (!st) return st;
   const sp = state.specialties.find(x => x.id === st.specialty_id);
   return { ...st, specialty_name: st.specialty_name || (sp ? sp.name : ""), category: st.category || categoryOf(st.order_index) };
-}
-function matchStudents(q) {
-  const tokens = norm(q).split(/\s+/).filter(Boolean);
-  if (!tokens.length) return [];
-  const out = [];
-  for (const s of state.students) {
-    const reg = norm(s.registration_number), name = norm(s.full_name);
-    const hay = reg + " " + name;
-    if (!tokens.every(tk => hay.includes(tk))) continue;
-    const score = reg === tokens[0] ? 0 : name.startsWith(tokens[0]) ? 1 : reg.startsWith(tokens[0]) ? 1 : 2;
-    out.push({ s, score });
-  }
-  return out.sort((a, b) => a.score - b.score || (a.s.full_name || "").localeCompare(b.s.full_name || "")).map(x => enrichStudent(x.s));
 }
 function initials(name) {
   const w = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -1777,9 +1878,9 @@ function avatarHTML(st, cls) {
   return `<div class="gav ${cls || ""}" style="--h:${hueOf(st.registration_number || st.full_name)}">${u
     ? `<img src="${esc(u)}" alt="${esc(st.full_name || "")}" loading="lazy" decoding="async" onerror="this.remove()" />` : ""}<span ${u ? 'style="position:absolute;z-index:-1"' : ""} aria-hidden="true">${esc(initials(st.full_name))}</span></div>`;
 }
-function skeletons(n) { return `<div class="ggrid" aria-hidden="true">${Array.from({ length: n }, () => `<div class="sk"></div>`).join("")}</div>`; }
-function cardHTML(st, i) {
-  return `<article class="gcard" data-reg="${esc(st.registration_number)}" style="--i:${Math.min(i, 11)}">
+function skeletons(n) { return `<div class="ggrid one" aria-hidden="true">${Array.from({ length: n }, () => `<div class="sk"></div>`).join("")}</div>`; }
+function cardHTML(st) {
+  return `<article class="gcard" data-reg="${esc(st.registration_number)}">
     <div class="gcard-band"></div>${avatarHTML(st)}
     <h3>${esc(st.full_name)}</h3>
     <span class="gcard-mat" dir="ltr" title="${esc(t("lbl_matricule"))}">${esc(st.registration_number)}</span>
@@ -1788,43 +1889,51 @@ function cardHTML(st, i) {
     <button type="button" class="btn gcard-btn" data-reg="${esc(st.registration_number)}">${t("view_profile")}</button>
   </article>`;
 }
-function renderResults() {
-  const box = $("#searchResult");
-  if (!lastList.length) {
-    box.innerHTML = `<div class="gempty" role="status"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg><b>${t("empty_title")}</b><p>${t("empty_text")}</p></div>`;
-    return;
-  }
-  const page = lastList.slice(0, shown);
-  box.innerHTML = `<p class="res-count" role="status">${t("n_results", { n: lastList.length })}</p>
-    <div class="ggrid">${page.map(cardHTML).join("")}</div>
-    ${lastList.length > shown ? `<div class="more-wrap"><button type="button" class="btn btn-ghost" id="btnMore">${t("show_more")}</button></div>` : ""}`;
-  const more = $("#btnMore"); if (more) more.onclick = () => { shown += PAGE_SIZE; renderResults(); };
-}
-async function runSearch() {
-  const q = $("#searchInput").value.trim(), box = $("#searchResult"), hint = $("#searchHint");
-  const clr = $("#searchClear"); if (clr) clr.hidden = !q;
+async function runSearch(fromUser) {
+  const input = $("#searchInput"), box = $("#searchResult"), hint = $("#searchHint"), clr = $("#searchClear");
+  const q = input.value.trim().toUpperCase();
+  if (clr) clr.hidden = !input.value;
   clearTimeout(searchTimer);
   const seq = ++searchSeq;
-  if (norm(q).length < 2) { lastList = []; box.innerHTML = ""; if (hint) hint.textContent = t("search_hint2"); return; }
-  if (hint) hint.textContent = "";
-  if (!state.publicLoaded) { box.innerHTML = skeletons(3); return; }
-  shown = PAGE_SIZE;
-  let list = matchStudents(q);
-  if (!list.length && REG_NUMBER_PATTERN.test(q.toUpperCase())) {   // ancien comportement : RPC sécurisée par matricule
-    box.innerHTML = skeletons(1);
-    const { data } = await db.rpc("search_student", { _reg: q.toUpperCase() });
-    if (seq !== searchSeq) return;
-    const st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
-    if (st) list = [enrichStudent(st)];
+  if (!q) { box.innerHTML = ""; if (hint) hint.classList.remove("err"); if (fromUser === true) toast(t("search_enter_first"), "info"); return; }
+  if (!REG_NUMBER_PATTERN.test(q)) {           // رقم ناقص أو غير صحيح ⇒ لا نتائج إطلاقاً
+    box.innerHTML = "";
+    if (hint) hint.classList.toggle("err", fromUser === true);
+    if (fromUser === true) toast(t("search_invalid_format"), "err");
+    return;
   }
+  if (hint) hint.classList.remove("err");
+  if (!state.publicLoaded) { box.innerHTML = skeletons(1); return; }
+  box.innerHTML = skeletons(1);
+  const { data, error } = await db.rpc("search_student", { _reg: q });
   if (seq !== searchSeq) return;
-  lastList = list; renderResults();
+  let st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
+  if (!st && !error) {                          // احتياط: مطابقة تامة محلياً إذا لم تُنشر الدالة بعد
+    const local = state.students.find(s => String(s.registration_number).trim().toUpperCase() === q);
+    if (local) st = local;
+  }
+  if (st && String(st.registration_number).trim().toUpperCase() !== q) st = null;   // مطابقة تامة فقط
+  if (!st) {
+    box.innerHTML = `<div class="gempty" role="status"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg><b>${t("empty_title")}</b><p>${t("search_no_results_text", { q: esc(q) })}</p></div>`;
+    return;
+  }
+  const first = String(st.full_name || "").trim().split(/\s+/)[0] || "";
+  box.innerHTML = `<div class="congrats" role="status"><div class="congrats-logo">${promoLogoHTML(state.promo.logo, state.promo.number, "plate")}</div>
+      <div><b>${t("congrats_title", { name: esc(first) })}</b><p>${t("congrats_text", { promo: esc(promoNumberLabel()) })}</p></div></div>
+    <div class="ggrid one">${cardHTML(enrichStudent(st))}</div>`;
+  if (fromUser === true) setTimeout(() => { const el = box.querySelector(".gcard"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 120);
 }
-function doSearch() { return runSearch(); }
-$("#searchInput").addEventListener("input", () => { clearTimeout(searchTimer); const c = $("#searchClear"); if (c) c.hidden = !$("#searchInput").value; searchTimer = setTimeout(runSearch, 220); });
-$("#searchInput").addEventListener("keydown", e => { if (e.key === "Enter") runSearch(); if (e.key === "Escape") { e.target.value = ""; runSearch(); } });
-$("#searchClear").onclick = () => { const i = $("#searchInput"); i.value = ""; runSearch(); i.focus(); };
-$("#btnSearch").onclick = runSearch;
+function doSearch() { return runSearch(false); }
+$("#searchInput").addEventListener("input", e => {
+  const v = e.target.value.toUpperCase().replace(/\s+/g, ""); if (v !== e.target.value) e.target.value = v;
+  const c = $("#searchClear"); if (c) c.hidden = !v;
+  clearTimeout(searchTimer);
+  if (REG_NUMBER_PATTERN.test(v)) searchTimer = setTimeout(() => runSearch(false), 200);   // رقم كامل ⇒ بحث تلقائي
+  else { ++searchSeq; $("#searchResult").innerHTML = ""; const h = $("#searchHint"); if (h) h.classList.remove("err"); }
+});
+$("#searchInput").addEventListener("keydown", e => { if (e.key === "Enter") runSearch(true); if (e.key === "Escape") { e.target.value = ""; runSearch(false); } });
+$("#searchClear").onclick = () => { const i = $("#searchInput"); i.value = ""; runSearch(false); i.focus(); };
+$("#btnSearch").onclick = () => runSearch(true);
 $("#searchResult").addEventListener("click", e => {
   const el = e.target.closest("[data-reg]"); if (el) openProfile(el.dataset.reg);
 });
@@ -1852,10 +1961,11 @@ async function routeFromHash() {
   const h = location.hash;
   if (!h.startsWith(PROFILE_HASH)) { if ($("#profileOverlay")) hideProfile(); return; }
   const reg = decodeURIComponent(h.slice(PROFILE_HASH.length)).trim().toUpperCase();
-  let st = state.students.find(s => String(s.registration_number).trim().toUpperCase() === reg);
-  if (!st && REG_NUMBER_PATTERN.test(reg)) {
+  let st = null;
+  if (REG_NUMBER_PATTERN.test(reg)) {
     const { data } = await db.rpc("search_student", { _reg: reg });
     st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
+    if (!st) st = state.students.find(s => String(s.registration_number).trim().toUpperCase() === reg) || null;
   }
   showProfile(enrichStudent(st), reg);
 }
@@ -1875,7 +1985,8 @@ function showProfile(st, reg) {
   ov.innerHTML = `<div class="prof-sheet">
     <div class="prof-head">
       <button type="button" class="prof-close" id="profClose" aria-label="${esc(t("close"))}">×</button>
-      <div class="prof-inst"><img src="icons/icon-192.png" alt="" /><span>ISCAE · ${esc(promoNumberLabel())}</span></div>
+      <div class="prof-logos"><img class="pl-inst" src="brand/logo-iscae.png" alt="ISCAE" /><i class="pl-sep" aria-hidden="true"></i><div class="pl-promo">${promoLogoHTML(state.promo.logo, state.promo.number, "plate")}</div></div>
+      <div class="prof-inst"><span>ISCAE · ${esc(promoLabel())}</span></div>
     </div>
     ${st ? `${avatarHTML(st, "prof-av")}
     <div class="prof-body">
@@ -2584,6 +2695,15 @@ function promoPreviewHTML(lang, n, name) {
   const inst = lang === "fr" ? "Institut Supérieur de Comptabilité<br>et d'Administration des Entreprises" : "المعهد العالي للمحاسبة وإدارة المؤسسات";
   return `<div class="pv" dir="${lang === "fr" ? "ltr" : "rtl"}" lang="${lang}"><b>${esc(promoNumberLabel(lang, n))}</b>${name ? `<em>${esc(name)}</em>` : ""}<small class="pv-inst">${inst}<br>ISCAE</small></div>`;
 }
+/** رفع شعار الدفعة: التخزين أولاً، وإن رُفض (صلاحيات) نستعمل data-URL للملفات الصغيرة. */
+async function uploadPromoLogo(file) {
+  const ext = ((file.name || "").split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const path = `promotion/logo-${Date.now()}.${ext}`;
+  const { error } = await db.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (!error) return db.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+  if (file.size <= 350 * 1024) return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(error); r.readAsDataURL(file); });
+  throw error;
+}
 function promoAdminHTML() {
   if (!isSuper()) return "";
   const p = state.promo;
@@ -2593,6 +2713,11 @@ function promoAdminHTML() {
       <div class="field"><label for="pNum">${t("promo_number")}</label><input id="pNum" name="n" type="number" min="1" max="99" value="${esc(p.number)}" dir="ltr" /></div>
       <div class="field"><label for="pFr">${t("promo_name_fr")}</label><input id="pFr" name="fr" dir="ltr" lang="fr" maxlength="80" value="${esc(p.name_fr || "")}" /></div>
       <div class="field"><label for="pAr">${t("promo_name_ar")}</label><input id="pAr" name="ar" dir="rtl" lang="ar" maxlength="80" value="${esc(p.name_ar || "")}" /></div>
+      <div class="field"><label for="pLogo">${t("promo_logo")}</label>
+        <div class="logo-edit"><div class="logo-prev" id="logoPrev"></div>
+          <div class="stack" style="gap:8px;min-width:0"><input id="pLogo" type="file" accept="image/png,image/jpeg,image/webp" />
+          <button type="button" class="btn btn-ghost btn-sm" id="pLogoReset" style="align-self:flex-start">${t("promo_logo_reset")}</button>
+          <small class="muted">${t("promo_logo_hint")}</small></div></div></div>
       <button class="btn btn-primary" type="submit" style="align-self:flex-start">${t("promo_save")}</button>
     </div><div><p class="muted" style="font-size:13px;font-weight:700;margin-bottom:8px">${t("promo_preview")}</p>
       <div class="stack" id="promoPreview" aria-live="polite"></div></div></div></form>`;
@@ -2603,17 +2728,33 @@ function bindPromoAdmin() {
     const n = Math.max(1, Number(f.n.value) || state.promo.number);
     $("#promoPreview").innerHTML = promoPreviewHTML("fr", n, f.fr.value.trim()) + promoPreviewHTML("ar", n, f.ar.value.trim());
   };
-  f.addEventListener("input", prev); prev();
+  let pending;   // undefined = inchangé · null = retirer · File = nouveau logo
+  const showLogo = () => {
+    const box = $("#logoPrev"); if (!box) return;
+    const n = Math.max(1, Number(f.n.value) || state.promo.number);
+    if (pending instanceof File) { if (box._u) URL.revokeObjectURL(box._u); box._u = URL.createObjectURL(pending); box.innerHTML = `<img src="${box._u}" alt="" />`; }
+    else box.innerHTML = promoLogoHTML(pending === null ? "" : state.promo.logo, n);
+  };
+  f.addEventListener("input", () => { prev(); if (!(pending instanceof File) && !state.promo.logo) showLogo(); });
+  $("#pLogo").onchange = e => { const file = e.target.files[0]; if (!file) return; if (!validatePhotoFile(file)) { e.target.value = ""; return; } pending = file; showLogo(); };
+  $("#pLogoReset").onclick = () => { pending = null; $("#pLogo").value = ""; showLogo(); };
+  prev(); showLogo();
   f.onsubmit = async e => {
     e.preventDefault();
     const n = Number(f.n.value);
     if (!Number.isInteger(n) || n < 1) { toast(t("promo_number"), "err"); return; }
-    const { data, error } = await db.from("promotion_settings")
-      .update({ promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null })
-      .eq("id", 1).select();
+    const payload = { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
+    const oldLogo = state.promo.logo;
+    if (pending instanceof File) {
+      try { payload.promotion_logo_url = await uploadPromoLogo(pending); }
+      catch (err) { toast(t("promo_logo_fail", { msg: err.message || err }), "err"); return; }
+    } else if (pending === null) payload.promotion_logo_url = null;
+    const { data, error } = await db.from("promotion_settings").update(payload).eq("id", 1).select();
     if (error) { toast(/relation|schema cache|does not exist/i.test(error.message || "") ? t("promo_missing") : t("err_save_failed", { msg: error.message }), "err"); return; }
     if (!data || !data.length) { toast(t("promo_denied"), "err"); return; }   // RLS: aucune ligne modifiée
-    await loadPromotion(); applyBranding(); renderStats(); renderEvents();
+    if (payload.promotion_logo_url !== undefined && oldLogo && oldLogo !== payload.promotion_logo_url) removeStoredPhoto(oldLogo);
+    pending = undefined;
+    await loadPromotion(); applyBranding(); renderStats(); renderEvents(); showLogo();
     toast(t("promo_saved"));
   };
 }
