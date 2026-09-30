@@ -689,6 +689,9 @@ html[dir=rtl] .hero2-num{letter-spacing:0;font-weight:900}
 .gcard-mat{margin-top:8px;font-weight:800;letter-spacing:.06em;color:var(--primary);background:var(--violet-50);padding:3px 12px;border-radius:999px;font-size:14px}
 .gcard-spec{margin-top:10px;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
 .gcard-promo{margin-top:4px;font-size:13px;font-weight:700;color:var(--text)}
+.gcard-phone{margin-top:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px;max-width:100%;font-size:14px;font-weight:700;color:var(--text);direction:ltr;unicode-bidi:isolate;text-decoration:none;overflow-wrap:anywhere}
+.gcard-phone svg{flex:none;color:var(--primary)}
+.gcard-phone:hover{color:var(--primary)}
 .gcard-btn{margin-top:18px;min-height:44px;width:100%;background:var(--ink);color:#fff;border-radius:14px}
 .gcard-btn:hover{background:var(--primary)}
 .gempty{margin-top:26px;text-align:center;padding:44px 22px;border:1px dashed var(--violet-300);border-radius:22px;background:var(--surface)}
@@ -824,6 +827,24 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
+/* ---- STATISTICS ---- */
+.st-filters{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;margin:0 0 16px}
+.st-filters .field{min-width:140px}
+.st-chips{display:flex;gap:6px;flex-wrap:wrap}
+.st-card{background:var(--surface-solid);border:1px solid var(--stroke);border-radius:20px;padding:16px;margin:0 0 16px;box-shadow:var(--shadow-sm)}
+.st-card h3{font-weight:900;margin:0 0 10px;font-size:16px}
+.st-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.st-grid2{grid-template-columns:1fr}}
+.ch-wrap{direction:ltr;width:100%;overflow:hidden}
+.ch-wrap svg{width:100%;height:auto;display:block}
+.ch-grid{stroke:var(--muted);stroke-opacity:.18;stroke-width:1}
+.ch-ax{fill:var(--muted);font-size:11px;font-weight:600}
+.ch-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;font-size:12px;font-weight:700}
+.ch-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px}
+#chTip{position:fixed;z-index:9999;pointer-events:none;background:#0f172a;color:#fff;padding:8px 10px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-line;box-shadow:var(--shadow-md);display:none;max-width:260px}
+.hbar{display:grid;grid-template-columns:minmax(90px,160px) 1fr auto;gap:10px;align-items:center;margin:10px 0;font-size:13px}
+.hbar>.tr{height:10px;background:rgba(124,58,237,.14);border-radius:99px;overflow:hidden}
+.hbar>.tr>b{display:block;height:100%;border-radius:99px}
 </style>
 </head>
 <body>
@@ -1212,6 +1233,8 @@ const I18N = {
   btn_add_student_submit:{ar:"إضافة الطالب",fr:"Ajouter l'étudiant"},
   btn_cancel:{ar:"إلغاء",fr:"Annuler"},
   err_reg_duplicate:{ar:"رقم التسجيل مستخدم مسبقاً",fr:"Ce numéro d'inscription est déjà utilisé"},
+  err_rank_conflict:{ar:"تعذّر تحديد ترتيب غير مكرر للطالب الآن (إضافة متزامنة). أعد المحاولة.",fr:"Impossible d'attribuer un rang unique pour le moment (ajout simultané). Réessayez."},
+  err_admin_specialty_locked:{ar:"قاعدة البيانات تمنع أكثر من رئيس لنفس التخصص. نفّذ ملف MULTI-HEADS.sql في Supabase ثم أعد المحاولة.",fr:"La base de données interdit plusieurs chefs pour une même spécialité. Exécutez MULTI-HEADS.sql dans Supabase puis réessayez."},
   err_save_failed:{ar:"تعذر الحفظ: {msg}",fr:"Échec de l'enregistrement : {msg}"},
   msg_student_updated:{ar:"تم تحديث بيانات الطالب",fr:"Données de l'étudiant mises à jour"},
   msg_student_added:{ar:"تمت إضافة الطالب",fr:"Étudiant ajouté avec succès"},
@@ -1888,6 +1911,7 @@ function cardHTML(st) {
     <h3>${esc(st.full_name)}</h3>
     <span class="gcard-mat" dir="ltr" title="${esc(t("lbl_matricule"))}">${esc(st.registration_number)}</span>
     ${st.specialty_name ? `<p class="gcard-spec">${esc(st.specialty_name)}</p>` : ""}
+    ${phoneVisible() && String(st.phone || "").trim() ? `<a class="gcard-phone" dir="ltr" href="tel:${esc(String(st.phone).replace(/[^\d+]/g, ""))}" title="${esc(t("label_phone"))}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>${esc(String(st.phone).trim())}</span></a>` : ""}
     <p class="gcard-promo">${esc(promoNumberLabel())}</p>
     <button type="button" class="btn gcard-btn" data-reg="${esc(st.registration_number)}">${t("view_profile")}</button>
   </article>`;
@@ -1981,6 +2005,7 @@ function showProfile(st, reg) {
     [t("label_specialty"), st.specialty_name],
     [t("label_category"), st.category],
     [t("label_order_in_specialty"), st.order_index],
+    [t("label_phone"), phoneVisible() && st.phone ? String(st.phone).trim() : ""],
     [t("label_sash_name"), sashName(st)],
     [t("label_certificate_name"), certName(st)]
   ].filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "") : [];
@@ -1996,7 +2021,7 @@ function showProfile(st, reg) {
       <h2 id="profName">${esc(st.full_name)}</h2>
       <div class="prof-meta"><span class="gcard-mat" dir="ltr">${esc(st.registration_number)}</span>
         <span class="pm">${esc(promoLabel())}</span></div>
-      ${facts.length ? `<dl class="prof-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
+      ${facts.length ? `<dl class="prof-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd${k === t("label_phone") ? ' dir="ltr" style="unicode-bidi:isolate"' : ""}>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
       <div id="studentCardsBox"></div>
       <div class="prof-actions"><button type="button" class="btn btn-primary" id="profShare">${t("share_profile")}</button></div>
     </div>` : `<div class="prof-body"><div class="gempty" style="border:0"><b id="profName">${t("empty_title")}</b><p>${t("empty_text")}</p></div></div>`}
@@ -2119,7 +2144,7 @@ function showDash() {
 /* ------------------------- 11. DASHBOARD SHELL ------------------------- */
 function tabsForRole() {
   const list = [{ k: "overview", n: t("nav_overview") }, { k: "students", n: t("nav_students") }];
-  if (isSuper()) list.push({ k: "specialties", n: t("tab_specialties") }, { k: "admins", n: t("nav_admins") }, { k: "cards", n: t("nav_cards") }, { k: "notifs", n: t("nav_notifs") }, { k: "settings", n: t("nav_settings") });
+  if (isSuper()) list.push({ k: "stats", n: t("nav_stats") }, { k: "specialties", n: t("tab_specialties") }, { k: "admins", n: t("nav_admins") }, { k: "cards", n: t("nav_cards") }, { k: "notifs", n: t("nav_notifs") }, { k: "settings", n: t("nav_settings") });
   list.push({ k: "exports", n: t("nav_exports") });
   return list;
 }
@@ -2145,6 +2170,7 @@ function renderDash() {
   const panel = $("#panel");
   ({
     overview: renderOverview,
+    stats: renderStatsTab,
     students: renderStudents,
     specialties: renderSpecialties,
     admins: renderAdminsTab,
@@ -2352,21 +2378,49 @@ function studentModal(student, specs) {
       specialty_id: isSuper() ? f.specialty_id : state.me.specialty_id,
       photo_url: finalPhoto
     };
+    /* منع تكرار الطالب: رقم التسجيل موجود مسبقاً لدى طالب آخر (مثلاً أضافه رئيس آخر لنفس التخصص) */
+    {
+      const regUp = payload.registration_number.toUpperCase();
+      const clash = state.students.find(x => String(x.registration_number || "").trim().toUpperCase() === regUp && (!isEdit || x.id !== student.id));
+      if (clash) { toast(t("err_reg_duplicate"), "err"); return; }
+    }
     let error;
     if (isEdit) ({ error } = await db.from("students").update(payload).eq("id", student.id));
-    else ({ error } = await db.from("students").insert({ ...payload, created_by: state.session.user.id }));
+    else {
+      /* عند إضافة رئيسين لنفس التخصص قد يتصادم الترتيب لحظياً؛ نعيد المحاولة ليُحسب ترتيب جديد غير مكرر */
+      for (let i = 0; i < 4; i++) {
+        ({ error } = await db.from("students").insert({ ...payload, created_by: state.session.user.id }));
+        if (!error || !isRankCollision(error)) break;
+        await new Promise(r => setTimeout(r, 150 + Math.random() * 250));
+      }
+    }
     /* توافق مع قاعدة بيانات لم تُطبَّق عليها الترقية بعد (عمود photo_url غير موجود) */
     if (error && /photo_url|schema cache|column/i.test(error.message || "")) {
       const { photo_url, ...legacy } = payload;
       if (isEdit) ({ error } = await db.from("students").update(legacy).eq("id", student.id));
-      else ({ error } = await db.from("students").insert({ ...legacy, created_by: state.session.user.id }));
+      else {
+        for (let i = 0; i < 4; i++) {
+          ({ error } = await db.from("students").insert({ ...legacy, created_by: state.session.user.id }));
+          if (!error || !isRankCollision(error)) break;
+          await new Promise(r => setTimeout(r, 150 + Math.random() * 250));
+        }
+      }
     }
-    if (error) { toast(error.message.includes("duplicate") ? t("err_reg_duplicate") : t("err_save_failed", { msg: error.message }), "err"); return; }
+    if (error) {
+      const em = String(error.message || "");
+      toast(isRankCollision(error) ? t("err_rank_conflict") : (/duplicate|unique/i.test(em) ? t("err_reg_duplicate") : t("err_save_failed", { msg: em })), "err"); return;
+    }
     /* حذف الملف القديم من التخزين بعد نجاح الحفظ */
     if (oldPhoto && (photoCleared || (pendingPhotoFile && finalPhoto !== oldPhoto))) await removeStoredPhoto(oldPhoto);
     closeModals(); toast(isEdit ? t("msg_student_updated") : t("msg_student_added"));
     await loadPublicData(); renderDash();
   };
+}
+
+/** هل الخطأ تصادم في (التخصص + الترتيب) وليس في رقم التسجيل؟ */
+function isRankCollision(err) {
+  const m = String((err && (err.message || "")) + " " + (err && (err.details || ""))).toLowerCase();
+  return /duplicate|unique/.test(m) && /order_index|order|rank/.test(m) && !/registration/.test(m);
 }
 
 async function deleteStudent(id) {
@@ -2411,12 +2465,12 @@ function renderSpecialties(panel) {
     <div class="table-wrap"><table>
       <thead><tr><th>${t("th_name")}</th><th>${t("th_code")}</th><th>${t("th_students_count")}</th><th>${t("th_dept_head")}</th><th>${t("th_actions")}</th></tr></thead>
       <tbody>${state.specialties.length ? state.specialties.map(sp => {
-        const head = state.admins.find(a => a.specialty_id === sp.id && a.role === "dept_admin");
+        const heads = state.admins.filter(a => a.specialty_id === sp.id && a.role === "dept_admin");
         return `<tr>
           <td><b>${esc(sp.name)}</b></td>
           <td>${esc(sp.code || "—")}</td>
           <td>${state.students.filter(s => s.specialty_id === sp.id).length}</td>
-          <td>${esc(head ? head.full_name : "—")}</td>
+          <td>${heads.length ? heads.map(h => esc(h.full_name)).join(" · ") : "—"}</td>
           <td><div class="row" style="gap:6px">
             <button class="btn btn-ghost btn-sm" data-edit="${sp.id}">${t("btn_edit")}</button>
             <button class="btn btn-danger btn-sm" data-del="${sp.id}">${t("btn_delete")}</button>
@@ -2590,7 +2644,9 @@ function adminModal(admin) {
       closeModals(); toast(t("msg_saved_ok"));
       await loadAdmins(); renderDash();
     } catch (err) {
-      toast(t("err_generic", { msg: err.message || err }), "err");
+      const em = String((err && err.message) || err || "");
+      const locked = !isEdit && /admins?_.*specialty|specialty.*(unique|duplicate|already|exist)|(unique|duplicate).*specialty|one.*(head|admin).*specialty/i.test(em);
+      toast(locked ? t("err_admin_specialty_locked") : t("err_generic", { msg: em }), "err");
       btn.disabled = false; btn.textContent = t("btn_save");
     }
   };
@@ -2611,6 +2667,7 @@ function renderSettings(panel) {
   const ovs = specialtyOverrides();
   panel.innerHTML = `
     <div class="panel-head"><h2>${t("settings_title")}</h2></div>
+    ${phoneControlHTML()}
     ${promoAdminHTML()}
     <form id="setForm" class="stack" style="max-width:720px">
       <div class="grid-2">
@@ -2654,6 +2711,7 @@ function renderSettings(panel) {
       <button class="btn btn-primary" type="submit" style="align-self:flex-start">${t("btn_save_settings")}</button>
     </form>`;
   bindPromoAdmin();
+  bindPhoneControl();
   $("#setForm").onsubmit = async e => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
@@ -2759,6 +2817,212 @@ function bindPromoAdmin() {
     pending = undefined;
     await loadPromotion(); applyBranding(); renderStats(); renderEvents(); showLogo();
     toast(t("promo_saved"));
+  };
+}
+
+/* ------------------------- 16B. STATISTICS + PHONE CONTROL (المشرف الرئيسي) ------------------------- */
+Object.assign(I18N, {
+  nav_stats:{ar:"الإحصائيات",fr:"Statistiques"},
+  stats_title:{ar:"إحصائيات الموقع والتسجيل",fr:"Statistiques du site et des inscriptions"},
+  st_last_n:{ar:"آخر {n} يوم",fr:"{n} derniers jours"},
+  st_from:{ar:"من تاريخ",fr:"Du"}, st_to:{ar:"إلى تاريخ",fr:"Au"},
+  st_admin_all:{ar:"كل المسجِّلين",fr:"Tous les opérateurs"},
+  st_visitors:{ar:"الزوار (فريدون)",fr:"Visiteurs uniques"},
+  st_visits:{ar:"إجمالي الزيارات",fr:"Visites totales"},
+  st_regs:{ar:"الطلاب المسجلون",fr:"Étudiants inscrits"},
+  st_regs_today:{ar:"مسجلون اليوم",fr:"Inscrits aujourd'hui"},
+  st_chart_visits:{ar:"الزوار حسب التاريخ",fr:"Visiteurs par date"},
+  st_chart_regs:{ar:"التسجيل اليومي حسب التخصص",fr:"Inscriptions quotidiennes par spécialité"},
+  st_chart_share:{ar:"توزيع المسجلين حسب التخصص",fr:"Répartition des inscrits par spécialité"},
+  st_chart_hours:{ar:"التسجيل حسب الساعة",fr:"Inscriptions par heure"},
+  st_chart_admins:{ar:"من سجّل الطلاب",fr:"Qui a inscrit les étudiants"},
+  st_matrix:{ar:"عدد المسجلين من كل تخصص حسب التاريخ",fr:"Inscrits par spécialité et par date"},
+  st_log:{ar:"سجل التسجيل (التاريخ والتوقيت ومن سجّل)",fr:"Journal des inscriptions (date, heure, opérateur)"},
+  st_series_visits:{ar:"إجمالي الزيارات",fr:"Visites"}, st_series_unique:{ar:"زوار فريدون",fr:"Visiteurs uniques"},
+  st_date:{ar:"التاريخ",fr:"Date"}, st_datetime:{ar:"التاريخ والتوقيت",fr:"Date et heure"},
+  st_registered_by:{ar:"سجّله",fr:"Inscrit par"}, st_total:{ar:"المجموع",fr:"Total"},
+  st_no_data:{ar:"لا توجد بيانات في هذه الفترة",fr:"Aucune donnée sur cette période"},
+  st_visits_missing:{ar:"إحصائيات الزوار غير مفعّلة بعد: نفّذ ملف STATS.sql في Supabase ثم أعد تحميل الصفحة.",fr:"Statistiques de visites non activées : exécutez STATS.sql dans Supabase puis rechargez la page."},
+  st_show_more:{ar:"عرض المزيد",fr:"Afficher plus"}, st_export:{ar:"تصدير Excel",fr:"Exporter Excel"},
+  st_hour:{ar:"الساعة",fr:"Heure"}, st_count:{ar:"العدد",fr:"Nombre"},
+  phone_ctl_title:{ar:"رقم الهاتف في نتيجة البحث",fr:"Numéro de téléphone dans les résultats de recherche"},
+  phone_ctl_label:{ar:"إظهار رقم هاتف الخريج عند البحث عن رقم التسجيل",fr:"Afficher le téléphone du diplômé lors de la recherche par numéro d'inscription"},
+  phone_ctl_hint:{ar:"عند الإيقاف لا يظهر الرقم للزوار في بطاقة النتيجة ولا في الملف الشخصي، ويبقى ظاهراً للمشرفين في لوحة التحكم.",fr:"Désactivé : le numéro n'apparaît ni dans la carte de résultat ni dans le profil public ; il reste visible pour les administrateurs."},
+  phone_ctl_on:{ar:"تم إظهار رقم الهاتف للزوار",fr:"Téléphone affiché aux visiteurs"},
+  phone_ctl_off:{ar:"تم إخفاء رقم الهاتف عن الزوار",fr:"Téléphone masqué pour les visiteurs"},
+  phone_ctl_missing:{ar:"تعذّر الحفظ: نفّذ ملف STATS.sql في Supabase أولاً.",fr:"Échec : exécutez d'abord STATS.sql dans Supabase."}
+});
+
+/* ---- التحكم بظهور رقم الهاتف (الافتراضي ظاهر) ---- */
+function phoneVisible() { return (state.settings || {}).show_phone_in_search !== false; }
+function phoneControlHTML() {
+  if (!isSuper()) return "";
+  return `<div class="st-card" id="phoneCtl"><h3>${t("phone_ctl_title")}</h3>
+    <label class="row" style="gap:10px;align-items:center;cursor:pointer;font-weight:700">
+      <input type="checkbox" id="phoneCtlChk" ${phoneVisible() ? "checked" : ""} style="width:18px;height:18px;accent-color:var(--violet-600)" />
+      <span>${t("phone_ctl_label")}</span></label>
+    <p class="muted" style="font-size:12px;margin-top:8px">${t("phone_ctl_hint")}</p></div>`;
+}
+function bindPhoneControl() {
+  const chk = $("#phoneCtlChk"); if (!chk) return;
+  chk.onchange = async () => {
+    const v = chk.checked; chk.disabled = true;
+    const { data, error } = await db.from("settings").update({ show_phone_in_search: v }).eq("id", 1).select();
+    chk.disabled = false;
+    if (error || !data || !data.length) {
+      chk.checked = !v;
+      toast(error && /column|schema cache/i.test(error.message || "") ? t("phone_ctl_missing") : t("err_save_failed", { msg: (error && error.message) || t("promo_denied") }), "err"); return;
+    }
+    state.settings = { ...(state.settings || {}), show_phone_in_search: v };
+    toast(t(v ? "phone_ctl_on" : "phone_ctl_off"));
+    if ($("#searchInput") && $("#searchInput").value.trim()) doSearch();
+    if ($("#profileOverlay")) routeFromHash();
+  };
+}
+
+/* ---- تتبّع الزيارات: مرة لكل جلسة، ولا تُحتسب زيارات المشرفين ---- */
+function trackVisit() {
+  try {
+    if (state.session || sessionStorage.getItem("iscae-visit-sent")) return;
+    let vid = localStorage.getItem("iscae-vid");
+    if (!vid) { vid = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12)); localStorage.setItem("iscae-vid", vid); }
+    sessionStorage.setItem("iscae-visit-sent", "1");
+    const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "mobile" : "desktop";
+    Promise.resolve(db.rpc("track_visit", { _visitor: vid, _lang: state.lang, _device: device, _path: location.pathname })).catch(() => {});
+  } catch (e) { /* التتبع لا يعطّل الموقع أبداً */ }
+}
+
+/* ---- أدوات التاريخ ---- */
+const STATS_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; } })();
+state.stats = { days: 30, from: "", to: "", spec: "all", admin: "all", daily: [], totals: null, err: "", logLimit: 50, seq: 0 };
+const pad2 = n => String(n).padStart(2, "0");
+const dayKey = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+function statsRange() {
+  const s = state.stats, to = s.to ? new Date(s.to + "T00:00:00") : new Date(); to.setHours(0, 0, 0, 0);
+  let from;
+  if (s.from) from = new Date(s.from + "T00:00:00"); else { from = new Date(to); from.setDate(from.getDate() - (s.days - 1)); }
+  let a = from, b = to; if (a > b) { a = to; b = from; }
+  const end = new Date(b); end.setDate(end.getDate() + 1);
+  const days = []; for (const d = new Date(a); d < end; d.setDate(d.getDate() + 1)) days.push(dayKey(d));
+  return { from: a, end, days };
+}
+function statsStudents(r) {
+  const s = state.stats;
+  return state.students.filter(x => {
+    const d = new Date(x.created_at); if (isNaN(d) || d < r.from || d >= r.end) return false;
+    return (s.spec === "all" || x.specialty_id === s.spec) && (s.admin === "all" || x.created_by === s.admin);
+  });
+}
+const registrarName = uid => { const a = state.admins.find(x => x.user_id === uid); return a ? a.full_name : "—"; };
+const fmtDT = iso => { const d = new Date(iso); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+
+/* ---- رسوم SVG احترافية (بدون مكتبات خارجية): خطي/مساحي، أعمدة مكدّسة، دائري ---- */
+let chartUid = 0;
+function niceMax(v) { if (v <= 5) return 5; const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
+function chartSVG({ labels, tips, series, type, stacked }) {
+  const W = 720, H = 300, L = 44, R = 14, T = 16, B = 38, iw = W - L - R, ih = H - T - B, n = labels.length, u = ++chartUid;
+  const tot = labels.map((_, i) => stacked ? series.reduce((a, s) => a + s.values[i], 0) : Math.max(...series.map(s => s.values[i])));
+  const max = niceMax(Math.max(...tot, 1)), x = i => type === "line" ? L + (n === 1 ? iw / 2 : iw * i / (n - 1)) : L + iw * (i + .5) / n, y = v => T + ih - ih * v / max;
+  let g = "";
+  for (let k = 0; k <= 5; k++) { const v = max * k / 5, yy = y(v).toFixed(1); g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" class="ch-grid"/><text x="${L - 8}" y="${(+yy + 4).toFixed(1)}" class="ch-ax" text-anchor="end">${Math.round(v * 10) / 10}</text>`; }
+  const step = Math.max(1, Math.ceil(n / 12));
+  labels.forEach((lb, i) => { if (i % step === 0) g += `<text x="${x(i).toFixed(1)}" y="${H - 14}" class="ch-ax" text-anchor="middle">${esc(lb)}</text>`; });
+  if (type === "line") {
+    series.forEach((s, k) => {
+      const pts = s.values.map((v, i) => [x(i), y(v)]), line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+      const area = `${line} L${pts[n - 1][0].toFixed(1)} ${y(0)} L${pts[0][0].toFixed(1)} ${y(0)} Z`;
+      g += `<defs><linearGradient id="lg${u}_${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".28"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient></defs>`
+        + `<path d="${area}" fill="url(#lg${u}_${k})"/><path d="${line}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`
+        + (n <= 45 ? pts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--surface-solid)" stroke="${s.color}" stroke-width="2"/>`).join("") : "");
+    });
+  } else {
+    const bw = Math.min(42, iw / n * .7);
+    for (let i = 0; i < n; i++) { let acc = 0; series.forEach(s => { const v = s.values[i]; if (!v) return; const h = ih * v / max, yy = y(acc + v); g += `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${bw > 8 ? 3 : 1}" fill="${s.color}"/>`; acc += v; }); }
+  }
+  const cw = iw / n;
+  for (let i = 0; i < n; i++) g += `<rect x="${(L + cw * i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih}" fill="transparent" data-tip="${esc(tips[i])}"/>`;
+  return `<div class="ch-wrap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="chart">${g}</svg></div>`;
+}
+function donutSVG(items) {
+  const total = items.reduce((a, i) => a + i.value, 0), R = 70, C = 2 * Math.PI * R; let off = 0, segs = "";
+  items.forEach(i => { if (!i.value) return; const len = C * i.value / total; segs += `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${i.color}" stroke-width="28" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(i.name + ": " + i.value + " (" + Math.round(i.value * 100 / total) + "%)")}"/>`; off += len; });
+  return `<div class="ch-wrap" style="max-width:260px;margin:0 auto"><svg viewBox="0 0 200 200" role="img" aria-label="donut">${segs}<text x="100" y="104" text-anchor="middle" style="font-size:30px;font-weight:900;fill:var(--text)">${total}</text><text x="100" y="124" text-anchor="middle" class="ch-ax">${esc(t("st_total"))}</text></svg></div>`;
+}
+const legendHTML = items => `<div class="ch-legend">${items.map(i => `<span><i style="background:${i.color}"></i>${esc(i.name)}${i.value !== undefined ? " — " + i.value : ""}</span>`).join("")}</div>`;
+function showChartTip(e) {
+  let tip = $("#chTip"); if (!tip) { tip = document.createElement("div"); tip.id = "chTip"; document.body.appendChild(tip); }
+  const el = e.target.closest && e.target.closest("[data-tip]");
+  if (!el) { tip.style.display = "none"; return; }
+  const p = e.touches ? e.touches[0] : e; tip.textContent = el.getAttribute("data-tip"); tip.style.display = "block";
+  tip.style.left = Math.min(p.clientX + 14, window.innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = Math.max(8, p.clientY - tip.offsetHeight - 12) + "px";
+}
+
+/* ---- صفحة الإحصائيات ---- */
+function renderStatsTab(panel) {
+  if (!isSuper()) return renderOverview(panel);
+  const s = state.stats, seq = ++s.seq, r = statsRange();
+  panel.innerHTML = `<div class="panel-head"><h2>${t("stats_title")}</h2></div>
+    <div class="st-filters no-print">
+      <div class="st-chips">${[7, 30, 90, 365].map(n => `<button class="btn btn-sm ${!s.from && !s.to && s.days === n ? "btn-primary" : "btn-ghost"}" data-days="${n}">${t("st_last_n", { n })}</button>`).join("")}</div>
+      <div class="field"><label>${t("st_from")}</label><input type="date" id="stFrom" value="${s.from || dayKey(r.from)}" dir="ltr" /></div>
+      <div class="field"><label>${t("st_to")}</label><input type="date" id="stTo" value="${s.to || dayKey(new Date())}" dir="ltr" /></div>
+      <div class="field"><label>${t("th_specialty")}</label><select id="stSpec"><option value="all">${t("all_specialties_option")}</option>${state.specialties.map(x => `<option value="${x.id}" ${s.spec === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
+      <div class="field"><label>${t("st_registered_by")}</label><select id="stAdm"><option value="all">${t("st_admin_all")}</option>${state.admins.filter(a => a.user_id).map(a => `<option value="${a.user_id}" ${s.admin === a.user_id ? "selected" : ""}>${esc(a.full_name)}</option>`).join("")}</select></div>
+    </div><div id="stBody"><div class="empty">…</div></div>`;
+  $$("[data-days]", panel).forEach(b => b.onclick = () => { s.days = +b.dataset.days; s.from = s.to = ""; renderStatsTab(panel); });
+  const chg = () => { s.from = $("#stFrom").value; s.to = $("#stTo").value; s.spec = $("#stSpec").value; s.admin = $("#stAdm").value; renderStatsTab(panel); };
+  ["#stFrom", "#stTo", "#stSpec", "#stAdm"].forEach(id => $(id).onchange = chg);
+  panel.onmousemove = panel.onmouseover = showChartTip; panel.onmouseleave = () => { const tp = $("#chTip"); if (tp) tp.style.display = "none"; }; panel.ontouchstart = showChartTip;
+  (async () => {
+    let daily = [], totals = null, err = "";
+    const a = { _from: r.from.toISOString(), _to: r.end.toISOString() };
+    const [d1, d2] = await Promise.all([db.rpc("get_visit_stats", { ...a, _tz: STATS_TZ }), db.rpc("get_visit_totals", a)]);
+    if (d1.error || d2.error) err = t("st_visits_missing"); else { daily = d1.data || []; totals = Array.isArray(d2.data) ? d2.data[0] : d2.data; }
+    if (seq !== s.seq || state.tab !== "stats") return;
+    drawStatsBody(r, daily, totals, err);
+  })();
+}
+function drawStatsBody(r, daily, totals, err) {
+  const s = state.stats, body = $("#stBody"); if (!body) return;
+  const sts = statsStudents(r), short = k => k.slice(8) + "/" + k.slice(5, 7);
+  const vMap = {}; daily.forEach(x => { vMap[String(x.day).slice(0, 10)] = x; });
+  const vis = r.days.map(k => +(vMap[k] ? vMap[k].visits : 0)), uni = r.days.map(k => +(vMap[k] ? vMap[k].unique_visitors : 0));
+  const specs = state.specialties.filter(x => s.spec === "all" || x.id === s.spec).map(x => ({ id: x.id, name: x.name, color: x.color || "#7C3AED" }));
+  const byDaySpec = {}; sts.forEach(x => { const k = dayKey(new Date(x.created_at)); (byDaySpec[k] = byDaySpec[k] || {})[x.specialty_id] = ((byDaySpec[k] || {})[x.specialty_id] || 0) + 1; });
+  const regSeries = specs.map(sp => ({ name: sp.name, color: sp.color, values: r.days.map(k => (byDaySpec[k] && byDaySpec[k][sp.id]) || 0) }));
+  const today = dayKey(new Date()), regToday = state.students.filter(x => dayKey(new Date(x.created_at)) === today && (s.spec === "all" || x.specialty_id === s.spec) && (s.admin === "all" || x.created_by === s.admin)).length;
+  const hours = Array.from({ length: 24 }, () => 0); sts.forEach(x => hours[new Date(x.created_at).getHours()]++);
+  const byAdm = {}; sts.forEach(x => { const k = x.created_by || "—"; byAdm[k] = (byAdm[k] || 0) + 1; });
+  const admRows = Object.entries(byAdm).map(([k, v]) => ({ name: k === "—" ? "—" : registrarName(k), v })).sort((a, b) => b.v - a.v), admMax = Math.max(...admRows.map(x => x.v), 1);
+  const share = specs.map(sp => ({ name: sp.name, color: sp.color, value: sts.filter(x => x.specialty_id === sp.id).length })).filter(x => x.value);
+  const tipV = r.days.map((k, i) => `${k}\n${t("st_series_visits")}: ${vis[i]}\n${t("st_series_unique")}: ${uni[i]}`);
+  const tipR = r.days.map((k, i) => `${k}\n` + regSeries.filter(x => x.values[i]).map(x => `${x.name}: ${x.values[i]}`).join("\n") + (regSeries.some(x => x.values[i]) ? "" : "0"));
+  const hl = hours.map((_, h) => pad2(h)), tipH = hours.map((v, h) => `${t("st_hour")} ${pad2(h)}:00 — ${t("st_count")}: ${v}`);
+  const logRows = sts.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const matrixDays = r.days.slice().reverse().filter(k => byDaySpec[k]);
+  body.innerHTML = `
+    <div class="mini-grid">
+      <div class="mini"><b>${totals ? totals.unique_visitors : "—"}</b><small>${t("st_visitors")}</small></div>
+      <div class="mini"><b>${totals ? totals.visits : "—"}</b><small>${t("st_visits")}</small></div>
+      <div class="mini"><b>${sts.length}</b><small>${t("st_regs")}</small></div>
+      <div class="mini"><b>${regToday}</b><small>${t("st_regs_today")}</small></div>
+    </div>
+    <div class="st-card"><h3>${t("st_chart_visits")}</h3>${err ? `<p class="muted">${err}</p>` : chartSVG({ labels: r.days.map(short), tips: tipV, type: "line", series: [{ color: "#7C3AED", values: vis }, { color: "#10B981", values: uni }] }) + legendHTML([{ name: t("st_series_visits"), color: "#7C3AED" }, { name: t("st_series_unique"), color: "#10B981" }])}</div>
+    <div class="st-card"><h3>${t("st_chart_regs")}</h3>${sts.length ? chartSVG({ labels: r.days.map(short), tips: tipR, type: "bar", stacked: true, series: regSeries }) + legendHTML(regSeries.map(x => ({ name: x.name, color: x.color }))) : `<p class="muted">${t("st_no_data")}</p>`}</div>
+    <div class="st-grid2">
+      <div class="st-card"><h3>${t("st_chart_share")}</h3>${share.length ? donutSVG(share) + legendHTML(share) : `<p class="muted">${t("st_no_data")}</p>`}</div>
+      <div class="st-card"><h3>${t("st_chart_admins")}</h3>${admRows.length ? admRows.map(x => `<div class="hbar"><span>${esc(x.name)}</span><div class="tr"><b style="width:${(x.v * 100 / admMax).toFixed(1)}%;background:var(--violet-500)"></b></div><b>${x.v}</b></div>`).join("") : `<p class="muted">${t("st_no_data")}</p>`}</div>
+    </div>
+    <div class="st-card"><h3>${t("st_chart_hours")}</h3>${sts.length ? chartSVG({ labels: hl, tips: tipH, type: "bar", series: [{ color: "#6366F1", values: hours }] }) : `<p class="muted">${t("st_no_data")}</p>`}</div>
+    <div class="st-card"><h3>${t("st_matrix")}</h3><div class="table-wrap"><table><thead><tr><th>${t("st_date")}</th>${specs.map(x => `<th>${esc(x.name)}</th>`).join("")}<th>${t("st_total")}</th></tr></thead><tbody>${matrixDays.length ? matrixDays.map(k => `<tr><td dir="ltr">${k}</td>${specs.map(x => `<td>${(byDaySpec[k] && byDaySpec[k][x.id]) || 0}</td>`).join("")}<td><b>${specs.reduce((a, x) => a + ((byDaySpec[k] && byDaySpec[k][x.id]) || 0), 0)}</b></td></tr>`).join("") : `<tr><td colspan="${specs.length + 2}" class="empty">${t("st_no_data")}</td></tr>`}</tbody></table></div></div>
+    <div class="st-card"><div class="panel-head" style="margin-bottom:8px"><h3 style="margin:0">${t("st_log")} (${logRows.length})</h3><button class="btn btn-ghost btn-sm" id="stXlsx">${t("st_export")}</button></div>
+      <div class="table-wrap"><table><thead><tr><th>${t("st_datetime")}</th><th>${t("th_specialty")}</th><th>${t("th_full_name")}</th><th>${t("th_reg_number")}</th><th>${t("st_registered_by")}</th></tr></thead><tbody>${logRows.length ? logRows.slice(0, s.logLimit).map(x => `<tr><td dir="ltr">${fmtDT(x.created_at)}</td><td>${esc(specName(x.specialty_id))}</td><td>${esc(x.full_name)}</td><td dir="ltr">${esc(x.registration_number)}</td><td>${esc(registrarName(x.created_by))}</td></tr>`).join("") : `<tr><td colspan="5" class="empty">${t("st_no_data")}</td></tr>`}</tbody></table></div>
+      ${logRows.length > s.logLimit ? `<button class="btn btn-ghost btn-sm" id="stMore" style="margin-top:10px">${t("st_show_more")}</button>` : ""}</div>`;
+  const more = $("#stMore"); if (more) more.onclick = () => { s.logLimit += 100; drawStatsBody(r, daily, totals, err); };
+  const xl = $("#stXlsx"); if (xl) xl.onclick = () => {
+    if (!logRows.length) return toast(t("toast_no_export_data"), "info");
+    const ws = XLSX.utils.json_to_sheet(logRows.map(x => ({ [t("st_datetime")]: fmtDT(x.created_at), [t("th_specialty")]: specName(x.specialty_id), [t("th_full_name")]: x.full_name, [t("th_reg_number")]: x.registration_number, [t("st_registered_by")]: registrarName(x.created_by) })));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inscriptions"); XLSX.writeFile(wb, `ISCAE18-stats-${dayKey(new Date())}.xlsx`); toast(t("toast_excel_downloaded"));
   };
 }
 
@@ -3989,6 +4253,7 @@ async function init() {
   const { data: { session } } = await db.auth.getSession();
   state.session = session || null;
   await loadPublicData();
+  trackVisit();
   applyBranding();
   renderStats();
   renderEvents();
