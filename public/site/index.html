@@ -801,13 +801,15 @@ body:has(#installBanner:not(.hidden)) footer,body:has(#notifBanner:not(.hidden))
 .mda:hover,.mda:focus-visible{color:var(--primary);letter-spacing:.5em;text-shadow:0 0 18px rgba(201,162,74,.5)}
 .mda:hover::before,.mda:hover::after{width:32px}
 html.dark .mda:hover,html.dark .mda:focus-visible{color:var(--primary-soft)}
-.congrats{display:flex;align-items:center;gap:16px;max-width:440px;margin:26px auto 16px;padding:16px 18px;border-radius:20px;border:1px solid rgba(201,162,74,.6);
+.congrats{display:flex;align-items:center;gap:16px;max-width:520px;margin:26px auto 16px;padding:16px 18px;border-radius:20px;border:1px solid rgba(201,162,74,.6);
   background:linear-gradient(135deg,rgba(101,40,220,.09),rgba(201,162,74,.12));position:relative;overflow:hidden;animation:rise .6s var(--ease) both}
 .congrats::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%);transform:translateX(-120%);animation:sheen 2.4s .5s var(--ease) 1 forwards;pointer-events:none}
 @keyframes sheen{to{transform:translateX(120%)}}
 .congrats-logo{width:64px;height:64px;flex:none}.congrats-logo svg,.congrats-logo img{width:100%;height:100%;object-fit:contain}
 .congrats b{display:block;font-size:17px;font-weight:800;color:var(--text);overflow-wrap:anywhere}
 .congrats p{margin-top:4px;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.congrats p strong{color:var(--primary);font-weight:800}
+html.dark .congrats p strong{color:var(--primary-soft)}
 html.dark .congrats{background:linear-gradient(135deg,rgba(124,77,240,.18),rgba(201,162,74,.12))}
 .prof-logos{position:relative;display:flex;align-items:center;justify-content:center;gap:18px}
 .prof-logos .pl-inst{width:60px;height:60px;border-radius:16px;object-fit:contain;background:#fff;padding:2px;box-shadow:0 0 0 1px rgba(255,255,255,.2),0 10px 24px -8px rgba(0,0,0,.6)}
@@ -1462,8 +1464,8 @@ Object.assign(I18N, {
   show_more:{ar:"عرض المزيد",fr:"Afficher plus"},
   empty_title:{ar:"لم يتم العثور على الطالب",fr:"Aucun diplômé trouvé"},
   empty_text:{ar:"تحقق من الاسم أو الرقم الجامعي ثم حاول مرة أخرى.",fr:"Vérifiez le nom ou le matricule et essayez à nouveau."},
-  congrats_title:{ar:"تهانينا {name}! 🎓",fr:"Félicitations {name} ! 🎓"},
-  congrats_text:{ar:"يسعدنا أن نجدك ضمن خريجي {promo} من المعهد العالي للمحاسبة وإدارة المؤسسات. مسيرة مشرّفة وبداية مستقبل واعد.",fr:"Nous sommes fiers de vous compter parmi les diplômés de la {promo} de l'ISCAE. Un parcours d'excellence et un avenir prometteur."},
+  congrats_title:{ar:"🎓 مبروك يا {name}! 🎉",fr:"🎓 Félicitations {name} ! 🎉"},
+  congrats_text:{ar:"يشرّفنا ويسعدنا أن نجدك ضمن خريجي {promo} من المعهد العالي للمحاسبة وإدارة المؤسسات. هذا الإنجاز ثمرة جهدك وإصرارك وسهر الليالي، وهو بداية طريق مشرق مليء بالنجاحات. نفخر بك ونتطلع إلى أن نراك تصنع الفارق. ✨",fr:"Nous sommes fiers et honorés de vous compter parmi les diplômés de la {promo} de l'ISCAE. Cette réussite est le fruit de votre travail, de votre persévérance et de votre détermination : elle ouvre la voie à un avenir brillant. Nous avons hâte de vous voir faire la différence. ✨"},
   view_profile:{ar:"عرض الملف",fr:"Voir le profil"},
   lbl_matricule:{ar:"الرقم الجامعي",fr:"Matricule"},
   share_profile:{ar:"مشاركة الملف",fr:"Partager le profil"},
@@ -1917,9 +1919,9 @@ async function runSearch(fromUser) {
     box.innerHTML = `<div class="gempty" role="status"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg><b>${t("empty_title")}</b><p>${t("search_no_results_text", { q: esc(q) })}</p></div>`;
     return;
   }
-  const first = String(st.full_name || "").trim().split(/\s+/)[0] || "";
+  const fullName = String(st.full_name || "").trim().replace(/\s+/g, " ");   // الاسم الكامل للخريج
   box.innerHTML = `<div class="congrats" role="status"><div class="congrats-logo">${promoLogoHTML(state.promo.logo, state.promo.number, "plate")}</div>
-      <div><b>${t("congrats_title", { name: esc(first) })}</b><p>${t("congrats_text", { promo: esc(promoNumberLabel()) })}</p></div></div>
+      <div><b>${t("congrats_title", { name: esc(fullName) })}</b><p>${t("congrats_text", { promo: "<strong>" + esc(promoLabel()) + "</strong>" })}</p></div></div>
     <div class="ggrid one">${cardHTML(enrichStudent(st))}</div>`;
   if (fromUser === true) setTimeout(() => { const el = box.querySelector(".gcard"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 120);
 }
