@@ -1,13 +1,13 @@
 {
-  "name": "ISCAE 18ème Promotion — منصة حفل التخرج",
+  "name": "ISCAE — 18ème Promotion",
   "short_name": "ISCAE 18",
-  "description": "منصة ISCAE لإدارة حفل التخرج والبحث عن الخريجين.",
+  "description": "Plateforme officielle de remise des diplômes de l'ISCAE — annuaire des diplômés.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#6d33e0",
+  "background_color": "#180a42",
+  "theme_color": "#180a42",
   "categories": ["education", "productivity"],
   "screenshots": [
     {

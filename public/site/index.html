@@ -12,15 +12,18 @@
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>ISCAE 18ème Promotion — منصة حفل التخرج</title>
+<title>ISCAE — 18ème Promotion</title>
 <meta name="description" content="منصة ISCAE 18ème Promotion لإدارة حفل التخرج: بحث الخريجين برقم التسجيل، التخصصات، الفئات، والعد التنازلي للحفلات." />
-<meta property="og:title" content="ISCAE 18ème Promotion — منصة حفل التخرج" />
+<meta property="og:title" content="ISCAE — 18ème Promotion" />
+<meta name="twitter:title" content="ISCAE — 18ème Promotion" />
+<meta property="og:image" content="icons/icon-512.png" />
+<meta property="og:site_name" content="ISCAE" />
 <meta property="og:description" content="ابحث عن معلوماتك كخريج وتابع استعدادات حفل توزيع شهادات التكريم." />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
 <!-- PWA: قابلية التثبيت على الهاتف والحاسوب -->
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#6d33e0" />
+<meta name="theme-color" content="#180a42" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -30,7 +33,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Almarai:wght@300;400;700;800&family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -601,6 +604,145 @@ html.dark .result-card-new .congrats-msg p { color: var(--violet-300); }
   .cards-line{font-size:13px}
   .photo-thumb{width:72px;height:90px}
 }
+
+/* ==========================================================================
+   PREMIUM REDESIGN — graduation identity (overrides; appended last)
+   Palette derived from the ISCAE icon (#6528dc); gold used only as a hairline accent.
+   ========================================================================== */
+:root{
+  --primary:#6528dc; --primary-foreground:#fff; --secondary:#2a1163; --accent:#c9a24a;
+  --background:var(--bg); --surface-elevated:var(--surface-solid); --foreground:var(--text);
+  --border:var(--stroke); --success:#059669; --warning:#b45309; --error:#be123c;
+  --ink:#180a42; --ink-2:#2d1170; --gold:#c9a24a;
+  --ease:cubic-bezier(.22,.8,.2,1);
+}
+body{font-family:'Plus Jakarta Sans','Tajawal','Almarai',system-ui,sans-serif}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:10px}
+.topbar{transition:box-shadow .3s var(--ease),background .3s var(--ease)}
+.topbar.scrolled{box-shadow:0 8px 30px -12px rgba(24,10,66,.35)}
+.brand-logo-img{width:42px;height:42px;border-radius:12px;box-shadow:0 4px 14px rgba(101,40,220,.35)}
+.topnav{display:flex;gap:4px;margin-inline-end:8px}
+.topnav a{padding:10px 14px;min-height:44px;display:inline-flex;align-items:center;border-radius:12px;font-weight:700;font-size:14px;color:var(--muted);transition:color .2s,background .2s}
+.topnav a:hover{color:var(--text);background:var(--violet-50)}
+.topnav a[aria-current="true"]{color:var(--primary)}
+@media (max-width:760px){.topnav{display:none}}
+
+/* ---- Hero ---- */
+.hero2{position:relative;isolation:isolate;overflow:hidden;color:#fff;text-align:center;
+  background:radial-gradient(120% 90% at 50% 0%,var(--ink-2) 0%,var(--ink) 62%);
+  padding:clamp(56px,10vw,110px) 18px clamp(96px,14vw,150px)}
+.hero2-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:56px 56px;-webkit-mask-image:radial-gradient(70% 70% at 50% 40%,#000,transparent);mask-image:radial-gradient(70% 70% at 50% 40%,#000,transparent)}
+.hero2-bg i{position:absolute;inset-inline-start:50%;top:46%;border:1px solid rgba(201,162,74,.28);border-radius:50%;transform:translate(-50%,-50%)}
+html[dir=rtl] .hero2-bg i{transform:translate(50%,-50%)}
+.hero2-bg .a1{width:min(70vw,520px);aspect-ratio:1}
+.hero2-bg .a2{width:min(105vw,820px);aspect-ratio:1;border-color:rgba(255,255,255,.09)}
+.hero2-bg .a3{width:min(150vw,1160px);aspect-ratio:1;border-color:rgba(255,255,255,.05)}
+.hero2-bg .a1{animation:slowspin 60s linear infinite}
+@keyframes slowspin{to{rotate:360deg}}
+.hero2-in{max-width:820px;margin-inline:auto;display:flex;flex-direction:column;align-items:center}
+.hero2-logo{width:76px;height:76px;border-radius:20px;box-shadow:0 0 0 1px rgba(255,255,255,.18),0 18px 40px -10px rgba(0,0,0,.55)}
+.hero2 h1{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:10px;line-height:1.08}
+.hero2-num{font-size:clamp(40px,9.5vw,84px);font-weight:800;letter-spacing:-.03em}
+html[dir=rtl] .hero2-num{letter-spacing:0;font-weight:900}
+.hero2-name{font-size:clamp(20px,4.6vw,34px);font-weight:600;color:var(--gold);padding-top:14px;border-top:1px solid rgba(201,162,74,.55);margin-top:2px;min-width:140px}
+.hero2-inst{margin-top:26px;max-width:30ch;font-size:clamp(15px,3.4vw,19px);color:rgba(255,255,255,.82);line-height:1.6}
+.hero2-country{margin-top:6px;font-size:14px;font-weight:700;color:rgba(255,255,255,.6)}
+.hero2-soon{margin-top:14px;font-size:13px;color:rgba(255,255,255,.55)}
+.hero2-cta{margin-top:34px;min-height:52px;padding:14px 30px;border-radius:16px;background:#fff;color:var(--ink);font-weight:800;font-size:16px;box-shadow:0 14px 34px -10px rgba(0,0,0,.5)}
+.hero2-cta:hover{transform:translateY(-2px);box-shadow:0 20px 40px -10px rgba(0,0,0,.6)}
+.hero2-in>*{animation:rise .7s var(--ease) both}
+.hero2-in>:nth-child(2){animation-delay:.08s}.hero2-in>:nth-child(3){animation-delay:.16s}.hero2-in>:nth-child(4){animation-delay:.22s}.hero2-in>:nth-child(n+5){animation-delay:.3s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---- Finder ---- */
+.finder{margin-top:-64px;position:relative;z-index:2;scroll-margin-top:90px}
+.finder-title{text-align:center;color:#fff;font-size:clamp(17px,3.6vw,22px);font-weight:700;margin-bottom:16px;text-shadow:0 1px 12px rgba(24,10,66,.5)}
+.finder-box{display:flex;align-items:center;gap:10px;background:var(--surface-solid);border:1.5px solid var(--border);border-radius:22px;padding:8px 10px;
+  box-shadow:0 24px 50px -18px rgba(24,10,66,.45);transition:box-shadow .25s var(--ease),border-color .25s}
+.finder-box:focus-within{border-color:var(--primary);box-shadow:0 0 0 5px rgba(101,40,220,.16),0 24px 50px -18px rgba(24,10,66,.5)}
+.finder-box svg{flex:none;color:var(--primary);margin-inline-start:8px}
+.finder-box input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:clamp(16px,3.6vw,19px);font-weight:600;padding:16px 4px;min-height:56px}
+.finder-box input::placeholder{color:var(--muted);font-weight:500}
+.finder-clear{width:44px;height:44px;flex:none;border:0;border-radius:14px;background:var(--violet-50);color:var(--muted);font-size:20px;cursor:pointer;transition:transform .15s,background .2s}
+.finder-clear:hover{background:var(--violet-100)}.finder-clear:active{transform:scale(.92)}
+.finder-hint{margin-top:10px;text-align:center;font-size:13px;color:var(--muted)}
+.res-count{margin:26px 4px 12px;font-weight:700;color:var(--muted);font-size:14px}
+
+/* ---- Graduate cards ---- */
+.ggrid{display:grid;gap:18px;grid-template-columns:1fr}
+@media (min-width:640px){.ggrid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1000px){.ggrid{grid-template-columns:repeat(3,1fr)}}
+.gcard{position:relative;overflow:hidden;cursor:pointer;text-align:center;background:var(--surface-solid);border:1px solid var(--border);border-radius:22px;padding:0 20px 22px;
+  display:flex;flex-direction:column;align-items:center;transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s;
+  animation:rise .5s var(--ease) both;animation-delay:calc(var(--i,0)*45ms)}
+.gcard:hover{transform:translateY(-4px);border-color:var(--primary);box-shadow:0 22px 40px -22px rgba(101,40,220,.55)}
+.gcard-band{align-self:stretch;height:64px;margin-inline:-20px;background:linear-gradient(135deg,var(--ink-2),var(--primary));border-bottom:2px solid var(--gold)}
+.gav{width:88px;height:88px;border-radius:50%;margin-top:-44px;border:4px solid var(--surface-solid);box-shadow:0 8px 22px -8px rgba(24,10,66,.5);overflow:hidden;display:grid;place-items:center;flex:none;
+  background:hsl(var(--h,265) 55% 38%);color:#fff;font-weight:800;font-size:30px}
+.gav img{width:100%;height:100%;object-fit:cover;transition:transform .5s var(--ease)}
+.gcard:hover .gav img{transform:scale(1.06)}
+.gcard h3{margin-top:14px;font-size:18px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.gcard-mat{margin-top:8px;font-weight:800;letter-spacing:.06em;color:var(--primary);background:var(--violet-50);padding:3px 12px;border-radius:999px;font-size:14px}
+.gcard-spec{margin-top:10px;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.gcard-promo{margin-top:4px;font-size:13px;font-weight:700;color:var(--text)}
+.gcard-btn{margin-top:18px;min-height:44px;width:100%;background:var(--ink);color:#fff;border-radius:14px}
+.gcard-btn:hover{background:var(--primary)}
+.gempty{margin-top:26px;text-align:center;padding:44px 22px;border:1px dashed var(--violet-300);border-radius:22px;background:var(--surface)}
+.gempty svg{color:var(--primary);opacity:.75}.gempty b{display:block;margin-top:12px;font-size:19px}.gempty p{margin-top:6px;color:var(--muted)}
+.sk{border-radius:22px;height:270px;background:linear-gradient(100deg,var(--violet-50) 30%,var(--surface-solid) 50%,var(--violet-50) 70%);background-size:220% 100%;animation:shimmer 1.3s linear infinite;border:1px solid var(--border)}
+@keyframes shimmer{to{background-position:-220% 0}}
+.more-wrap{display:flex;justify-content:center;margin-top:22px}
+
+/* ---- Profile (digital academic identity card) ---- */
+.prof-overlay{position:fixed;inset:0;z-index:200;background:rgba(15,8,40,.62);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top)) 14px 32px;animation:fade .25s ease both}
+@keyframes fade{from{opacity:0}}
+.prof-sheet{position:relative;width:100%;max-width:640px;margin-block:auto;background:var(--surface-solid);color:var(--text);border-radius:26px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.7);animation:rise .4s var(--ease) both}
+.prof-head{position:relative;text-align:center;color:#fff;padding:34px 22px 74px;background:radial-gradient(120% 120% at 50% 0%,var(--ink-2),var(--ink));border-bottom:2px solid var(--gold)}
+.prof-head::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:40px 40px;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+.prof-inst{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:14px;color:rgba(255,255,255,.85)}
+.prof-inst img{width:30px;height:30px;border-radius:9px}
+.prof-close{position:absolute;top:12px;inset-inline-end:12px;z-index:2;width:44px;height:44px;border:0;border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font-size:22px;cursor:pointer;transition:background .2s,transform .15s}
+.prof-close:hover{background:rgba(255,255,255,.26)}.prof-close:active{transform:scale(.92)}
+.prof-av{width:128px;height:128px;margin:-64px auto 0;position:relative;z-index:1;font-size:44px;border:5px solid var(--surface-solid);box-shadow:0 0 0 2px var(--gold),0 18px 36px -12px rgba(24,10,66,.6)}
+.gav.prof-av{margin-top:-64px}
+.prof-body{padding:18px 22px 26px;text-align:center}
+.prof-body h2{font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.3;overflow-wrap:anywhere}
+.prof-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.prof-meta .gcard-mat{margin:0}.prof-meta .pm{font-size:13px;font-weight:700;padding:3px 12px;border-radius:999px;border:1px solid var(--border)}
+.prof-facts{margin-top:22px;border-top:1px solid var(--border);text-align:start}
+.prof-facts div{display:flex;justify-content:space-between;gap:16px;padding:13px 2px;border-bottom:1px solid var(--border)}
+.prof-facts dt{color:var(--muted);font-size:14px;flex:none}.prof-facts dd{font-weight:700;text-align:end;overflow-wrap:anywhere}
+.prof-actions{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+.prof-actions .btn{min-height:46px}
+
+/* ---- Admin promotion management ---- */
+.promo-admin{border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:26px;background:var(--surface)}
+.promo-admin h3{font-weight:900;font-size:18px}
+.promo-cols{display:grid;gap:18px;grid-template-columns:1fr;margin-top:14px}
+@media (min-width:860px){.promo-cols{grid-template-columns:1fr 1fr}}
+.pv{border-radius:16px;padding:22px 16px;text-align:center;color:#fff;background:radial-gradient(120% 100% at 50% 0%,var(--ink-2),var(--ink));min-height:180px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.pv b{font-size:24px;font-weight:800}.pv em{font-style:normal;color:var(--gold);font-size:17px;font-weight:600}.pv small{color:rgba(255,255,255,.75);font-size:12.5px;line-height:1.5}
+.pv .pv-inst{margin-top:6px}
+
+/* ---- Footer ---- */
+.foot2{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;font-size:14px;color:var(--muted)}
+.foot2 b{color:var(--text);font-size:15px}
+
+/* ---- polish pass ---- */
+:root{--grad-primary:linear-gradient(135deg,#7c4df0 0%,#6528dc 100%)}
+.finder-box input[type=search]::-webkit-search-cancel-button,.finder-box input[type=search]::-webkit-search-decoration{-webkit-appearance:none;display:none}
+.gcard-promo{margin-bottom:18px}.gcard-btn{margin-top:auto}
+.hero2-num{text-wrap:balance}
+html[dir=rtl] .hero2-num{font-size:clamp(34px,8.5vw,76px);line-height:1.25}
+.brand-text span{white-space:nowrap}
+html[dir=ltr] .topbar-inner{flex-direction:row-reverse}
+html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
 </style>
 </head>
 <body>
@@ -627,11 +769,12 @@ html.dark .result-card-new .congrats-msg p { color: var(--violet-300); }
     <button class="icon-btn lang-switch no-print" id="btnLangToggle" title="Changer de langue / تغيير اللغة">FR</button>
     <button class="icon-btn" id="btnTheme" title="الوضع الليلي" data-i18n-title="theme_tooltip"></button>
     <div class="spacer"></div>
+    <nav class="topnav" aria-label="Navigation"><a href="#top" id="navHome" aria-current="true">Accueil</a><a href="#search" id="navGrads">Diplômés</a></nav>
     <a href="#top" class="brand">
       <div class="brand-text center" style="align-items:flex-end">
         <b>ISCAE</b><span id="brandPromoLabel">PROMOTION 18</span>
       </div>
-      <div class="brand-logo">ISCAE</div>
+      <img class="brand-logo-img" src="icons/icon-192.png" alt="ISCAE" width="42" height="42" />
     </a>
   </div>
 </header>
@@ -639,11 +782,13 @@ html.dark .result-card-new .congrats-msg p { color: var(--violet-300); }
 <main id="top">
   <!-- ======================= PUBLIC PAGE ======================= -->
   <section id="pagePublic">
-    <div class="container">
-      <div class="hero">
-        <div class="pill"><span class="dot"></span><span id="heroPillText">ISCAE 18ème Promotion</span></div>
-        <h1><span data-i18n="hero_congrats">مبروك</span> <span class="grad" id="heroPromoLabel">الدفعة 18</span></h1>
-        <p data-i18n="hero_subtitle">ابحث عن معلوماتك كخريج وتابع استعدادات حفل توزيع شهادات التكريم.</p>
+    <header class="hero2">
+      <div class="hero2-bg" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+      <div class="hero2-in">
+        <img class="hero2-logo" src="icons/icon-192.png" alt="ISCAE" width="76" height="76" />
+        <h1 id="heroTitle"><span class="hero2-num" id="heroNumber">18ème Promotion</span><span class="hero2-name" id="heroName" hidden></span></h1>
+        <div><p class="hero2-inst" id="heroInst"></p><p class="hero2-country" id="heroCountry"></p><p class="hero2-soon" id="heroSoon" hidden></p></div>
+        <a class="btn hero2-cta" id="heroCta" href="#search"></a>
         <div id="heroInstall" class="hidden" style="margin-top: 24px; animation: fadeUp 0.8s ease 0.2s both;">
           <button class="btn btn-emerald" id="btnHeroInstall" style="padding: 14px 28px; font-size: 16px; border-radius: 20px;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 20h14"/></svg>
@@ -651,20 +796,19 @@ html.dark .result-card-new .congrats-msg p { color: var(--violet-300); }
           </button>
         </div>
       </div>
-
-      <!-- Search -->
-      <div class="search-wrap">
-        <button class="btn btn-primary" id="btnSearch">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/></svg>
-          <span data-i18n="search_btn">بحث</span>
-        </button>
-        <div class="search-field">
-          <span class="hash">#</span>
-          <input id="searchInput" placeholder="I21567" autocomplete="off" dir="ltr" maxlength="6" spellcheck="false" />
+    </header>
+    <div class="container">
+      <div class="finder" id="search">
+        <h2 class="finder-title" id="finderTitle"></h2>
+        <div class="finder-box" role="search">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/></svg>
+          <input id="searchInput" type="search" autocomplete="off" spellcheck="false" enterkeyhint="search" />
+          <button type="button" class="finder-clear" id="searchClear" hidden>×</button>
+          <button type="button" class="btn btn-primary" id="btnSearch" data-i18n="search_btn" style="min-height:48px">بحث</button>
         </div>
+        <p class="finder-hint" id="searchHint"></p>
       </div>
-      <p class="search-hint muted" id="searchHint"></p>
-      <div id="searchResult"></div>
+      <div id="searchResult" aria-live="polite"></div>
 
       <!-- Stats -->
       <div class="stats-grid" id="statsGrid"></div>
@@ -700,7 +844,7 @@ html.dark .result-card-new .congrats-msg p { color: var(--violet-300); }
 <footer>
   <div class="container footer-inner">
     <button class="btn btn-ghost btn-sm" id="btnFooterLogin" data-i18n="footer_login">دخول المشرفين ←</button>
-    <div>© <span id="footerYear">2026</span> ISCAE — <span id="footerPromoLabel">الدفعة 18</span></div>
+    <div class="foot2"><b>ISCAE — <span id="footerPromoLabel">18ème Promotion</span></b><span id="footerInst"></span><span>Mauritanie · © <span id="footerYear">2026</span> <span id="footerRights"></span></span></div>
   </div>
 </footer>
 
@@ -1170,11 +1314,62 @@ function brandName() {
   const v = (state.settings && state.settings.platform_name || "").trim();
   return v || "ISCAE 18ème Promotion";
 }
-function promoLabel() {
-  const v = (state.settings && state.settings.promotion_label || "").trim();
-  if (v) return v;
-  return state.lang === "fr" ? "18ème Promotion" : "الدفعة 18";
+/* ------------------------- PROMOTION — مصدر واحد (رقم ≠ اسم) -------------------------
+   الرقم (18) واسم الدفعة (FR/AR، NULL حتى يحدده المشرف الرئيسي) يأتيان فقط من
+   public.promotion_settings. كل واجهة تستعمل الدوال أدناه — لا نص مكرَّر. */
+const AR_ORD = {1:"الأولى",2:"الثانية",3:"الثالثة",4:"الرابعة",5:"الخامسة",6:"السادسة",7:"السابعة",8:"الثامنة",9:"التاسعة",10:"العاشرة",11:"الحادية عشر",12:"الثانية عشر",13:"الثالثة عشر",14:"الرابعة عشر",15:"الخامسة عشر",16:"السادسة عشر",17:"السابعة عشر",18:"الثامنة عشر",19:"التاسعة عشر",20:"العشرون"};
+state.promo = { number: 18, name_fr: null, name_ar: null };
+function promoNumberLabel(lang = state.lang, n = state.promo.number) {
+  return lang === "fr" ? `${n}${n === 1 ? "ère" : "ème"} Promotion` : `الدفعة ${AR_ORD[n] || n}`;
 }
+function promoName(lang = state.lang) {
+  return String((lang === "fr" ? state.promo.name_fr : state.promo.name_ar) || "").trim();
+}
+function promoLabel() {
+  const nm = promoName();
+  return nm ? `${promoNumberLabel()} — ${nm}` : promoNumberLabel();
+}
+async function loadPromotion() {
+  try {
+    const { data, error } = await db.from("promotion_settings").select("*").eq("id", 1).maybeSingle();
+    state.promoReady = !error && !!data;
+    if (state.promoReady) state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null };
+  } catch (e) { state.promoReady = false; }
+}
+
+Object.assign(I18N, {
+  hero_inst:{ar:"المعهد العالي للمحاسبة وإدارة المؤسسات",fr:"Institut Supérieur de Comptabilité et d'Administration des Entreprises"},
+  hero_country:{ar:"ISCAE — موريتانيا",fr:"ISCAE — Mauritanie"},
+  hero_cta:{ar:"البحث عن خريج",fr:"Rechercher un diplômé"},
+  hero_soon:{ar:"سيُعلَن عن اسم الدفعة قريباً.",fr:"Le nom de la promotion sera annoncé prochainement."},
+  finder_title:{ar:"ابحث عن خريجي {promo}",fr:"Retrouvez les diplômés de la {promo}"},
+  search_ph:{ar:"البحث بالاسم أو الرقم الجامعي...",fr:"Rechercher par nom ou matricule..."},
+  search_hint2:{ar:"اكتب حرفين على الأقل من الاسم أو الرقم الجامعي.",fr:"Saisissez au moins 2 caractères du nom ou du matricule."},
+  search_clear:{ar:"مسح البحث",fr:"Effacer la recherche"},
+  nav_home:{ar:"الرئيسية",fr:"Accueil"},nav_grads:{ar:"الخريجون",fr:"Diplômés"},
+  n_results:{ar:"{n} خريج",fr:"{n} diplômé(s)"},
+  show_more:{ar:"عرض المزيد",fr:"Afficher plus"},
+  empty_title:{ar:"لم يتم العثور على الطالب",fr:"Aucun diplômé trouvé"},
+  empty_text:{ar:"تحقق من الاسم أو الرقم الجامعي ثم حاول مرة أخرى.",fr:"Vérifiez le nom ou le matricule et essayez à nouveau."},
+  view_profile:{ar:"عرض الملف",fr:"Voir le profil"},
+  lbl_matricule:{ar:"الرقم الجامعي",fr:"Matricule"},
+  share_profile:{ar:"مشاركة الملف",fr:"Partager le profil"},
+  link_copied:{ar:"تم نسخ الرابط",fr:"Lien copié"},
+  close:{ar:"إغلاق",fr:"Fermer"},
+  meta_desc:{ar:"منصة ISCAE الرسمية لتخرّج {promo}: البحث عن الخريجين والاطلاع على ملفاتهم الأكاديمية وحفل التخرج.",fr:"Plateforme officielle de remise des diplômes de l'ISCAE — {promo} : retrouvez les diplômés et suivez la cérémonie."},
+  foot_rights:{ar:"جميع الحقوق محفوظة",fr:"Tous droits réservés"},
+  promo_mgmt:{ar:"إدارة الدفعة",fr:"Gestion de la promotion"},
+  promo_number:{ar:"رقم الدفعة",fr:"Numéro de la promotion"},
+  promo_name_fr:{ar:"اسم الدفعة — الفرنسية",fr:"Nom de la promotion — Français"},
+  promo_name_ar:{ar:"اسم الدفعة — العربية",fr:"اسم الدفعة — العربية"},
+  promo_preview:{ar:"معاينة مباشرة",fr:"Aperçu en direct"},
+  promo_save:{ar:"حفظ",fr:"Enregistrer"},
+  promo_saved:{ar:"تم حفظ هوية الدفعة",fr:"Identité de la promotion enregistrée"},
+  promo_missing:{ar:"جدول promotion_settings غير موجود: نفّذ PROMOTION.sql في Supabase أولاً.",fr:"Table promotion_settings absente : exécutez d'abord PROMOTION.sql dans Supabase."},
+  promo_denied:{ar:"غير مصرّح: للمشرف الرئيسي فقط.",fr:"Non autorisé : administrateur principal uniquement."},
+  promo_hint:{ar:"اترك اسم الدفعة فارغاً إذا لم يُحدَّد بعد — لن يظهر أي اسم للزوار.",fr:"Laissez le nom vide s'il n'est pas encore défini — aucun nom ne sera affiché aux visiteurs."}
+});
+
 
 
 
@@ -1250,23 +1445,31 @@ function applyStaticI18n() {
   $$("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   $$("[data-i18n-title]").forEach(el => { el.setAttribute("title", t(el.dataset.i18nTitle)); });
   const hint = $("#searchHint");
-  if (hint) hint.innerHTML = `${t("search_hint_prefix")} <code>I</code> ${t("search_hint_suffix")} <code>I21567</code>`;
+  if (hint && !($("#searchInput") && $("#searchInput").value)) hint.textContent = t("search_hint2");
 }
 
-/** Refresh the platform/promotion name shown across the header, hero, events section and footer. */
+function setMeta(sel, val) { const m = document.querySelector(sel); if (m) m.setAttribute("content", val); }
 function applyBranding() {
-  const brand = brandName(), promo = promoLabel();
-  document.title = `${brand} — ${t("hero_subtitle").split(".")[0]}`;
-  const metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) metaDesc.setAttribute("content", `${brand} — ${t("hero_subtitle")}`);
-  const ogTitle = document.querySelector('meta[property="og:title"]');
-  if (ogTitle) ogTitle.setAttribute("content", `${brand} — ${t("hero_subtitle").split(".")[0]}`);
-  if ($("#brandPromoLabel")) $("#brandPromoLabel").textContent = promo;
-  if ($("#heroPillText")) $("#heroPillText").textContent = brand;
-  if ($("#heroPromoLabel")) $("#heroPromoLabel").textContent = promo;
-  if ($("#eventsSubtitle")) $("#eventsSubtitle").textContent = t("events_subtitle", { promo });
-  if ($("#footerPromoLabel")) $("#footerPromoLabel").textContent = promo;
-  if ($("#footerYear")) $("#footerYear").textContent = new Date().getFullYear();
+  const num = promoNumberLabel(), name = promoName(), promo = promoLabel();
+  const title = `ISCAE — ${num}${name ? ` — ${name}` : ""}`;
+  document.title = title;
+  setMeta('meta[name="description"]', t("meta_desc", { promo }));
+  setMeta('meta[property="og:title"]', title);
+  setMeta('meta[property="og:description"]', t("meta_desc", { promo }));
+  const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
+  set("#brandPromoLabel", state.lang === "fr" ? `Promo ${state.promo.number}` : `الدفعة ${state.promo.number}`);
+  set("#heroNumber", num);
+  const hn = $("#heroName"); if (hn) { hn.textContent = name; hn.hidden = !name; }
+  const soon = $("#heroSoon"); if (soon) { soon.textContent = t("hero_soon"); soon.hidden = !!(state.promo.name_fr || state.promo.name_ar); }
+  set("#heroInst", t("hero_inst")); set("#heroCountry", t("hero_country")); set("#heroCta", t("hero_cta"));
+  set("#finderTitle", t("finder_title", { promo: num }));
+  set("#navHome", t("nav_home")); set("#navGrads", t("nav_grads"));
+  const inp = $("#searchInput"); if (inp) { inp.placeholder = t("search_ph"); inp.setAttribute("aria-label", t("search_ph")); }
+  const clr = $("#searchClear"); if (clr) clr.setAttribute("aria-label", t("search_clear"));
+  set("#eventsSubtitle", t("events_subtitle", { promo }));
+  set("#footerPromoLabel", promo); set("#footerRights", t("foot_rights"));
+  set("#footerInst", t("hero_inst"));
+  set("#footerYear", new Date().getFullYear());
 }
 
 /** Re-render everything that depends on language/branding without losing app state. */
@@ -1278,6 +1481,7 @@ function refreshChrome() {
   renderStats();
   renderEvents();
   if ($("#searchInput") && $("#searchInput").value.trim()) doSearch();
+  if ($("#profileOverlay")) routeFromHash();
   if (state.me && !$("#pageDash").classList.contains("hidden")) renderDash();
 }
 
@@ -1327,7 +1531,9 @@ async function loadPublicData() {
   state.specialties = sp.data || [];
   state.students    = st.data || [];
   state.settings    = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null };
+  await loadPromotion();
   await loadCeremonies();
+  state.publicLoaded = true;
 }
 
 /** الحفلات + ألوان البطاقات (لا يُعطّل الموقع إذا لم تُنفَّذ الترقية بعد). */
@@ -1533,97 +1739,183 @@ setInterval(tickCountdowns, 1000);
 
 /* ------------------------- 8. PUBLIC SEARCH ------------------------- */
 /** Registration numbers must be the letter I followed by exactly 5 digits, e.g. I21567. */
+/* ------------------------- 8. SEARCH — annuaire des diplômés ------------------------- */
 const REG_NUMBER_PATTERN = /^I\d{5}$/;
+const PAGE_SIZE = 24;
+let searchTimer = null, searchSeq = 0, shown = PAGE_SIZE, lastList = [];
 
-async function doSearch() {
-  const raw = $("#searchInput").value;
-  const q = raw.trim().toUpperCase();
-  const box = $("#searchResult");
-  const hint = $("#searchHint");
+const norm = s => String(s || "").normalize("NFD")
+  .replace(/[\u0300-\u036f\u064B-\u065F\u0670\u0640]/g, "")
+  .replace(/[إأآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").toLowerCase().trim();
 
-  if (!raw.trim()) { box.innerHTML = ""; toast(t("search_enter_first"), "info"); return; }
-
-  if (!REG_NUMBER_PATTERN.test(q)) {
-    box.innerHTML = "";
-    if (hint) hint.classList.add("err");
-    toast(t("search_invalid_format"), "err");
-    return;
-  }
-  if (hint) hint.classList.remove("err");
-
-  box.innerHTML = `<div class="loader"><div></div></div>`;
-
-  const { data, error } = await db.rpc("search_student", { _reg: q });
-  let st = Array.isArray(data) ? data[0] : data;
-  st = mergeStudentWithLocalFresh(st);
-
-  // fallback : direct table read (in case the RPC is not deployed yet)
-  if (!st && !error) {
-    const local = state.students.find(s => s.registration_number.trim().toUpperCase() === q);
-    if (local) {
-      const sp = state.specialties.find(x => x.id === local.specialty_id);
-      st = { ...local, specialty_name: sp ? sp.name : "—", category: categoryOf(local.order_index) };
-    }
-  }
-  if (!st) {
-    box.innerHTML = `<div class="glass" style="margin-top:22px;padding:34px;text-align:center">
-      <b style="font-size:18px">${t("search_no_results_title")}</b>
-      <p class="muted" style="margin-top:6px">${t("search_no_results_text", { q: esc(q) })}</p>
-    </div>`;
-    return;
-  }
-  const cat = st.category || categoryOf(st.order_index);
-  box.innerHTML = `
-  <div class="result-card-new">
-    <div class="banner"></div>
-    <div class="content">
-      <div class="avatar-box">
-        <div class="avatar-inner">${photoUrl(st)
-          ? `<img src="${esc(photoUrl(st))}" alt="${esc(st.full_name || "")}" loading="lazy" />`
-          : esc((st.full_name || "•").trim()[0] || "•")}</div>
-      </div>
-      <div class="name-row">
-        <div>
-          <div class="verify-badge">✓ ${t("result_verified")}</div>
-          <h3>${esc(st.full_name)}</h3>
-        </div>
-        <div class="row" style="gap:8px">
-          <span class="tag tag-A">#${esc(st.registration_number)}</span>
-          <span class="tag tag-B">${t("label_category")} ${esc(cat)}</span>
-        </div>
-      </div>
-      <div class="congrats-msg">
-        <span class="icon">🎓</span>
-        <p>${t("result_congrats", { promo: esc(promoLabel()) })}</p>
-      </div>
-      <div class="details-grid">
-        <div class="detail-item"><label>${t("label_specialty")}</label><span>${esc(st.specialty_name || "—")}</span></div>
-        <div class="detail-item"><label>${t("label_phone")}</label><span>${esc(st.phone || "—")}</span></div>
-        <div class="detail-item"><label>${t("label_sash_name")}</label><span>${esc(sashName(st) || "—")}</span></div>
-        <div class="detail-item"><label>${t("label_certificate_name")}</label><span>${esc(certName(st) || "—")}</span></div>
-        <div class="detail-item"><label>${t("label_order_in_specialty")}</label><span>${esc(st.order_index)}</span></div>
-      </div>
-      <div id="studentCardsBox"></div>
-    </div>
-  </div>`;
-
-  /* قسم بطاقات الحفلات (مستقل عن بيانات الطالب) */
-  const cardsBox = box.querySelector("#studentCardsBox");
-  if (cardsBox && st.id) {
-    fetchStudentCards(st.id).then(rows => { cardsBox.innerHTML = studentCardsHTML(rows); })
-      .catch(err => { console.warn(err); cardsBox.innerHTML = ""; });
-  }
-  
-  // Scroll to result
-  setTimeout(() => {
-    const el = box.querySelector('.result-card-new');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, 200);
+function enrichStudent(st) {
+  if (!st) return st;
+  const sp = state.specialties.find(x => x.id === st.specialty_id);
+  return { ...st, specialty_name: st.specialty_name || (sp ? sp.name : ""), category: st.category || categoryOf(st.order_index) };
 }
-$("#btnSearch").onclick = doSearch;
-$("#searchInput").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+function matchStudents(q) {
+  const tokens = norm(q).split(/\s+/).filter(Boolean);
+  if (!tokens.length) return [];
+  const out = [];
+  for (const s of state.students) {
+    const reg = norm(s.registration_number), name = norm(s.full_name);
+    const hay = reg + " " + name;
+    if (!tokens.every(tk => hay.includes(tk))) continue;
+    const score = reg === tokens[0] ? 0 : name.startsWith(tokens[0]) ? 1 : reg.startsWith(tokens[0]) ? 1 : 2;
+    out.push({ s, score });
+  }
+  return out.sort((a, b) => a.score - b.score || (a.s.full_name || "").localeCompare(b.s.full_name || "")).map(x => enrichStudent(x.s));
+}
+function initials(name) {
+  const w = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return "•";
+  return (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : "")).toUpperCase();
+}
+function hueOf(str) { let h = 0; for (const c of String(str)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return 250 + (h % 36); }
+function avatarHTML(st, cls) {
+  const u = photoUrl(st);
+  return `<div class="gav ${cls || ""}" style="--h:${hueOf(st.registration_number || st.full_name)}">${u
+    ? `<img src="${esc(u)}" alt="${esc(st.full_name || "")}" loading="lazy" decoding="async" onerror="this.remove()" />` : ""}<span ${u ? 'style="position:absolute;z-index:-1"' : ""} aria-hidden="true">${esc(initials(st.full_name))}</span></div>`;
+}
+function skeletons(n) { return `<div class="ggrid" aria-hidden="true">${Array.from({ length: n }, () => `<div class="sk"></div>`).join("")}</div>`; }
+function cardHTML(st, i) {
+  return `<article class="gcard" data-reg="${esc(st.registration_number)}" style="--i:${Math.min(i, 11)}">
+    <div class="gcard-band"></div>${avatarHTML(st)}
+    <h3>${esc(st.full_name)}</h3>
+    <span class="gcard-mat" dir="ltr" title="${esc(t("lbl_matricule"))}">${esc(st.registration_number)}</span>
+    ${st.specialty_name ? `<p class="gcard-spec">${esc(st.specialty_name)}</p>` : ""}
+    <p class="gcard-promo">${esc(promoNumberLabel())}</p>
+    <button type="button" class="btn gcard-btn" data-reg="${esc(st.registration_number)}">${t("view_profile")}</button>
+  </article>`;
+}
+function renderResults() {
+  const box = $("#searchResult");
+  if (!lastList.length) {
+    box.innerHTML = `<div class="gempty" role="status"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg><b>${t("empty_title")}</b><p>${t("empty_text")}</p></div>`;
+    return;
+  }
+  const page = lastList.slice(0, shown);
+  box.innerHTML = `<p class="res-count" role="status">${t("n_results", { n: lastList.length })}</p>
+    <div class="ggrid">${page.map(cardHTML).join("")}</div>
+    ${lastList.length > shown ? `<div class="more-wrap"><button type="button" class="btn btn-ghost" id="btnMore">${t("show_more")}</button></div>` : ""}`;
+  const more = $("#btnMore"); if (more) more.onclick = () => { shown += PAGE_SIZE; renderResults(); };
+}
+async function runSearch() {
+  const q = $("#searchInput").value.trim(), box = $("#searchResult"), hint = $("#searchHint");
+  const clr = $("#searchClear"); if (clr) clr.hidden = !q;
+  clearTimeout(searchTimer);
+  const seq = ++searchSeq;
+  if (norm(q).length < 2) { lastList = []; box.innerHTML = ""; if (hint) hint.textContent = t("search_hint2"); return; }
+  if (hint) hint.textContent = "";
+  if (!state.publicLoaded) { box.innerHTML = skeletons(3); return; }
+  shown = PAGE_SIZE;
+  let list = matchStudents(q);
+  if (!list.length && REG_NUMBER_PATTERN.test(q.toUpperCase())) {   // ancien comportement : RPC sécurisée par matricule
+    box.innerHTML = skeletons(1);
+    const { data } = await db.rpc("search_student", { _reg: q.toUpperCase() });
+    if (seq !== searchSeq) return;
+    const st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
+    if (st) list = [enrichStudent(st)];
+  }
+  if (seq !== searchSeq) return;
+  lastList = list; renderResults();
+}
+function doSearch() { return runSearch(); }
+$("#searchInput").addEventListener("input", () => { clearTimeout(searchTimer); const c = $("#searchClear"); if (c) c.hidden = !$("#searchInput").value; searchTimer = setTimeout(runSearch, 220); });
+$("#searchInput").addEventListener("keydown", e => { if (e.key === "Enter") runSearch(); if (e.key === "Escape") { e.target.value = ""; runSearch(); } });
+$("#searchClear").onclick = () => { const i = $("#searchInput"); i.value = ""; runSearch(); i.focus(); };
+$("#btnSearch").onclick = runSearch;
+$("#searchResult").addEventListener("click", e => {
+  const el = e.target.closest("[data-reg]"); if (el) openProfile(el.dataset.reg);
+});
+
+/* ------------------------- PROFILE — carte d'identité académique -------------------------
+   Route par hash (#/diplome/I21567) : bouton retour du navigateur, lien partageable. */
+const PROFILE_HASH = "#/diplome/";
+let profileReturnFocus = null, profilePushed = false;
+function openProfile(reg) { profilePushed = true; profileReturnFocus = document.activeElement; location.hash = PROFILE_HASH + encodeURIComponent(reg); }
+function closeProfile() {
+  if (location.hash.startsWith(PROFILE_HASH)) {
+    if (profilePushed) { profilePushed = false; history.back(); return; }
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  hideProfile();
+}
+function hideProfile() {
+  const ov = $("#profileOverlay"); if (ov) ov.remove();
+  document.body.style.overflow = "";
+  applyBranding();
+  if (profileReturnFocus && document.contains(profileReturnFocus)) profileReturnFocus.focus();
+  profileReturnFocus = null;
+}
+async function routeFromHash() {
+  const h = location.hash;
+  if (!h.startsWith(PROFILE_HASH)) { if ($("#profileOverlay")) hideProfile(); return; }
+  const reg = decodeURIComponent(h.slice(PROFILE_HASH.length)).trim().toUpperCase();
+  let st = state.students.find(s => String(s.registration_number).trim().toUpperCase() === reg);
+  if (!st && REG_NUMBER_PATTERN.test(reg)) {
+    const { data } = await db.rpc("search_student", { _reg: reg });
+    st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
+  }
+  showProfile(enrichStudent(st), reg);
+}
+function showProfile(st, reg) {
+  const old = $("#profileOverlay"); if (old) old.remove();
+  const ov = document.createElement("div");
+  ov.id = "profileOverlay"; ov.className = "prof-overlay";
+  ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+  const facts = st ? [
+    [t("label_specialty"), st.specialty_name],
+    [t("label_category"), st.category],
+    [t("label_order_in_specialty"), st.order_index],
+    [t("label_sash_name"), sashName(st)],
+    [t("label_certificate_name"), certName(st)]
+  ].filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "") : [];
+  ov.setAttribute("aria-labelledby", "profName");
+  ov.innerHTML = `<div class="prof-sheet">
+    <div class="prof-head">
+      <button type="button" class="prof-close" id="profClose" aria-label="${esc(t("close"))}">×</button>
+      <div class="prof-inst"><img src="icons/icon-192.png" alt="" /><span>ISCAE · ${esc(promoNumberLabel())}</span></div>
+    </div>
+    ${st ? `${avatarHTML(st, "prof-av")}
+    <div class="prof-body">
+      <h2 id="profName">${esc(st.full_name)}</h2>
+      <div class="prof-meta"><span class="gcard-mat" dir="ltr">${esc(st.registration_number)}</span>
+        <span class="pm">${esc(promoLabel())}</span></div>
+      ${facts.length ? `<dl class="prof-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
+      <div id="studentCardsBox"></div>
+      <div class="prof-actions"><button type="button" class="btn btn-primary" id="profShare">${t("share_profile")}</button></div>
+    </div>` : `<div class="prof-body"><div class="gempty" style="border:0"><b id="profName">${t("empty_title")}</b><p>${t("empty_text")}</p></div></div>`}
+  </div>`;
+  document.body.appendChild(ov);
+  document.body.style.overflow = "hidden";
+  if (st) document.title = `${st.full_name} — ISCAE — ${promoNumberLabel()}`;
+  const closeBtn = $("#profClose", ov); closeBtn.focus();
+  closeBtn.onclick = closeProfile;
+  ov.addEventListener("mousedown", e => { if (e.target === ov) closeProfile(); });
+  ov.addEventListener("keydown", e => {
+    if (e.key === "Escape") { e.preventDefault(); closeProfile(); }
+    if (e.key === "Tab") {
+      const f = $$("button,[href],input", ov).filter(x => !x.disabled); if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+  const share = $("#profShare", ov);
+  if (share) share.onclick = async () => {
+    const url = location.origin + location.pathname + PROFILE_HASH + encodeURIComponent(st.registration_number);
+    const data = { title: `${st.full_name} — ISCAE`, text: `${st.full_name} — ${promoLabel()}`, url };
+    try {
+      if (navigator.share) { await navigator.share(data); return; }
+      await navigator.clipboard.writeText(url); toast(t("link_copied"));
+    } catch (e) { if (e && e.name === "AbortError") return; try { await navigator.clipboard.writeText(url); toast(t("link_copied")); } catch (_) { window.prompt(url, url); } }
+  };
+  const cardsBox = $("#studentCardsBox", ov);
+  if (cardsBox && st && st.id) fetchStudentCards(st.id).then(rows => { cardsBox.innerHTML = studentCardsHTML(rows); }).catch(() => { cardsBox.innerHTML = ""; });
+}
+window.addEventListener("hashchange", routeFromHash);
+window.addEventListener("scroll", () => { const h = $(".topbar"); if (h) h.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
 
 /* ------------------------- 9. AUTH ------------------------- */
 function loginModal() {
@@ -2205,10 +2497,10 @@ function renderSettings(panel) {
   const ovs = specialtyOverrides();
   panel.innerHTML = `
     <div class="panel-head"><h2>${t("settings_title")}</h2></div>
+    ${promoAdminHTML()}
     <form id="setForm" class="stack" style="max-width:720px">
       <div class="grid-2">
         <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || "ISCAE 18ème Promotion")}" /></div>
-        <div class="field"><label>${t("field_promotion_name")}</label><input name="promotion_label" value="${esc(s.promotion_label || "الدفعة 18")}" /></div>
       </div>
       <div class="grid-2">
         <div class="field"><label>${t("field_graduation_date")}</label><input name="graduation_date" type="datetime-local" value="${toLocalInput(s.graduation_date)}" /></div>
@@ -2247,13 +2539,13 @@ function renderSettings(panel) {
         </div>` : ""}
       <button class="btn btn-primary" type="submit" style="align-self:flex-start">${t("btn_save_settings")}</button>
     </form>`;
+  bindPromoAdmin();
   $("#setForm").onsubmit = async e => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
     const basePayload = {
       id: 1,
       platform_name: f.platform_name.trim(),
-      promotion_label: f.promotion_label.trim(),
       graduation_date: f.graduation_date ? new Date(f.graduation_date).toISOString() : null,
       night_party_date: f.night_party_date ? new Date(f.night_party_date).toISOString() : null,
       cat_a_limit: Number(f.cat_a_limit) || 0,
@@ -2283,6 +2575,46 @@ function renderSettings(panel) {
     if (error) { toast(t("err_save_failed", { msg: error.message }), "err"); return; }
     toast(t("msg_settings_saved"));
     await loadPublicData(); applyBranding(); renderStats(); renderEvents(); renderDash();
+  };
+}
+
+
+/* ------------------------- GESTION DE LA PROMOTION (admin principal) ------------------------- */
+function promoPreviewHTML(lang, n, name) {
+  const inst = lang === "fr" ? "Institut Supérieur de Comptabilité<br>et d'Administration des Entreprises" : "المعهد العالي للمحاسبة وإدارة المؤسسات";
+  return `<div class="pv" dir="${lang === "fr" ? "ltr" : "rtl"}" lang="${lang}"><b>${esc(promoNumberLabel(lang, n))}</b>${name ? `<em>${esc(name)}</em>` : ""}<small class="pv-inst">${inst}<br>ISCAE</small></div>`;
+}
+function promoAdminHTML() {
+  if (!isSuper()) return "";
+  const p = state.promo;
+  return `<form id="promoForm" class="promo-admin" novalidate>
+    <h3>${t("promo_mgmt")}</h3><p class="muted" style="font-size:13px;margin-top:4px">${t("promo_hint")}</p>
+    <div class="promo-cols"><div class="stack">
+      <div class="field"><label for="pNum">${t("promo_number")}</label><input id="pNum" name="n" type="number" min="1" max="99" value="${esc(p.number)}" dir="ltr" /></div>
+      <div class="field"><label for="pFr">${t("promo_name_fr")}</label><input id="pFr" name="fr" dir="ltr" lang="fr" maxlength="80" value="${esc(p.name_fr || "")}" /></div>
+      <div class="field"><label for="pAr">${t("promo_name_ar")}</label><input id="pAr" name="ar" dir="rtl" lang="ar" maxlength="80" value="${esc(p.name_ar || "")}" /></div>
+      <button class="btn btn-primary" type="submit" style="align-self:flex-start">${t("promo_save")}</button>
+    </div><div><p class="muted" style="font-size:13px;font-weight:700;margin-bottom:8px">${t("promo_preview")}</p>
+      <div class="stack" id="promoPreview" aria-live="polite"></div></div></div></form>`;
+}
+function bindPromoAdmin() {
+  const f = $("#promoForm"); if (!f) return;
+  const prev = () => {
+    const n = Math.max(1, Number(f.n.value) || state.promo.number);
+    $("#promoPreview").innerHTML = promoPreviewHTML("fr", n, f.fr.value.trim()) + promoPreviewHTML("ar", n, f.ar.value.trim());
+  };
+  f.addEventListener("input", prev); prev();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const n = Number(f.n.value);
+    if (!Number.isInteger(n) || n < 1) { toast(t("promo_number"), "err"); return; }
+    const { data, error } = await db.from("promotion_settings")
+      .update({ promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null })
+      .eq("id", 1).select();
+    if (error) { toast(/relation|schema cache|does not exist/i.test(error.message || "") ? t("promo_missing") : t("err_save_failed", { msg: error.message }), "err"); return; }
+    if (!data || !data.length) { toast(t("promo_denied"), "err"); return; }   // RLS: aucune ligne modifiée
+    await loadPromotion(); applyBranding(); renderStats(); renderEvents();
+    toast(t("promo_saved"));
   };
 }
 
@@ -3410,6 +3742,8 @@ async function init() {
   applyBranding();
   renderStats();
   renderEvents();
+  runSearch();
+  routeFromHash();
   if (state.session) { await loadMe(); if (isSuper()) await loadAdmins(); }
   syncHeader();
   initNotifications();
