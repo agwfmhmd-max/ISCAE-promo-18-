@@ -1464,7 +1464,7 @@ Object.assign(I18N, {
   show_more:{ar:"عرض المزيد",fr:"Afficher plus"},
   empty_title:{ar:"لم يتم العثور على الطالب",fr:"Aucun diplômé trouvé"},
   empty_text:{ar:"تحقق من الاسم أو الرقم الجامعي ثم حاول مرة أخرى.",fr:"Vérifiez le nom ou le matricule et essayez à nouveau."},
-  congrats_title:{ar:"🎓 مبروك يا {name}! 🎉",fr:"🎓 Félicitations {name} ! 🎉"},
+  congrats_title:{ar:"🎓 مبروك يا {name} 🎉",fr:"🎓 Félicitations {name} 🎉"},
   congrats_text:{ar:"يشرّفنا ويسعدنا أن نجدك ضمن خريجي {promo} من المعهد العالي للمحاسبة وإدارة المؤسسات. هذا الإنجاز ثمرة جهدك وإصرارك وسهر الليالي، وهو بداية طريق مشرق مليء بالنجاحات. نفخر بك ونتطلع إلى أن نراك تصنع الفارق. ✨",fr:"Nous sommes fiers et honorés de vous compter parmi les diplômés de la {promo} de l'ISCAE. Cette réussite est le fruit de votre travail, de votre persévérance et de votre détermination : elle ouvre la voie à un avenir brillant. Nous avons hâte de vous voir faire la différence. ✨"},
   view_profile:{ar:"عرض الملف",fr:"Voir le profil"},
   lbl_matricule:{ar:"الرقم الجامعي",fr:"Matricule"},
@@ -1586,10 +1586,11 @@ function applyBranding() {
   const inp = $("#searchInput"); if (inp) { inp.dir = state.lang === "fr" ? "ltr" : "rtl"; inp.placeholder = t("search_ph"); inp.setAttribute("aria-label", t("search_ph")); }
   const clr = $("#searchClear"); if (clr) clr.setAttribute("aria-label", t("search_clear"));
   set("#eventsSubtitle", t("events_subtitle", { promo }));
-  set("#footerPromoLabel", promo); set("#footerRights", t("foot_rights"));
+  set("#footerPromoLabel", promo); set("#footerRights", `${t("foot_rights")} MDA & Promo ${state.promo.number}`);
   set("#footerInst", t("hero_inst"));
   renderHeroLogo();
   set("#footerYear", new Date().getFullYear());
+  syncPwaIcons();
 }
 
 /** Re-render everything that depends on language/branding without losing app state. */
@@ -3873,8 +3874,88 @@ async function renderNotifsTab(panel) {
   };
 }
 
+/* ------------------------- 18b. APP ICON = PROMO LOGO -------------------------
+   أيقونة التثبيت (PWA) وأيقونة التبويب (favicon) وأيقونة iOS تُولَّد من شعار الدفعة نفسه،
+   فإذا غيّر المشرف الرئيسي الشعار تتغير الأيقونة تلقائياً (manifest ديناميكي). */
+const PWA_ICON_CACHE = "iscae-pwa-icons-v1";
+let pwaIconKey = "", pwaIconToken = 0, pwaManifestUrl = "";
+function pwaLoadImg(src, cors) {
+  return new Promise((res, rej) => {
+    const im = new Image(); if (cors) im.crossOrigin = "anonymous";
+    im.onload = () => res(im); im.onerror = () => rej(new Error("logo load failed")); im.src = src;
+  });
+}
+async function pwaLogoImage() {
+  const url = state.promo.logo;
+  if (!url) {
+    const svg = defaultPromoLogo(state.promo.number).replace("<svg ", '<svg width="512" height="512" ');
+    return pwaLoadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
+  }
+  try { return await pwaLoadImg(url, true); } catch (e) { /* احتياط: جلب الملف كـ blob */ }
+  const r = await fetch(url, { mode: "cors" }); if (!r.ok) throw new Error("logo fetch failed");
+  const obj = URL.createObjectURL(await r.blob());
+  try { return await pwaLoadImg(obj); } finally { URL.revokeObjectURL(obj); }
+}
+function pwaDraw(img, size, bg, fill) {
+  const c = document.createElement("canvas"); c.width = c.height = size;
+  const g = c.getContext("2d"); if (bg) { g.fillStyle = bg; g.fillRect(0, 0, size, size); }
+  const iw = img.naturalWidth || img.width || 1, ih = img.naturalHeight || img.height || 1;
+  const k = Math.min(size * fill / iw, size * fill / ih), w = iw * k, h = ih * k;
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  g.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+  return c.toDataURL("image/png");
+}
+async function pwaApplyIcons(ic) {
+  document.querySelectorAll('link[rel="icon"]').forEach(l => {
+    const sz = l.getAttribute("sizes"); l.href = sz === "16x16" ? ic.f16 : ic.f32;
+  });
+  const at = document.querySelector('link[rel="apple-touch-icon"]'); if (at) at.href = ic.a180;
+  const mf = document.querySelector('link[rel="manifest"]'); if (!mf) return;
+  const base = new URL("manifest.json", document.baseURI);
+  let m; try { const r = await fetch(base.href, { cache: "no-store" }); m = await r.json(); } catch (e) { return; }
+  const abs = v => new URL(v, base).href;
+  if (m.start_url) m.start_url = abs(m.start_url);
+  if (m.scope) m.scope = abs(m.scope);
+  m.icons = [
+    { src: ic.f32,  sizes: "32x32",   type: "image/png" },
+    { src: ic.i192, sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: ic.i192, sizes: "192x192", type: "image/png", purpose: "maskable" },
+    { src: ic.i512, sizes: "512x512", type: "image/png", purpose: "any" },
+    { src: ic.i512, sizes: "512x512", type: "image/png", purpose: "maskable" }
+  ];
+  if (Array.isArray(m.screenshots)) m.screenshots.forEach(x => { x.src = ic.i192; });
+  if (Array.isArray(m.shortcuts)) m.shortcuts.forEach(sc => {
+    if (sc.url) sc.url = abs(sc.url);
+    sc.icons = [{ src: ic.i192, sizes: "192x192", type: "image/png" }];
+  });
+  const old = pwaManifestUrl;
+  pwaManifestUrl = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: "application/manifest+json" }));
+  mf.href = pwaManifestUrl;
+  if (old) URL.revokeObjectURL(old);
+}
+/** يُستدعى من applyBranding: يعيد توليد الأيقونات فقط عند تغيّر الشعار/رقم الدفعة. */
+async function syncPwaIcons() {
+  if (!state.promoReady) return;
+  const key = (state.promo.logo || "default") + "|" + state.promo.number;
+  if (key === pwaIconKey) return;
+  pwaIconKey = key; const token = ++pwaIconToken;
+  try {
+    const img = await pwaLogoImage(); if (token !== pwaIconToken) return;
+    const BG = "#180a42";
+    const ic = { f16: pwaDraw(img, 16, null, 1), f32: pwaDraw(img, 32, null, 1), a180: pwaDraw(img, 180, BG, .8),
+                 i192: pwaDraw(img, 192, BG, .74), i512: pwaDraw(img, 512, BG, .74) };
+    await pwaApplyIcons(ic);
+    try { localStorage.setItem(PWA_ICON_CACHE, JSON.stringify({ key, ic })); } catch (e) {}
+  } catch (e) { if (token === pwaIconToken) pwaIconKey = ""; console.warn("[PWA icons]", e); }
+}
+/** تطبيق آخر أيقونات محفوظة فوراً عند الفتح (قبل وصول بيانات الدفعة) لتسبق حدث التثبيت. */
+function restorePwaIcons() {
+  try { const c = JSON.parse(localStorage.getItem(PWA_ICON_CACHE) || "null"); if (c && c.ic && c.ic.i512) pwaApplyIcons(c.ic); } catch (e) {}
+}
+
 /* ------------------------- 19. BOOTSTRAP ------------------------- */
 async function init() {
+  restorePwaIcons();
   initTheme();
   applyLangAttrs();
   applyStaticI18n();
