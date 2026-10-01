@@ -38,20 +38,23 @@ end $$;
 revoke all on function public.track_visit(text, text, text, text) from public;
 grant execute on function public.track_visit(text, text, text, text) to anon, authenticated;
 
--- 4) إحصائيات الزيارات اليومية (للمشرف الرئيسي فقط)
-create or replace function public.get_visit_stats(_from timestamptz, _to timestamptz, _tz text default 'UTC')
+-- 4) إحصائيات الزيارات مجمّعة (يوم / أسبوع / شهر) مع حساب الزوار الفريدين لكل فترة بدقة
+--    (للمشرف الرئيسي فقط). تُحذف النسخة القديمة ثلاثية المعاملات إن وُجدت.
+drop function if exists public.get_visit_stats(timestamptz, timestamptz, text);
+create or replace function public.get_visit_stats(_from timestamptz, _to timestamptz, _tz text default 'UTC', _bucket text default 'day')
 returns table (day date, visits bigint, unique_visitors bigint)
 language plpgsql stable security definer set search_path = public as $$
 begin
   if not public.is_super_admin() then raise exception 'forbidden'; end if;
+  if _bucket not in ('day','week','month') then _bucket := 'day'; end if;
   return query
-    select (v.visited_at at time zone _tz)::date as d, count(*)::bigint, count(distinct v.visitor_id)::bigint
+    select date_trunc(_bucket, v.visited_at at time zone _tz)::date as d, count(*)::bigint, count(distinct v.visitor_id)::bigint
     from public.site_visits v
     where v.visited_at >= _from and v.visited_at < _to
     group by 1 order by 1;
 end $$;
-revoke all on function public.get_visit_stats(timestamptz, timestamptz, text) from public;
-grant execute on function public.get_visit_stats(timestamptz, timestamptz, text) to authenticated;
+revoke all on function public.get_visit_stats(timestamptz, timestamptz, text, text) from public;
+grant execute on function public.get_visit_stats(timestamptz, timestamptz, text, text) to authenticated;
 
 -- 5) إجمالي الزيارات والزوار الفريدين في الفترة (الفريد لا يُجمع يومياً)
 create or replace function public.get_visit_totals(_from timestamptz, _to timestamptz)

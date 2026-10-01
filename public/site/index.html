@@ -828,23 +828,38 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
 /* ---- STATISTICS ---- */
-.st-filters{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;margin:0 0 16px}
-.st-filters .field{min-width:140px}
-.st-chips{display:flex;gap:6px;flex-wrap:wrap}
-.st-card{background:var(--surface-solid);border:1px solid var(--stroke);border-radius:20px;padding:16px;margin:0 0 16px;box-shadow:var(--shadow-sm)}
+.panel{min-width:0}
+.st-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px;align-items:end;margin:0 0 16px}
+.st-chips{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.st-note{font-size:12px;margin:0 0 12px}
+.st-card{background:var(--surface-solid);border:1px solid var(--stroke);border-radius:20px;padding:16px;margin:0 0 16px;box-shadow:var(--shadow-sm);min-width:0}
 .st-card h3{font-weight:900;margin:0 0 10px;font-size:16px}
 .st-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.st-grid2>.st-card{margin:0}
+.st-grid2{margin-bottom:16px}
 @media(max-width:860px){.st-grid2{grid-template-columns:1fr}}
-.ch-wrap{direction:ltr;width:100%;overflow:hidden}
-.ch-wrap svg{width:100%;height:auto;display:block}
+@media(max-width:640px){.st-card{padding:12px;border-radius:16px}.st-card h3{font-size:14px}}
+.ch-slot{direction:ltr;width:100%;min-height:200px;overflow:hidden}
+.ch-slot svg{display:block;width:100%;height:auto;max-width:100%}
+.ch-donut{max-width:240px;margin:0 auto;direction:ltr}
+.ch-donut svg{display:block;width:100%;height:auto}
 .ch-grid{stroke:var(--muted);stroke-opacity:.18;stroke-width:1}
 .ch-ax{fill:var(--muted);font-size:11px;font-weight:600}
-.ch-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;font-size:12px;font-weight:700}
-.ch-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px}
+.ch-hit{fill:transparent}.ch-hit:hover{fill:rgba(124,58,237,.09)}
+.ch-seg{transition:opacity .15s}.ch-seg:hover{opacity:.82}
+.ch-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;font-weight:700}
+.ch-legend span{display:inline-flex;align-items:center}
+.ch-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px;flex:none}
 #chTip{position:fixed;z-index:9999;pointer-events:none;background:#0f172a;color:#fff;padding:8px 10px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-line;box-shadow:var(--shadow-md);display:none;max-width:260px}
-.hbar{display:grid;grid-template-columns:minmax(90px,160px) 1fr auto;gap:10px;align-items:center;margin:10px 0;font-size:13px}
+.hbar{display:grid;grid-template-columns:minmax(80px,150px) 1fr auto;gap:10px;align-items:center;margin:10px 0;font-size:13px}
+.hbar>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hbar>.tr{height:10px;background:rgba(124,58,237,.14);border-radius:99px;overflow:hidden}
 .hbar>.tr>b{display:block;height:100%;border-radius:99px}
+.st-scroll{max-height:440px;overflow:auto}
+.st-scroll thead th{position:sticky;top:0;z-index:1}
+.st-total td{font-weight:900;background:var(--violet-50)}
+.lock-note{display:inline-block;font-size:12px;font-weight:700;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px dashed var(--stroke);white-space:nowrap}
+@media(max-width:640px){.st-filters{grid-template-columns:1fr 1fr}.hbar{grid-template-columns:minmax(70px,110px) 1fr auto}.ch-slot{min-height:160px}}
 </style>
 </head>
 <body>
@@ -1665,10 +1680,30 @@ function toLocalInput(iso) {
 }
 
 /* ------------------------- 6. DATA LOADING ------------------------- */
+/** جلب كل الصفوف على دفعات: Supabase/PostgREST يقصر كل طلب على 1000 صف افتراضياً (أو أقل حسب إعداد المشروع).
+ *  نطلب دفعة بعد أخرى حتى نصل إلى العدد الإجمالي الفعلي، ونتقدّم بعدد الصفوف المُستلَمة فعلاً (لا بحجم الدفعة)
+ *  فلا يضيع أي صف حتى لو كان سقف الخادم أقل من 1000. الترتيب يجب أن يكون كاملاً (ينتهي بـ id) لمنع تكرار/ضياع صف بين الدفعات. */
+const PAGE_SIZE = 1000;
+async function fetchAllRows(makeQuery) {
+  const rows = new Map();
+  let from = 0, total = null;
+  for (;;) {
+    let res = await makeQuery().range(from, from + PAGE_SIZE - 1);
+    if (res.error) res = await makeQuery().range(from, from + PAGE_SIZE - 1);      // محاولة ثانية عند خطأ عابر
+    if (res.error) return { data: null, error: res.error };
+    const batch = res.data || [];
+    if (total === null && typeof res.count === "number") total = res.count;
+    batch.forEach(r => rows.set(r.id, r));
+    from += batch.length;
+    if (!batch.length || (total !== null && from >= total)) break;
+  }
+  return { data: Array.from(rows.values()), error: null };
+}
+
 async function loadPublicData() {
   const [sp, st, se] = await Promise.all([
     db.from("specialties").select("*").order("created_at"),
-    db.from("students").select("*").order("order_index"),
+    fetchAllRows(() => db.from("students").select("*", { count: "exact" }).order("order_index").order("id")),
     db.from("settings").select("*").eq("id", 1).maybeSingle()
   ]);
   if (sp.error) console.error(sp.error);
@@ -2094,7 +2129,7 @@ function loginModal() {
       toast(t("err_not_registered_admin"), "err"); return;
     }
     closeModals();
-    toast(t("welcome_msg", { name: state.me.full_name }));
+    toast(t("welcome_msg", { name: adminName(state.me) }));
     await afterAuthChange(true);
   };
 }
@@ -2154,7 +2189,7 @@ function renderDash() {
   const mySpec = state.specialties.find(s => s.id === state.me.specialty_id);
   $("#sidebar").innerHTML = `
     <div class="side-user">
-      <b>${esc(state.me.full_name)}</b>
+      <b>${esc(adminName(state.me))}</b>
       <small>${isSuper() ? t("role_super_admin") : t("role_dept_admin_prefix") + esc(mySpec ? mySpec.name : "—")}</small>
     </div>
     ${tabs.map(tb => `<button class="nav-item ${state.tab === tb.k ? "active" : ""}" data-tab="${tb.k}">${tb.n}</button>`).join("")}
@@ -2261,8 +2296,8 @@ function renderStudents(panel) {
               ${isSuper() ? `
                 <button class="btn btn-ghost btn-sm" data-up="${s.id}" title="${t("tooltip_up")}">▲</button>
                 <button class="btn btn-ghost btn-sm" data-down="${s.id}" title="${t("tooltip_down")}">▼</button>` : ""}
-              <button class="btn btn-ghost btn-sm" data-edit="${s.id}">${t("btn_edit")}</button>
-              <button class="btn btn-danger btn-sm" data-del="${s.id}">${t("btn_delete")}</button>
+              ${canModifyStudent(s) ? `<button class="btn btn-ghost btn-sm" data-edit="${s.id}">${t("btn_edit")}</button>
+              <button class="btn btn-danger btn-sm" data-del="${s.id}">${t("btn_delete")}</button>` : `<span class="lock-note" title="${esc(t("student_locked"))}">🔒 ${t("student_locked_short")}</span>`}
             </div>
           </td>
         </tr>`).join("") : `<tr><td colspan="11" class="empty">${t("no_students")}</td></tr>`}
@@ -2280,6 +2315,7 @@ function renderStudents(panel) {
 const specName = id => (state.specialties.find(s => s.id === id) || {}).name || "—";
 
 function studentModal(student, specs) {
+  if (student && !canModifyStudent(student)) { toast(t("student_locked"), "err"); return; }
   const isEdit = !!student;
   const m = openModal(`
     <div class="modal">
@@ -2425,6 +2461,7 @@ function isRankCollision(err) {
 
 async function deleteStudent(id) {
   const st = state.students.find(s => s.id === id);
+  if (!canModifyStudent(st)) { toast(t("student_locked"), "err"); return; }
   if (!await confirmDialog(t("delete_student_title"), t("delete_student_text", { name: st.full_name }))) return;
   const { error } = await db.from("students").delete().eq("id", id);
   if (error) { toast(t("err_delete_failed", { msg: error.message }), "err"); return; }
@@ -2566,7 +2603,7 @@ function renderAdminsTab(panel) {
       <thead><tr><th>${t("th_name")}</th><th>${t("th_email")}</th><th>${t("th_phone")}</th><th>${t("th_role")}</th><th>${t("th_specialty")}</th><th>${t("th_status")}</th><th>${t("th_actions")}</th></tr></thead>
       <tbody>${state.admins.length ? state.admins.map(a => `
         <tr>
-          <td><b>${esc(a.full_name)}</b></td>
+          <td><b>${esc(adminName(a))}</b></td>
           <td dir="ltr">${esc(a.email)}</td>
           <td dir="ltr">${esc(a.phone || "—")}</td>
           <td><span class="tag ${a.role === "super_admin" ? "tag-A" : "tag-B"}">${a.role === "super_admin" ? t("role_super") : t("role_dept")}</span></td>
@@ -2892,61 +2929,98 @@ function trackVisit() {
   } catch (e) { /* التتبع لا يعطّل الموقع أبداً */ }
 }
 
+/* ---- اسم المشرف الرئيسي كما يظهر في صفحته ---- */
+const SUPER_ADMIN_NAME = "Mohamed Dah Agove";
+const adminName = a => !a ? "—" : (a.role === "super_admin" ? SUPER_ADMIN_NAME : (a.full_name || "—"));
+
+/* ---- منع رئيس التخصص من تعديل/حذف طالب أضافه مشرف آخر (رئيسان لنفس التخصص) ----
+   المشرف الرئيسي: كل الصلاحيات. طلاب بلا مُنشئ مسجَّل (قديمون) يبقون قابلين للتعديل كما كانوا. */
+Object.assign(I18N, {
+  student_locked:{ar:"هذا الطالب أضافه مشرف آخر — لا يمكنك تعديله أو حذفه.",fr:"Cet étudiant a été ajouté par un autre administrateur — modification et suppression impossibles."},
+  student_locked_short:{ar:"أضافه مشرف آخر",fr:"Ajouté par un autre admin"},
+  st_group:{ar:"طريقة العرض",fr:"Affichage"},
+  st_g_day:{ar:"يومي",fr:"par jour"}, st_g_week:{ar:"أسبوعي",fr:"par semaine"}, st_g_month:{ar:"شهري",fr:"par mois"}
+});
+function canModifyStudent(st) {
+  if (!st) return false;
+  if (isSuper()) return true;
+  const me = state.session && state.session.user && state.session.user.id;
+  return !st.created_by || st.created_by === me;
+}
+
 /* ---- أدوات التاريخ ---- */
 const STATS_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; } })();
-state.stats = { days: 30, from: "", to: "", spec: "all", admin: "all", daily: [], totals: null, err: "", logLimit: 50, seq: 0 };
+state.stats = { days: 30, from: "", to: "", spec: "all", admin: "all", logLimit: 50, seq: 0, jobs: {}, ro: null };
 const pad2 = n => String(n).padStart(2, "0");
 const dayKey = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 function statsRange() {
-  const s = state.stats, to = s.to ? new Date(s.to + "T00:00:00") : new Date(); to.setHours(0, 0, 0, 0);
-  let from;
-  if (s.from) from = new Date(s.from + "T00:00:00"); else { from = new Date(to); from.setDate(from.getDate() - (s.days - 1)); }
-  let a = from, b = to; if (a > b) { a = to; b = from; }
-  const end = new Date(b); end.setDate(end.getDate() + 1);
-  const days = []; for (const d = new Date(a); d < end; d.setDate(d.getDate() + 1)) days.push(dayKey(d));
-  return { from: a, end, days };
+  const s = state.stats, today = new Date(); today.setHours(0, 0, 0, 0);
+  let to = s.to ? new Date(s.to + "T00:00:00") : new Date(today);
+  if (isNaN(to) || to > today) to = new Date(today);
+  let from = s.from ? new Date(s.from + "T00:00:00") : null;
+  if (!from || isNaN(from)) { from = new Date(to); from.setDate(from.getDate() - (s.days - 1)); }
+  if (from > today) from = new Date(today);
+  if (from > to) { const x = from; from = to; to = x; }
+  const end = new Date(to); end.setDate(end.getDate() + 1);
+  const days = []; for (const d = new Date(from); d < end; d.setDate(d.getDate() + 1)) days.push(dayKey(d));
+  return { from, end, days };
 }
+/* تجميع المحور الزمني: يومي (≤ 62 يوماً) · أسبوعي (≤ 210) · شهري — الأسبوع يبدأ الإثنين كما في قاعدة البيانات */
+function mondayOf(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+const bucketMode = n => n <= 62 ? "day" : (n <= 210 ? "week" : "month");
+function bucketKeyOfDate(d, mode) { return mode === "day" ? dayKey(d) : mode === "week" ? dayKey(mondayOf(d)) : `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-01`; }
+function buildBuckets(days, mode) {
+  const list = [], idx = {};
+  days.forEach(k => { const key = bucketKeyOfDate(new Date(k + "T00:00:00"), mode); if (!(key in idx)) { idx[key] = list.length; list.push({ key, first: k, last: k }); } else list[idx[key]].last = k; });
+  list.forEach(b => { const f = b.first.split("-"), l = b.last.split("-");
+    if (mode === "month") b.label = b.tip = `${f[1]}/${f[0]}`;
+    else if (mode === "week") { b.label = `${f[2]}/${f[1]}`; b.tip = `${f[2]}/${f[1]} → ${l[2]}/${l[1]}/${l[0]}`; }
+    else { b.label = `${f[2]}/${f[1]}`; b.tip = `${f[2]}/${f[1]}/${f[0]}`; } });
+  return { list, idx };
+}
+const inc = (o, a, b) => { (o[a] = o[a] || {})[b] = (o[a][b] || 0) + 1; };
 function statsStudents(r) {
-  const s = state.stats;
+  const s = state.stats, known = new Set(state.specialties.map(x => x.id));
   return state.students.filter(x => {
-    const d = new Date(x.created_at); if (isNaN(d) || d < r.from || d >= r.end) return false;
+    const d = new Date(x.created_at); if (isNaN(d) || d < r.from || d >= r.end || !known.has(x.specialty_id)) return false;
     return (s.spec === "all" || x.specialty_id === s.spec) && (s.admin === "all" || x.created_by === s.admin);
   });
 }
-const registrarName = uid => { const a = state.admins.find(x => x.user_id === uid); return a ? a.full_name : "—"; };
+const registrarName = uid => uid ? adminName(state.admins.find(x => x.user_id === uid)) : "—";
 const fmtDT = iso => { const d = new Date(iso); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 
-/* ---- رسوم SVG احترافية (بدون مكتبات خارجية): خطي/مساحي، أعمدة مكدّسة، دائري ---- */
-let chartUid = 0;
+/* ---- رسوم SVG احترافية متجاوبة (تُرسم بعرض الحاوية الفعلي وتُعاد عند تغيّر العرض) ---- */
 function niceMax(v) { if (v <= 5) return 5; const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
-function chartSVG({ labels, tips, series, type, stacked }) {
-  const W = 720, H = 300, L = 44, R = 14, T = 16, B = 38, iw = W - L - R, ih = H - T - B, n = labels.length, u = ++chartUid;
-  const tot = labels.map((_, i) => stacked ? series.reduce((a, s) => a + s.values[i], 0) : Math.max(...series.map(s => s.values[i])));
-  const max = niceMax(Math.max(...tot, 1)), x = i => type === "line" ? L + (n === 1 ? iw / 2 : iw * i / (n - 1)) : L + iw * (i + .5) / n, y = v => T + ih - ih * v / max;
+function chartSVG({ labels, tips, series, type, stacked }, W) {
+  W = Math.max(260, Math.round(W)); const n = labels.length, H = W < 420 ? 230 : (W < 760 ? 270 : 310), u = ++chartUid;
+  const tot = labels.map((_, i) => type === "bar" && stacked ? series.reduce((a, s) => a + s.values[i], 0) : Math.max(...series.map(s => s.values[i])));
+  const max = niceMax(Math.max(...tot, 1)), L = 16 + String(max).length * 7, R = W < 420 ? 8 : 14, T = 14, B = 32, iw = Math.max(60, W - L - R), ih = H - T - B;
+  const x = i => L + iw * (i + .5) / n, y = v => T + ih - ih * v / max;
   let g = "";
-  for (let k = 0; k <= 5; k++) { const v = max * k / 5, yy = y(v).toFixed(1); g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" class="ch-grid"/><text x="${L - 8}" y="${(+yy + 4).toFixed(1)}" class="ch-ax" text-anchor="end">${Math.round(v * 10) / 10}</text>`; }
-  const step = Math.max(1, Math.ceil(n / 12));
-  labels.forEach((lb, i) => { if (i % step === 0) g += `<text x="${x(i).toFixed(1)}" y="${H - 14}" class="ch-ax" text-anchor="middle">${esc(lb)}</text>`; });
+  for (let k = 0; k <= 5; k++) { const v = max * k / 5, yy = y(v).toFixed(1); g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" class="ch-grid"/><text x="${L - 7}" y="${(+yy + 4).toFixed(1)}" class="ch-ax" text-anchor="end">${v}</text>`; }
+  const lw = Math.max(...labels.map(l => String(l).length)) * 6.4 + 14, step = Math.max(1, Math.ceil(lw * n / iw));
+  labels.forEach((lb, i) => { if (i % step === 0) g += `<text x="${x(i).toFixed(1)}" y="${H - 11}" class="ch-ax" text-anchor="middle">${esc(lb)}</text>`; });
   if (type === "line") {
     series.forEach((s, k) => {
       const pts = s.values.map((v, i) => [x(i), y(v)]), line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
-      const area = `${line} L${pts[n - 1][0].toFixed(1)} ${y(0)} L${pts[0][0].toFixed(1)} ${y(0)} Z`;
-      g += `<defs><linearGradient id="lg${u}_${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".28"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient></defs>`
-        + `<path d="${area}" fill="url(#lg${u}_${k})"/><path d="${line}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`
-        + (n <= 45 ? pts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--surface-solid)" stroke="${s.color}" stroke-width="2"/>`).join("") : "");
+      g += `<defs><linearGradient id="lg${u}_${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".26"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient></defs>`
+        + `<path d="${line} L${pts[n - 1][0].toFixed(1)} ${y(0).toFixed(1)} L${pts[0][0].toFixed(1)} ${y(0).toFixed(1)} Z" fill="url(#lg${u}_${k})"/>`
+        + `<path d="${line}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`
+        + (n <= iw / 16 ? pts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" fill="var(--surface-solid)" stroke="${s.color}" stroke-width="2"/>`).join("") : "");
     });
   } else {
-    const bw = Math.min(42, iw / n * .7);
-    for (let i = 0; i < n; i++) { let acc = 0; series.forEach(s => { const v = s.values[i]; if (!v) return; const h = ih * v / max, yy = y(acc + v); g += `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${bw > 8 ? 3 : 1}" fill="${s.color}"/>`; acc += v; }); }
+    const bw = Math.max(2, Math.min(44, iw / n * .72));
+    for (let i = 0; i < n; i++) { let acc = 0; series.forEach(s => { const v = s.values[i]; if (!v) return; const h = ih * v / max; g += `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${y(acc + v).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${bw > 8 ? 3 : 1}" fill="${s.color}"/>`; acc += v; }); }
   }
   const cw = iw / n;
-  for (let i = 0; i < n; i++) g += `<rect x="${(L + cw * i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih}" fill="transparent" data-tip="${esc(tips[i])}"/>`;
-  return `<div class="ch-wrap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="chart">${g}</svg></div>`;
+  for (let i = 0; i < n; i++) g += `<rect class="ch-hit" x="${(L + cw * i).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih}" data-tip="${esc(tips[i])}"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="chart">${g}</svg>`;
 }
+let chartUid = 0;
 function donutSVG(items) {
   const total = items.reduce((a, i) => a + i.value, 0), R = 70, C = 2 * Math.PI * R; let off = 0, segs = "";
-  items.forEach(i => { if (!i.value) return; const len = C * i.value / total; segs += `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${i.color}" stroke-width="28" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(i.name + ": " + i.value + " (" + Math.round(i.value * 100 / total) + "%)")}"/>`; off += len; });
-  return `<div class="ch-wrap" style="max-width:260px;margin:0 auto"><svg viewBox="0 0 200 200" role="img" aria-label="donut">${segs}<text x="100" y="104" text-anchor="middle" style="font-size:30px;font-weight:900;fill:var(--text)">${total}</text><text x="100" y="124" text-anchor="middle" class="ch-ax">${esc(t("st_total"))}</text></svg></div>`;
+  items.forEach(i => { const len = C * i.value / total; segs += `<circle class="ch-seg" cx="100" cy="100" r="${R}" fill="none" stroke="${i.color}" stroke-width="28" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(i.name + " — " + i.value + " (" + (i.value * 100 / total).toFixed(1) + "%)")}"/>`; off += len; });
+  return `<div class="ch-donut"><svg viewBox="0 0 200 200" role="img" aria-label="donut">${segs}<text x="100" y="105" text-anchor="middle" style="font-size:30px;font-weight:900;fill:var(--text)">${total}</text><text x="100" y="125" text-anchor="middle" class="ch-ax">${esc(t("st_total"))}</text></svg></div>`;
 }
 const legendHTML = items => `<div class="ch-legend">${items.map(i => `<span><i style="background:${i.color}"></i>${esc(i.name)}${i.value !== undefined ? " — " + i.value : ""}</span>`).join("")}</div>`;
 function showChartTip(e) {
@@ -2954,29 +3028,44 @@ function showChartTip(e) {
   const el = e.target.closest && e.target.closest("[data-tip]");
   if (!el) { tip.style.display = "none"; return; }
   const p = e.touches ? e.touches[0] : e; tip.textContent = el.getAttribute("data-tip"); tip.style.display = "block";
-  tip.style.left = Math.min(p.clientX + 14, window.innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = Math.max(8, p.clientY - tip.offsetHeight - 12) + "px";
+  tip.style.left = Math.max(8, Math.min(p.clientX + 14, window.innerWidth - tip.offsetWidth - 8)) + "px";
+  tip.style.top = Math.max(8, p.clientY - tip.offsetHeight - 14) + "px";
+  clearTimeout(showChartTip.t); if (e.touches) showChartTip.t = setTimeout(() => { tip.style.display = "none"; }, 2600);
+}
+/** يرسم كل مخطط داخل حاويته بالعرض الفعلي الحالي (هاتف/لوحي/حاسوب). */
+function mountCharts() {
+  $$(".ch-slot").forEach(el => { const f = state.stats.jobs[el.dataset.chart]; if (f) el.innerHTML = f(Math.floor(el.clientWidth) || 640); });
+}
+function watchStatsResize() {
+  const s = state.stats; if (s.ro) { s.ro.disconnect(); s.ro = null; }
+  const body = $("#stBody"); if (!body || !window.ResizeObserver) return;
+  let last = body.clientWidth, tm;
+  s.ro = new ResizeObserver(() => { const w = body.clientWidth; if (w === last) return; last = w; clearTimeout(tm); tm = setTimeout(mountCharts, 120); });
+  s.ro.observe(body);
 }
 
 /* ---- صفحة الإحصائيات ---- */
 function renderStatsTab(panel) {
   if (!isSuper()) return renderOverview(panel);
-  const s = state.stats, seq = ++s.seq, r = statsRange();
+  const s = state.stats, seq = ++s.seq, r = statsRange(), today = dayKey(new Date());
+  if (s.ro) { s.ro.disconnect(); s.ro = null; }
   panel.innerHTML = `<div class="panel-head"><h2>${t("stats_title")}</h2></div>
     <div class="st-filters no-print">
       <div class="st-chips">${[7, 30, 90, 365].map(n => `<button class="btn btn-sm ${!s.from && !s.to && s.days === n ? "btn-primary" : "btn-ghost"}" data-days="${n}">${t("st_last_n", { n })}</button>`).join("")}</div>
-      <div class="field"><label>${t("st_from")}</label><input type="date" id="stFrom" value="${s.from || dayKey(r.from)}" dir="ltr" /></div>
-      <div class="field"><label>${t("st_to")}</label><input type="date" id="stTo" value="${s.to || dayKey(new Date())}" dir="ltr" /></div>
+      <div class="field"><label>${t("st_from")}</label><input type="date" id="stFrom" max="${today}" value="${dayKey(r.from)}" dir="ltr" /></div>
+      <div class="field"><label>${t("st_to")}</label><input type="date" id="stTo" max="${today}" value="${dayKey(new Date(r.end.getTime() - 86400000))}" dir="ltr" /></div>
       <div class="field"><label>${t("th_specialty")}</label><select id="stSpec"><option value="all">${t("all_specialties_option")}</option>${state.specialties.map(x => `<option value="${x.id}" ${s.spec === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
-      <div class="field"><label>${t("st_registered_by")}</label><select id="stAdm"><option value="all">${t("st_admin_all")}</option>${state.admins.filter(a => a.user_id).map(a => `<option value="${a.user_id}" ${s.admin === a.user_id ? "selected" : ""}>${esc(a.full_name)}</option>`).join("")}</select></div>
+      <div class="field"><label>${t("st_registered_by")}</label><select id="stAdm"><option value="all">${t("st_admin_all")}</option>${state.admins.filter(a => a.user_id).map(a => `<option value="${a.user_id}" ${s.admin === a.user_id ? "selected" : ""}>${esc(adminName(a))}</option>`).join("")}</select></div>
     </div><div id="stBody"><div class="empty">…</div></div>`;
-  $$("[data-days]", panel).forEach(b => b.onclick = () => { s.days = +b.dataset.days; s.from = s.to = ""; renderStatsTab(panel); });
-  const chg = () => { s.from = $("#stFrom").value; s.to = $("#stTo").value; s.spec = $("#stSpec").value; s.admin = $("#stAdm").value; renderStatsTab(panel); };
+  $$("[data-days]", panel).forEach(b => b.onclick = () => { s.days = +b.dataset.days; s.from = s.to = ""; s.logLimit = 50; renderStatsTab(panel); });
+  const chg = () => { s.from = $("#stFrom").value; s.to = $("#stTo").value; s.spec = $("#stSpec").value; s.admin = $("#stAdm").value; s.logLimit = 50; renderStatsTab(panel); };
   ["#stFrom", "#stTo", "#stSpec", "#stAdm"].forEach(id => $(id).onchange = chg);
   panel.onmousemove = panel.onmouseover = showChartTip; panel.onmouseleave = () => { const tp = $("#chTip"); if (tp) tp.style.display = "none"; }; panel.ontouchstart = showChartTip;
+  const mode = bucketMode(r.days.length);
   (async () => {
     let daily = [], totals = null, err = "";
     const a = { _from: r.from.toISOString(), _to: r.end.toISOString() };
-    const [d1, d2] = await Promise.all([db.rpc("get_visit_stats", { ...a, _tz: STATS_TZ }), db.rpc("get_visit_totals", a)]);
+    const [d1, d2] = await Promise.all([db.rpc("get_visit_stats", { ...a, _tz: STATS_TZ, _bucket: mode }), db.rpc("get_visit_totals", a)]);
     if (d1.error || d2.error) err = t("st_visits_missing"); else { daily = d1.data || []; totals = Array.isArray(d2.data) ? d2.data[0] : d2.data; }
     if (seq !== s.seq || state.tab !== "stats") return;
     drawStatsBody(r, daily, totals, err);
@@ -2984,40 +3073,48 @@ function renderStatsTab(panel) {
 }
 function drawStatsBody(r, daily, totals, err) {
   const s = state.stats, body = $("#stBody"); if (!body) return;
-  const sts = statsStudents(r), short = k => k.slice(8) + "/" + k.slice(5, 7);
+  const mode = bucketMode(r.days.length), B = buildBuckets(r.days, mode), sts = statsStudents(r);
   const vMap = {}; daily.forEach(x => { vMap[String(x.day).slice(0, 10)] = x; });
-  const vis = r.days.map(k => +(vMap[k] ? vMap[k].visits : 0)), uni = r.days.map(k => +(vMap[k] ? vMap[k].unique_visitors : 0));
+  const vis = B.list.map(b => +(vMap[b.key] ? vMap[b.key].visits : 0)), uni = B.list.map(b => +(vMap[b.key] ? vMap[b.key].unique_visitors : 0));
   const specs = state.specialties.filter(x => s.spec === "all" || x.id === s.spec).map(x => ({ id: x.id, name: x.name, color: x.color || "#7C3AED" }));
-  const byDaySpec = {}; sts.forEach(x => { const k = dayKey(new Date(x.created_at)); (byDaySpec[k] = byDaySpec[k] || {})[x.specialty_id] = ((byDaySpec[k] || {})[x.specialty_id] || 0) + 1; });
-  const regSeries = specs.map(sp => ({ name: sp.name, color: sp.color, values: r.days.map(k => (byDaySpec[k] && byDaySpec[k][sp.id]) || 0) }));
-  const today = dayKey(new Date()), regToday = state.students.filter(x => dayKey(new Date(x.created_at)) === today && (s.spec === "all" || x.specialty_id === s.spec) && (s.admin === "all" || x.created_by === s.admin)).length;
-  const hours = Array.from({ length: 24 }, () => 0); sts.forEach(x => hours[new Date(x.created_at).getHours()]++);
-  const byAdm = {}; sts.forEach(x => { const k = x.created_by || "—"; byAdm[k] = (byAdm[k] || 0) + 1; });
-  const admRows = Object.entries(byAdm).map(([k, v]) => ({ name: k === "—" ? "—" : registrarName(k), v })).sort((a, b) => b.v - a.v), admMax = Math.max(...admRows.map(x => x.v), 1);
+  const perBucket = {}, perDay = {}, hours = Array.from({ length: 24 }, () => 0), byAdm = {};
+  sts.forEach(x => { const d = new Date(x.created_at); inc(perDay, dayKey(d), x.specialty_id); inc(perBucket, B.idx[bucketKeyOfDate(d, mode)], x.specialty_id); hours[d.getHours()]++; const k = x.created_by || "—"; byAdm[k] = (byAdm[k] || 0) + 1; });
+  const regSeries = specs.map(sp => ({ name: sp.name, color: sp.color, values: B.list.map((_, i) => (perBucket[i] && perBucket[i][sp.id]) || 0) }));
+  const todayK = dayKey(new Date()), regToday = state.students.filter(x => dayKey(new Date(x.created_at)) === todayK && specs.some(sp => sp.id === x.specialty_id) && (s.admin === "all" || x.created_by === s.admin)).length;
+  const admRows = Object.entries(byAdm).map(([k, v]) => ({ name: registrarName(k === "—" ? "" : k), v })).sort((a, b) => b.v - a.v), admMax = Math.max(...admRows.map(x => x.v), 1);
   const share = specs.map(sp => ({ name: sp.name, color: sp.color, value: sts.filter(x => x.specialty_id === sp.id).length })).filter(x => x.value);
-  const tipV = r.days.map((k, i) => `${k}\n${t("st_series_visits")}: ${vis[i]}\n${t("st_series_unique")}: ${uni[i]}`);
-  const tipR = r.days.map((k, i) => `${k}\n` + regSeries.filter(x => x.values[i]).map(x => `${x.name}: ${x.values[i]}`).join("\n") + (regSeries.some(x => x.values[i]) ? "" : "0"));
+  const tipV = B.list.map((b, i) => `${b.tip}\n${t("st_series_visits")}: ${vis[i]}\n${t("st_series_unique")}: ${uni[i]}`);
+  const tipR = B.list.map((b, i) => { const rows = regSeries.filter(x => x.values[i]).map(x => `${x.name}: ${x.values[i]}`); return `${b.tip}\n` + (rows.length ? rows.join("\n") + `\n${t("st_total")}: ${regSeries.reduce((a, x) => a + x.values[i], 0)}` : "0"); });
   const hl = hours.map((_, h) => pad2(h)), tipH = hours.map((v, h) => `${t("st_hour")} ${pad2(h)}:00 — ${t("st_count")}: ${v}`);
   const logRows = sts.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  const matrixDays = r.days.slice().reverse().filter(k => byDaySpec[k]);
+  const matrixDays = r.days.slice().reverse().filter(k => perDay[k]);
+  const colTot = specs.map(sp => sts.filter(x => x.specialty_id === sp.id).length);
+  s.jobs = {
+    visits: w => chartSVG({ labels: B.list.map(b => b.label), tips: tipV, type: "line", series: [{ color: "#7C3AED", values: vis }, { color: "#10B981", values: uni }] }, w),
+    regs: w => chartSVG({ labels: B.list.map(b => b.label), tips: tipR, type: "bar", stacked: true, series: regSeries }, w),
+    hours: w => chartSVG({ labels: hl, tips: tipH, type: "bar", series: [{ color: "#6366F1", values: hours }] }, w)
+  };
+  const none = `<p class="muted">${t("st_no_data")}</p>`;
   body.innerHTML = `
+    <p class="muted st-note">${t("st_group")}: <b>${t("st_g_" + mode)}</b> · ${dayKey(r.from)} → ${dayKey(new Date(r.end.getTime() - 86400000))}</p>
     <div class="mini-grid">
       <div class="mini"><b>${totals ? totals.unique_visitors : "—"}</b><small>${t("st_visitors")}</small></div>
       <div class="mini"><b>${totals ? totals.visits : "—"}</b><small>${t("st_visits")}</small></div>
       <div class="mini"><b>${sts.length}</b><small>${t("st_regs")}</small></div>
       <div class="mini"><b>${regToday}</b><small>${t("st_regs_today")}</small></div>
     </div>
-    <div class="st-card"><h3>${t("st_chart_visits")}</h3>${err ? `<p class="muted">${err}</p>` : chartSVG({ labels: r.days.map(short), tips: tipV, type: "line", series: [{ color: "#7C3AED", values: vis }, { color: "#10B981", values: uni }] }) + legendHTML([{ name: t("st_series_visits"), color: "#7C3AED" }, { name: t("st_series_unique"), color: "#10B981" }])}</div>
-    <div class="st-card"><h3>${t("st_chart_regs")}</h3>${sts.length ? chartSVG({ labels: r.days.map(short), tips: tipR, type: "bar", stacked: true, series: regSeries }) + legendHTML(regSeries.map(x => ({ name: x.name, color: x.color }))) : `<p class="muted">${t("st_no_data")}</p>`}</div>
+    <div class="st-card"><h3>${t("st_chart_visits")}</h3>${err ? `<p class="muted">${err}</p>` : `<div class="ch-slot" data-chart="visits"></div>` + legendHTML([{ name: t("st_series_visits"), color: "#7C3AED" }, { name: t("st_series_unique"), color: "#10B981" }])}</div>
+    <div class="st-card"><h3>${t("st_chart_regs")}</h3>${sts.length ? `<div class="ch-slot" data-chart="regs"></div>` + legendHTML(regSeries.map(x => ({ name: x.name, color: x.color }))) : none}</div>
     <div class="st-grid2">
-      <div class="st-card"><h3>${t("st_chart_share")}</h3>${share.length ? donutSVG(share) + legendHTML(share) : `<p class="muted">${t("st_no_data")}</p>`}</div>
-      <div class="st-card"><h3>${t("st_chart_admins")}</h3>${admRows.length ? admRows.map(x => `<div class="hbar"><span>${esc(x.name)}</span><div class="tr"><b style="width:${(x.v * 100 / admMax).toFixed(1)}%;background:var(--violet-500)"></b></div><b>${x.v}</b></div>`).join("") : `<p class="muted">${t("st_no_data")}</p>`}</div>
+      <div class="st-card"><h3>${t("st_chart_share")}</h3>${share.length ? donutSVG(share) + legendHTML(share) : none}</div>
+      <div class="st-card"><h3>${t("st_chart_admins")}</h3>${admRows.length ? admRows.map(x => `<div class="hbar"><span title="${esc(x.name)}">${esc(x.name)}</span><div class="tr"><b style="width:${(x.v * 100 / admMax).toFixed(1)}%;background:var(--violet-500)"></b></div><b>${x.v}</b></div>`).join("") : none}</div>
     </div>
-    <div class="st-card"><h3>${t("st_chart_hours")}</h3>${sts.length ? chartSVG({ labels: hl, tips: tipH, type: "bar", series: [{ color: "#6366F1", values: hours }] }) : `<p class="muted">${t("st_no_data")}</p>`}</div>
-    <div class="st-card"><h3>${t("st_matrix")}</h3><div class="table-wrap"><table><thead><tr><th>${t("st_date")}</th>${specs.map(x => `<th>${esc(x.name)}</th>`).join("")}<th>${t("st_total")}</th></tr></thead><tbody>${matrixDays.length ? matrixDays.map(k => `<tr><td dir="ltr">${k}</td>${specs.map(x => `<td>${(byDaySpec[k] && byDaySpec[k][x.id]) || 0}</td>`).join("")}<td><b>${specs.reduce((a, x) => a + ((byDaySpec[k] && byDaySpec[k][x.id]) || 0), 0)}</b></td></tr>`).join("") : `<tr><td colspan="${specs.length + 2}" class="empty">${t("st_no_data")}</td></tr>`}</tbody></table></div></div>
-    <div class="st-card"><div class="panel-head" style="margin-bottom:8px"><h3 style="margin:0">${t("st_log")} (${logRows.length})</h3><button class="btn btn-ghost btn-sm" id="stXlsx">${t("st_export")}</button></div>
-      <div class="table-wrap"><table><thead><tr><th>${t("st_datetime")}</th><th>${t("th_specialty")}</th><th>${t("th_full_name")}</th><th>${t("th_reg_number")}</th><th>${t("st_registered_by")}</th></tr></thead><tbody>${logRows.length ? logRows.slice(0, s.logLimit).map(x => `<tr><td dir="ltr">${fmtDT(x.created_at)}</td><td>${esc(specName(x.specialty_id))}</td><td>${esc(x.full_name)}</td><td dir="ltr">${esc(x.registration_number)}</td><td>${esc(registrarName(x.created_by))}</td></tr>`).join("") : `<tr><td colspan="5" class="empty">${t("st_no_data")}</td></tr>`}</tbody></table></div>
+    <div class="st-card"><h3>${t("st_chart_hours")}</h3>${sts.length ? `<div class="ch-slot" data-chart="hours"></div>` : none}</div>
+    <div class="st-card"><h3>${t("st_matrix")}</h3><div class="table-wrap st-scroll"><table><thead><tr><th>${t("st_date")}</th>${specs.map(x => `<th>${esc(x.name)}</th>`).join("")}<th>${t("st_total")}</th></tr></thead><tbody>${matrixDays.length ? `<tr class="st-total"><td>${t("st_total")}</td>${colTot.map(v => `<td>${v}</td>`).join("")}<td>${sts.length}</td></tr>` + matrixDays.map(k => `<tr><td dir="ltr">${k}</td>${specs.map(x => `<td>${(perDay[k] && perDay[k][x.id]) || 0}</td>`).join("")}<td><b>${specs.reduce((a, x) => a + ((perDay[k] && perDay[k][x.id]) || 0), 0)}</b></td></tr>`).join("") : `<tr><td colspan="${specs.length + 2}" class="empty">${t("st_no_data")}</td></tr>`}</tbody></table></div></div>
+    <div class="st-card"><div class="panel-head" style="margin-bottom:8px"><h3 style="margin:0;flex:1">${t("st_log")} (${logRows.length})</h3><button class="btn btn-ghost btn-sm" id="stXlsx">${t("st_export")}</button></div>
+      <div class="table-wrap st-scroll"><table><thead><tr><th>${t("st_datetime")}</th><th>${t("th_specialty")}</th><th>${t("th_full_name")}</th><th>${t("th_reg_number")}</th><th>${t("st_registered_by")}</th></tr></thead><tbody>${logRows.length ? logRows.slice(0, s.logLimit).map(x => `<tr><td dir="ltr">${fmtDT(x.created_at)}</td><td>${esc(specName(x.specialty_id))}</td><td>${esc(x.full_name)}</td><td dir="ltr">${esc(x.registration_number)}</td><td>${esc(registrarName(x.created_by))}</td></tr>`).join("") : `<tr><td colspan="5" class="empty">${t("st_no_data")}</td></tr>`}</tbody></table></div>
       ${logRows.length > s.logLimit ? `<button class="btn btn-ghost btn-sm" id="stMore" style="margin-top:10px">${t("st_show_more")}</button>` : ""}</div>`;
+  mountCharts(); watchStatsResize();
   const more = $("#stMore"); if (more) more.onclick = () => { s.logLimit += 100; drawStatsBody(r, daily, totals, err); };
   const xl = $("#stXlsx"); if (xl) xl.onclick = () => {
     if (!logRows.length) return toast(t("toast_no_export_data"), "info");
