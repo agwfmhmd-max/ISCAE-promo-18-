@@ -59,11 +59,35 @@ async function updateNotificationStats(
 async function fetchActiveSubscriptions(
   token: string,
 ): Promise<{ subs: StoredPushSubscription[]; error: string | null }> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_active_push_subscriptions`, {
-    method: "POST",
-    headers: restHeaders(token, { "content-type": "application/json" }),
-    body: "{}",
-  });
+  const url = `${SUPABASE_URL}/rest/v1/rpc/get_active_push_subscriptions`;
+  const call = (qs: string) =>
+    fetch(url + qs, {
+      method: "POST",
+      headers: restHeaders(token, { "content-type": "application/json" }),
+      body: "{}",
+    });
+
+  // PostgREST يقصر كل رد على 1000 صف (أو أقل): نجلب على دفعات مرتّبة بـ id ونتقدّم بعدد الصفوف المستلمة فعلاً.
+  const PAGE = 1000;
+  const byId = new Map<string, StoredPushSubscription>();
+  let offset = 0;
+  let paged = true;
+  for (;;) {
+    const res = await call(`?order=id.asc&limit=${PAGE}&offset=${offset}`);
+    if (!res.ok) {
+      if (offset === 0) { paged = false; break; } // الترقيم غير مدعوم هنا: نرجع للطلب الأصلي
+      const text = (await res.text().catch(() => "")).slice(0, 200);
+      console.error("[Push] get_active_push_subscriptions page failed:", res.status, text);
+      return { subs: [], error: `RPC get_active_push_subscriptions: ${res.status} ${text}` };
+    }
+    const rows = (await res.json()) as StoredPushSubscription[];
+    if (!Array.isArray(rows) || rows.length === 0) break;
+    rows.forEach((r) => byId.set(r.id, r));
+    offset += rows.length;
+  }
+  if (paged) return { subs: Array.from(byId.values()), error: null };
+
+  const res = await call("");
   if (!res.ok) {
     const text = (await res.text().catch(() => "")).slice(0, 200);
     console.error("[Push] get_active_push_subscriptions failed:", res.status, text);
