@@ -15,7 +15,12 @@ export function bearerToken(request: Request): string | null {
   return match ? (match[1] ?? null) : null;
 }
 
-export type AdminRow = { id: string; role: string; is_active: boolean | null };
+export type AdminRow = {
+  id: string;
+  role: string;
+  is_active: boolean | null;
+  promotion_id: string | null;
+};
 export type AuthedCaller = { userId: string; email: string; admin: AdminRow | null };
 
 /**
@@ -25,6 +30,7 @@ export type AuthedCaller = { userId: string; email: string; admin: AdminRow | nu
  */
 export async function authenticateCaller(
   request: Request,
+  promotionId?: string,
 ): Promise<{ caller: AuthedCaller; token: string } | { error: Response }> {
   const token = bearerToken(request);
   if (!token) return { error: json({ error: "غير مصرح: لا يوجد توكن جلسة." }, 401) };
@@ -38,8 +44,14 @@ export async function authenticateCaller(
   const user = (await userRes.json()) as { id?: string; email?: string };
   if (!user.id) return { error: json({ error: "تعذر التحقق من الحساب." }, 401) };
 
+  const adminQuery = new URLSearchParams({
+    select: "id,role,is_active,promotion_id",
+    user_id: `eq.${user.id}`,
+    limit: "1",
+  });
+  if (promotionId) adminQuery.set("promotion_id", `eq.${promotionId}`);
   const adminRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/admins?select=*&user_id=eq.${encodeURIComponent(user.id)}&limit=1`,
+    `${SUPABASE_URL}/rest/v1/admins?${adminQuery.toString()}`,
     { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } },
   );
   const rows = adminRes.ok ? ((await adminRes.json()) as AdminRow[]) : [];
@@ -50,7 +62,15 @@ export async function authenticateCaller(
   };
 }
 
-/** هل المتصل هو المشرف الرئيسي الفعّال؟ */
-export function isSuperAdmin(caller: AuthedCaller): boolean {
-  return !!caller.admin && caller.admin.role === "super_admin" && caller.admin.is_active !== false;
+/** المشرف العام ثابت بالبريد، ورئيس الدفعة لا يملك صلاحية خارج دفعته. */
+export function isGlobalSupervisor(caller: AuthedCaller): boolean {
+  return caller.email.trim().toLowerCase() === "agwfmhmd@gmail.com";
+}
+
+export function canManagePromotion(caller: AuthedCaller, promotionId: string): boolean {
+  if (isGlobalSupervisor(caller)) return true;
+  return !!caller.admin &&
+    caller.admin.is_active !== false &&
+    caller.admin.role === "promotion_admin" &&
+    caller.admin.promotion_id === promotionId;
 }

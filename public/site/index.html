@@ -1000,8 +1000,39 @@ const SUPABASE_URL = "https://httwzwtyjucqtjpjsvuh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dHd6d3R5anVjcXRqcGpzdnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNTY1OTMsImV4cCI6MjEwMDkzMjU5M30.C7kAem3bfJPXvi_7FsKfippVGFX1f3Em_oLbdUFu3O8";
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: "iscae18-auth" }
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: "iscae-multi-promo-auth" }
 });
+
+const ROOT_SUPERVISOR_EMAIL = "agwfmhmd@gmail.com";
+const TENANT_TABLES = new Set(["admins", "students", "specialties", "settings", "ceremonies", "ceremony_card_types", "student_ceremony_cards", "notifications", "push_subscriptions", "site_visits"]);
+function promotionNumberFromLocation() {
+  const host = location.hostname.toLowerCase();
+  const hosted = host.match(/^iscae-promo-(\d+)\.vercel\.app$/);
+  const query = Number(new URLSearchParams(location.search).get("promotion"));
+  return hosted ? Number(hosted[1]) : (Number.isInteger(query) && query > 0 ? query : 18);
+}
+// Inject the active tenant into table reads, writes and new rows; promotion access is still enforced by Supabase RLS.
+const rawDbFrom = db.from.bind(db);
+db.from = (table) => {
+  const builder = rawDbFrom(table);
+  if (!TENANT_TABLES.has(table)) return builder;
+  return new Proxy(builder, { get(target, prop) {
+    const original = target[prop];
+    if (typeof original !== "function") return original;
+    if (["select", "update", "delete"].includes(prop)) return (...args) => {
+      const result = original.apply(target, args);
+      return state?.promo?.id && !state.legacyMode ? result.eq("promotion_id", state.promo.id) : result;
+    };
+    if (["insert", "upsert"].includes(prop)) return (...args) => {
+      if (state?.promo?.id && !state.legacyMode) {
+        const addTenant = row => row && typeof row === "object" ? { ...row, promotion_id: state.promo.id } : row;
+        args[0] = Array.isArray(args[0]) ? args[0].map(addTenant) : addTenant(args[0]);
+      }
+      return original.apply(target, args);
+    };
+    return original.bind(target);
+  }});
+};
 /* إنشاء حسابات رؤساء التخصصات يتم عبر Edge Function آمنة (create-admin)
    حيث يوجد Service Role Key على الخادم فقط — لا يوجد أي مفتاح سري هنا. */
 // دالة إضافة رئيس التخصص (معدلة لتفادي خطأ event.preventDefault is not a function)
@@ -1023,13 +1054,15 @@ async function handleAddAdmin(arg) {
   const specialty_id= payload.specialty_id ?? val("admin-specialty") ?? val("admin-department") ?? null;
   const phone       = payload.phone ?? null;
   const is_active   = payload.is_active !== undefined ? payload.is_active : true;
+  const role        = payload.role || "dept_admin";
+  const promotion_id = payload.promotion_id || state.promo?.id || null;
 
   try {
     console.log("جاري إنشاء الحساب...");
 
     // استدعاء الدالة الآمنة على الخادم باسم 'create-admin'
     const { data, error } = await db.functions.invoke("create-admin", {
-      body: { email, password, full_name: name, name, specialty_id, phone, is_active }
+      body: { email, password, full_name: name, name, specialty_id, phone, is_active, role, promotion_id }
     });
 
     // إظهار الرسالة الحقيقية القادمة من الخادم بدل "non-2xx status code"
@@ -1071,7 +1104,10 @@ const state = {
   tab: "overview",
   filterSpec: "all",
   query: "",
-  lang: (localStorage.getItem("iscae-lang") === "fr") ? "fr" : "ar"
+  lang: (localStorage.getItem("iscae-lang") === "fr") ? "fr" : "ar",
+  legacyMode: false,
+  promotions: [],
+  promo: { id: null, number: promotionNumberFromLocation(), name_fr: null, name_ar: null, logo: null, domain: null, domain_status: "pending" }
 };
 
 const $  = (s, r = document) => r.querySelector(s);
@@ -1108,7 +1144,8 @@ function mergeStudentWithLocalFresh(st) {
      لذلك نأخذ بيانات البحث/التخصص من الدالة، ونكملها بأعمدة students الكاملة المحمّلة بـ select(*). */
   return { ...local, ...st, certificate_name: rawCertName(local), sash_name: sashName(local) || sashName(st) };
 }
-const isSuper = () => state.me?.role === "super_admin";
+const isGlobalSupervisor = () => String(state.session?.user?.email || "").toLowerCase() === ROOT_SUPERVISOR_EMAIL;
+const isSuper = () => isGlobalSupervisor() || state.me?.role === "promotion_admin";
 
 /* ------------------------- 1B. I18N (عربي / فرنسي) ------------------------- */
 const I18N = {
@@ -1206,13 +1243,15 @@ const I18N = {
   nav_exports:{ar:"التصدير",fr:"Exportation"},
   nav_back_home:{ar:"← العودة للصفحة الرئيسية",fr:"→ Retour à l'accueil"},
   nav_home_mobile:{ar:"الرئيسية",fr:"Accueil"},
-  role_super_admin:{ar:"المشرف الرئيسي",fr:"Administrateur principal"},
+  role_super_admin:{ar:"المشرف العام",fr:"Superviseur général"},
+  role_promotion_admin:{ar:"رئيس الدفعة",fr:"Chef de promotion"},
   role_dept_admin_prefix:{ar:"رئيس تخصص — ",fr:"Chef de spécialité — "},
   kpi_students_count:{ar:"عدد الطلاب",fr:"Nombre d'étudiants"},
   kpi_specialties_count:{ar:"عدد التخصصات",fr:"Nombre de spécialités"},
   kpi_dept_admins_count:{ar:"رؤساء التخصصات",fr:"Chefs de spécialité"},
   kpi_cat_prefix:{ar:"الفئة ",fr:"Catégorie "},
   students_by_specialty_title:{ar:"الطلاب حسب التخصص",fr:"Étudiants par spécialité"},
+  th_specialty:{ar:"التخصص",fr:"Spécialité"},
   th_specialty:{ar:"التخصص",fr:"Spécialité"},
   th_students_count:{ar:"عدد الطلاب",fr:"Nombre d'étudiants"},
   no_data:{ar:"لا توجد بيانات",fr:"Aucune donnée"},
@@ -1285,7 +1324,7 @@ const I18N = {
   status_active:{ar:"نشط",fr:"Actif"},
   status_suspended:{ar:"موقوف",fr:"Suspendu"},
   no_admins:{ar:"لا يوجد مشرفون",fr:"Aucun administrateur"},
-  admins_note:{ar:"عند الإضافة يتم إنشاء حساب دخول جديد. إذا كان تأكيد البريد مفعّلاً في إعدادات المصادقة فيجب تعطيله ليتمكن الرئيس من الدخول مباشرة.",fr:"L'ajout crée un nouveau compte de connexion. Si la confirmation d'e-mail est activée dans les paramètres d'authentification, désactivez-la pour permettre une connexion immédiate."},
+  admins_note:{ar:"عند الإضافة ينشأ حساب دخول جديد ويؤكّد الخادم البريد. سلّم بيانات الدخول لصاحب الحساب بطريقة آمنة.",fr:"L'ajout crée un compte de connexion et confirme l'e-mail côté serveur. Transmettez les identifiants au titulaire de manière sécurisée."},
   admin_modal_edit_title:{ar:"تعديل مشرف",fr:"Modifier l'administrateur"},
   admin_modal_add_title:{ar:"إضافة رئيس تخصص",fr:"Ajouter un chef de spécialité"},
   field_email_required:{ar:"البريد الإلكتروني *",fr:"Adresse e-mail *"},
@@ -1296,6 +1335,7 @@ const I18N = {
   btn_saving:{ar:"جارٍ الحفظ...",fr:"Enregistrement..."},
   err_must_choose_specialty:{ar:"يجب اختيار تخصص",fr:"Vous devez choisir une spécialité"},
   err_generic:{ar:"خطأ: {msg}",fr:"Erreur : {msg}"},
+  err_session_expired:{ar:"انتهت الجلسة، سجّل الدخول مجددًا.",fr:"Session expirée, reconnectez-vous."},
   delete_admin_title:{ar:"حذف مشرف",fr:"Supprimer un administrateur"},
   delete_admin_text:{ar:"سيتم إلغاء صلاحيات «{name}».",fr:"Les droits de « {name} » seront révoqués."},
   msg_admin_deleted:{ar:"تم حذف المشرف",fr:"Administrateur supprimé"},
@@ -1432,13 +1472,12 @@ function t(key, vars) {
 
 function brandName() {
   const v = (state.settings && state.settings.platform_name || "").trim();
-  return v || "ISCAE 18ème Promotion";
+  return v || `ISCAE ${state.promo.number}ème Promotion`;
 }
 /* ------------------------- PROMOTION — مصدر واحد (رقم ≠ اسم) -------------------------
-   الرقم (18) واسم الدفعة (FR/AR، NULL حتى يحدده المشرف الرئيسي) يأتيان فقط من
-   public.promotion_settings. كل واجهة تستعمل الدوال أدناه — لا نص مكرَّر. */
+   رقم الدفعة واسمها وشعارها يأتيان من public.promotions بعد ترحيل قاعدة البيانات. */
 const AR_ORD = {1:"الأولى",2:"الثانية",3:"الثالثة",4:"الرابعة",5:"الخامسة",6:"السادسة",7:"السابعة",8:"الثامنة",9:"التاسعة",10:"العاشرة",11:"الحادية عشر",12:"الثانية عشر",13:"الثالثة عشر",14:"الرابعة عشر",15:"الخامسة عشر",16:"السادسة عشر",17:"السابعة عشر",18:"الثامنة عشر",19:"التاسعة عشر",20:"العشرون"};
-state.promo = { number: 18, name_fr: null, name_ar: null, logo: null };
+state.promo = { id: null, number: promotionNumberFromLocation(), name_fr: null, name_ar: null, logo: null, domain: null, domain_status: "pending" };
 function promoNumberLabel(lang = state.lang, n = state.promo.number) {
   return lang === "fr" ? `${n}${n === 1 ? "ère" : "ème"} Promotion` : `الدفعة ${AR_ORD[n] || n}`;
 }
@@ -1481,11 +1520,26 @@ function promoLabel() {
   return nm ? `${promoNumberLabel()} — ${nm}` : promoNumberLabel();
 }
 async function loadPromotion() {
+  const requestedNumber = promotionNumberFromLocation();
   try {
-    const { data, error } = await db.from("promotion_settings").select("*").eq("id", 1).maybeSingle();
-    state.promoReady = !error && !!data;
-    if (state.promoReady) state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null, logo: data.promotion_logo_url || null };
-  } catch (e) { state.promoReady = false; }
+    const { data, error } = await rawDbFrom("promotions").select("*").eq("promotion_number", requestedNumber).maybeSingle();
+    if (error) throw error;
+    if (!data) { state.promoReady = false; state.promoNotFound = true; state.promo.id = null; return; }
+    state.legacyMode = false;
+    state.promoNotFound = false;
+    state.promo = { id: data.id, number: Number(data.promotion_number) || requestedNumber, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null, logo: data.promotion_logo_url || null, domain: data.domain || null, domain_status: data.domain_status || "pending" };
+    state.promoReady = true;
+  } catch (e) {
+    if (requestedNumber !== 18) { state.promoReady = false; state.promoNotFound = true; console.error("[Promotion] registry unavailable", e); return; }
+    try {
+      const { data, error } = await rawDbFrom("promotion_settings").select("*").eq("id", 1).maybeSingle();
+      if (error) throw error;
+      state.legacyMode = true;
+      state.promoNotFound = !data;
+      state.promoReady = !!data;
+      state.promo = { id: null, number: Number(data?.promotion_number) || 18, name_fr: data?.promotion_name_fr || null, name_ar: data?.promotion_name_ar || null, logo: data?.promotion_logo_url || data?.promotion_logo || null, domain: "iscae-promo-18.vercel.app", domain_status: "pending" };
+    } catch (legacyError) { state.promoReady = false; state.promoNotFound = true; console.error("[Promotion] legacy settings unavailable", legacyError); }
+  }
 }
 
 Object.assign(I18N, {
@@ -1518,8 +1572,8 @@ Object.assign(I18N, {
   promo_preview:{ar:"معاينة مباشرة",fr:"Aperçu en direct"},
   promo_save:{ar:"حفظ",fr:"Enregistrer"},
   promo_saved:{ar:"تم حفظ هوية الدفعة",fr:"Identité de la promotion enregistrée"},
-  promo_missing:{ar:"جدول promotion_settings غير موجود: نفّذ PROMOTION.sql في Supabase أولاً.",fr:"Table promotion_settings absente : exécutez d'abord PROMOTION.sql dans Supabase."},
-  promo_denied:{ar:"غير مصرّح: للمشرف الرئيسي فقط.",fr:"Non autorisé : administrateur principal uniquement."},
+  promo_missing:{ar:"تعذر العثور على سجل هذه الدفعة؛ نفّذ MULTI-PROMOTION.sql في Supabase أولًا.",fr:"Promotion introuvable : exécutez d'abord MULTI-PROMOTION.sql dans Supabase."},
+  promo_denied:{ar:"غير مصرّح: يلزم أن تكون مشرفًا لهذه الدفعة.",fr:"Non autorisé : vous devez administrer cette promotion."},
   promo_logo:{ar:"شعار الدفعة",fr:"Logo de la promotion"},
   promo_logo_hint:{ar:"PNG أو JPG أو WebP (حتى 5 ميغابايت). يظهر بارزاً في الصفحة الرئيسية. بدون شعار يظهر الشعار الافتراضي.",fr:"PNG, JPG ou WebP (5 Mo max). Affiché en évidence sur l'accueil. Sans logo, l'emblème par défaut est utilisé."},
   promo_logo_reset:{ar:"العودة للشعار الافتراضي",fr:"Revenir à l'emblème par défaut"},
@@ -1701,6 +1755,10 @@ async function fetchAllRows(makeQuery) {
 }
 
 async function loadPublicData() {
+  if (!state.promo.id && !state.legacyMode) {
+    state.specialties = []; state.students = []; state.settings = null; state.ceremonies = []; state.publicLoaded = true;
+    return;
+  }
   const [sp, st, se] = await Promise.all([
     db.from("specialties").select("*").order("created_at"),
     fetchAllRows(() => db.from("students").select("*", { count: "exact" }).order("order_index").order("id")),
@@ -1710,7 +1768,6 @@ async function loadPublicData() {
   state.specialties = sp.data || [];
   state.students    = st.data || [];
   state.settings    = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null };
-  await loadPromotion();
   await loadCeremonies();
   state.publicLoaded = true;
 }
@@ -1748,9 +1805,9 @@ function validatePhotoFile(file) {
   return true;
 }
 /** رفع الصورة إلى Supabase Storage وإرجاع الرابط العمومي (يُخزَّن الرابط فقط). */
-async function uploadStudentPhoto(file) {
+async function uploadStudentPhoto(file, specialtyId) {
   const ext = ((file.name || "").split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-  const path = `students/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const path = `students/${state.promo.id || "legacy"}/${specialtyId || "legacy"}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await db.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
   if (error) throw error;
   const { data } = db.storage.from(PHOTO_BUCKET).getPublicUrl(path);
@@ -1777,7 +1834,10 @@ async function loadAdmins() {
 async function loadMe() {
   if (!state.session) { state.me = null; return; }
   const { data } = await db.from("admins").select("*").eq("user_id", state.session.user.id).maybeSingle();
-  state.me = data || null;
+  if (isGlobalSupervisor()) {
+    state.me = data || { id: "global-supervisor", user_id: state.session.user.id, full_name: "Mohamed Dah Agove", email: ROOT_SUPERVISOR_EMAIL, role: "super_admin", is_active: true, specialty_id: null, promotion_id: null };
+    if (state.me.role !== "super_admin") state.me = { ...state.me, role: "super_admin" };
+  } else state.me = data || null;
 }
 
 /* ------------------------- 7. PUBLIC PAGE RENDER ------------------------- */
@@ -1967,7 +2027,7 @@ async function runSearch(fromUser) {
   if (hint) hint.classList.remove("err");
   if (!state.publicLoaded) { box.innerHTML = skeletons(1); return; }
   box.innerHTML = skeletons(1);
-  const { data, error } = await db.rpc("search_student", { _reg: q });
+  const { data, error } = await db.rpc("search_student_for_promotion", { _reg: q, _promotion_id: state.promo.id });
   if (seq !== searchSeq) return;
   let st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
   if (!st && !error) {                          // احتياط: مطابقة تامة محلياً إذا لم تُنشر الدالة بعد
@@ -2025,7 +2085,7 @@ async function routeFromHash() {
   const reg = decodeURIComponent(h.slice(PROFILE_HASH.length)).trim().toUpperCase();
   let st = null;
   if (REG_NUMBER_PATTERN.test(reg)) {
-    const { data } = await db.rpc("search_student", { _reg: reg });
+    const { data } = await db.rpc("search_student_for_promotion", { _reg: reg, _promotion_id: state.promo.id });
     st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
     if (!st) st = state.students.find(s => String(s.registration_number).trim().toUpperCase() === reg) || null;
   }
@@ -2180,6 +2240,7 @@ function showDash() {
 function tabsForRole() {
   const list = [{ k: "overview", n: t("nav_overview") }, { k: "students", n: t("nav_students") }];
   if (isSuper()) list.push({ k: "stats", n: t("nav_stats") }, { k: "specialties", n: t("tab_specialties") }, { k: "admins", n: t("nav_admins") }, { k: "cards", n: t("nav_cards") }, { k: "notifs", n: t("nav_notifs") }, { k: "settings", n: t("nav_settings") });
+  if (isGlobalSupervisor()) list.push({ k: "promotions", n: t("nav_promotions") });
   list.push({ k: "exports", n: t("nav_exports") });
   return list;
 }
@@ -2190,7 +2251,7 @@ function renderDash() {
   $("#sidebar").innerHTML = `
     <div class="side-user">
       <b>${esc(adminName(state.me))}</b>
-      <small>${isSuper() ? t("role_super_admin") : t("role_dept_admin_prefix") + esc(mySpec ? mySpec.name : "—")}</small>
+      <small>${isGlobalSupervisor() ? t("role_super_admin") : (state.me.role === "promotion_admin" ? t("role_promotion_admin") : t("role_dept_admin_prefix") + esc(mySpec ? mySpec.name : "—"))}</small>
     </div>
     ${tabs.map(tb => `<button class="nav-item ${state.tab === tb.k ? "active" : ""}" data-tab="${tb.k}">${tb.n}</button>`).join("")}
     <button class="nav-item" data-home>${t("nav_back_home")}</button>
@@ -2212,6 +2273,7 @@ function renderDash() {
     cards: renderCardsTab,
     notifs: renderNotifsTab,
     settings: renderSettings,
+    promotions: renderPromotionsTab,
     exports: renderExports
   }[state.tab] || renderOverview)(panel);
 }
@@ -2397,7 +2459,7 @@ function studentModal(student, specs) {
     if (pendingPhotoFile) {
       const btn = e.target.querySelector('button[type="submit"]');
       if (btn) { btn.disabled = true; btn.textContent = t("msg_photo_uploading"); }
-      try { finalPhoto = await uploadStudentPhoto(pendingPhotoFile); }
+      try { finalPhoto = await uploadStudentPhoto(pendingPhotoFile, isSuper() ? f.specialty_id : state.me.specialty_id); }
       catch (err) {
         if (btn) { btn.disabled = false; btn.textContent = isEdit ? t("btn_save_changes") : t("btn_add_student_submit"); }
         toast(t("err_photo_upload", { msg: err.message || "" }), "err");
@@ -2594,14 +2656,15 @@ async function deleteSpec(id) {
 
 /* ------------------------- 15. DEPARTMENT ADMINS ------------------------- */
 function renderAdminsTab(panel) {
+  const admins = state.admins.filter(a => a.role === "dept_admin");
   panel.innerHTML = `
     <div class="panel-head">
-      <h2>${t("admins_title_count", { n: state.admins.filter(a => a.role === "dept_admin").length })}</h2>
+      <h2>${t("admins_title_count", { n: admins.length })}</h2>
       <button class="btn btn-primary btn-sm" id="addAdmin">${t("btn_add_admin")}</button>
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>${t("th_name")}</th><th>${t("th_email")}</th><th>${t("th_phone")}</th><th>${t("th_role")}</th><th>${t("th_specialty")}</th><th>${t("th_status")}</th><th>${t("th_actions")}</th></tr></thead>
-      <tbody>${state.admins.length ? state.admins.map(a => `
+      <tbody>${admins.length ? admins.map(a => `
         <tr>
           <td><b>${esc(adminName(a))}</b></td>
           <td dir="ltr">${esc(a.email)}</td>
@@ -2698,6 +2761,98 @@ async function deleteAdmin(id) {
   await loadAdmins(); renderDash();
 }
 
+/* ------------------------- GLOBAL: إدارة الدفعات ------------------------- */
+Object.assign(I18N, {
+  nav_promotions:{ar:"إدارة الدفعات",fr:"Promotions"},
+  promotions_title:{ar:"إدارة دفعات ISCAE",fr:"Gestion des promotions ISCAE"},
+  promotions_note:{ar:"إنشاء دفعة جديدة برقمها وشعارها الافتراضي، ثم تعيين رئيس دفعة. نطاق vercel.app يظهر كقيد إلى أن يُنشأ/يُربط مشروعه في Vercel.",fr:"Créez une promotion et attribuez un chef. Le domaine vercel.app reste en attente jusqu'à la création/association du projet Vercel."},
+  promo_create:{ar:"إنشاء الدفعة التالية",fr:"Créer la promotion suivante"},
+  promo_manager:{ar:"تعيين رئيس الدفعة",fr:"Attribuer un chef de promotion"},
+  promo_domain_pending:{ar:"بانتظار ربط النطاق في Vercel",fr:"En attente de la liaison du domaine Vercel"},
+  promo_domain_ready:{ar:"تم إنشاء مشروع Vercel وربط النطاق",fr:"Projet Vercel créé et domaine lié"},
+  promo_domain_error:{ar:"تعذر تجهيز مشروع Vercel",fr:"Échec de la configuration du projet Vercel"},
+  promo_provision_retry:{ar:"تجهيز/إعادة المحاولة",fr:"Configurer / réessayer"},
+  promo_provision_not_configured:{ar:"أُنشئت الدفعة، لكن يلزم ضبط أسرار Vercel على الخادم لتجهيز الرابط تلقائيًا.",fr:"Promotion créée; configurez les secrets Vercel côté serveur pour provisionner le domaine."},
+  promo_manager_title:{ar:"إنشاء حساب رئيس الدفعة",fr:"Créer le compte du chef de promotion"},
+  promo_name_ar:{ar:"اسم الدفعة بالعربية",fr:"Nom arabe de la promotion"},
+  promo_name_fr:{ar:"اسم الدفعة بالفرنسية",fr:"Nom français de la promotion"},
+  err_global_only:{ar:"هذه الإدارة للمشرف العام فقط.",fr:"Réservé au superviseur général."}
+});
+
+async function requestPromotionProvision(promotionId) {
+  const accessToken = state.session?.access_token;
+  if (!accessToken) throw new Error(t("err_session_expired"));
+  const response = await fetch("/api/public/promotions/provision", {
+    method: "POST",
+    headers: { "content-type": "application/json", Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ promotion_id: promotionId }),
+  });
+  let result;
+  try { result = await response.json(); }
+  catch { throw new Error(`Provisioning endpoint returned HTTP ${response.status}`); }
+  if (!response.ok && !result.pending) throw new Error(result.error || `HTTP ${response.status}`);
+  return result;
+}
+
+async function renderPromotionsTab(panel) {
+  if (!isGlobalSupervisor()) { panel.innerHTML = `<div class="empty">${t("err_global_only")}</div>`; return; }
+  const { data, error } = await rawDbFrom("promotions").select("*").order("promotion_number", { ascending: false });
+  state.promotions = data || [];
+  panel.innerHTML = `<div class="panel-head"><h2>${t("promotions_title")}</h2></div>
+    <p class="muted" style="font-size:13px">${t("promotions_note")}</p>
+    <form id="newPromotionForm" class="stack" style="max-width:720px;margin:16px 0">
+      <div class="grid-2">
+        <div class="field"><label>${t("promo_name_ar")}</label><input name="name_ar" dir="rtl" maxlength="80" /></div>
+        <div class="field"><label>${t("promo_name_fr")}</label><input name="name_fr" dir="ltr" maxlength="80" /></div>
+      </div><button class="btn btn-primary" type="submit">${t("promo_create")}</button>
+    </form>
+    ${error ? `<div class="empty">${esc(error.message)}</div>` : `<div class="table-wrap"><table><thead><tr><th>#</th><th>${t("field_promotion_name")}</th><th>URL</th><th>${t("th_status")}</th><th>${t("th_actions")}</th></tr></thead><tbody>
+      ${state.promotions.map(p => `<tr><td>${p.promotion_number}</td><td>${esc(p.promotion_name_ar || p.promotion_name_fr || promoNumberLabel(state.lang,p.promotion_number))}</td><td dir="ltr"><a href="https://${esc(p.domain || p.slug)}" target="_blank" rel="noopener">${esc(p.domain || p.slug)}</a></td><td>${p.domain_status === "ready" ? t("promo_domain_ready") : p.domain_status === "error" ? t("promo_domain_error") : t("promo_domain_pending")}</td><td><div class="row" style="gap:6px"><button class="btn btn-ghost btn-sm" data-provision="${p.id}">${t("promo_provision_retry")}</button><button class="btn btn-ghost btn-sm" data-promo-manager="${p.id}">${t("promo_manager")}</button></div></td></tr>`).join("") || `<tr><td colspan="5" class="empty">${t("no_data")}</td></tr>`}
+    </tbody></table></div>`}`;
+  const form = panel.querySelector("#newPromotionForm");
+  if (form) form.onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(form);
+    const { data: created, error: createError } = await db.rpc("create_promotion", { _name_ar: String(f.get("name_ar") || "").trim() || null, _name_fr: String(f.get("name_fr") || "").trim() || null });
+    if (createError) { toast(t("err_save_failed", { msg: createError.message }), "err"); return; }
+    try {
+      const provision = await requestPromotionProvision(created.id);
+      if (provision.ok) toast(`${promoNumberLabel(state.lang, created.promotion_number)} — ${provision.domain} (${t("promo_domain_ready")})`);
+      else if (provision.pending) toast(t("promo_provision_not_configured"), "err");
+      else toast(provision.error || t("promo_domain_error"), "err");
+    } catch (err) { toast(`${t("promo_domain_error")}: ${err.message || err}`, "err"); }
+    await renderPromotionsTab(panel);
+  };
+  panel.querySelectorAll("[data-promo-manager]").forEach(b => b.onclick = () => promotionManagerModal(state.promotions.find(p => p.id === b.dataset.promoManager)));
+  panel.querySelectorAll("[data-provision]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      const result = await requestPromotionProvision(b.dataset.provision);
+      toast(result.ok ? `${result.domain} — ${t("promo_domain_ready")}` : (result.pending ? t("promo_provision_not_configured") : result.error), result.ok ? undefined : "err");
+    } catch (err) { toast(`${t("promo_domain_error")}: ${err.message || err}`, "err"); }
+    await renderPromotionsTab(panel);
+  });
+}
+
+function promotionManagerModal(promo) {
+  if (!promo || !isGlobalSupervisor()) return;
+  const m = openModal(`<div class="modal"><div class="modal-head"><h3>${t("promo_manager_title")} — ${esc(promo.domain)}</h3></div>
+    <form class="modal-body" id="promoManagerForm"><div class="field"><label>${t("field_full_name_required")}</label><input name="full_name" required /></div>
+    <div class="field"><label>${t("field_email_required")}</label><input name="email" type="email" dir="ltr" required /></div>
+    <div class="field"><label>${t("field_password_required")}</label><input name="password" type="password" minlength="6" required /></div>
+    <div class="row"><button class="btn btn-primary" type="submit">${t("btn_save")}</button><button class="btn btn-ghost" type="button" data-close>${t("btn_cancel")}</button></div></form></div>`);
+  m.querySelector("[data-close]").onclick = closeModals;
+  m.querySelector("#promoManagerForm").onsubmit = async e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true;
+    try {
+      await handleAddAdmin({ email:f.email, password:f.password, full_name:f.full_name, role:"promotion_admin", promotion_id:promo.id, is_active:true });
+      closeModals(); toast(t("msg_saved_ok"));
+    } catch (err) { toast(t("err_generic", {msg:err.message || err}), "err"); btn.disabled = false; }
+  };
+}
+
 /* ------------------------- 16. SETTINGS ------------------------- */
 function renderSettings(panel) {
   const s = state.settings || {};
@@ -2708,7 +2863,7 @@ function renderSettings(panel) {
     ${promoAdminHTML()}
     <form id="setForm" class="stack" style="max-width:720px">
       <div class="grid-2">
-        <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || "ISCAE 18ème Promotion")}" /></div>
+      <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || `ISCAE ${state.promo.number}ème Promotion`)}" /></div>
       </div>
       <div class="grid-2">
         <div class="field"><label>${t("field_graduation_date")}</label><input name="graduation_date" type="datetime-local" value="${toLocalInput(s.graduation_date)}" /></div>
@@ -2774,10 +2929,10 @@ function renderSettings(panel) {
       specialty_counts_override: Object.keys(specOverride).length ? specOverride : null
     };
 
-    let { error } = await db.from("settings").upsert({ ...basePayload, ...extraPayload }, { onConflict: "id" });
+    let { error } = await db.from("settings").upsert({ ...basePayload, ...extraPayload }, { onConflict: "id,promotion_id" });
     if (error && /column|schema cache|show_category_stats|total_graduates_override|specialty_counts_override/i.test(error.message || "")) {
       /* الأعمدة الجديدة غير موجودة بعد: نحفظ الإعدادات القديمة كما كانت وننبّه المشرف. */
-      const retry = await db.from("settings").upsert(basePayload, { onConflict: "id" });
+      const retry = await db.from("settings").upsert(basePayload, { onConflict: "id,promotion_id" });
       error = retry.error;
       if (!error) toast(t("warn_settings_columns"), "err");
     }
@@ -2796,7 +2951,7 @@ function promoPreviewHTML(lang, n, name) {
 /** رفع شعار الدفعة: التخزين أولاً، وإن رُفض (صلاحيات) نستعمل data-URL للملفات الصغيرة. */
 async function uploadPromoLogo(file) {
   const ext = ((file.name || "").split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
-  const path = `promotion/logo-${Date.now()}.${ext}`;
+  const path = `promotions/${state.promo.id || "legacy"}/logo-${Date.now()}.${ext}`;
   const { error } = await db.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
   if (!error) return db.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
   if (file.size <= 350 * 1024) return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(error); r.readAsDataURL(file); });
@@ -2808,7 +2963,7 @@ function promoAdminHTML() {
   return `<form id="promoForm" class="promo-admin" novalidate>
     <h3>${t("promo_mgmt")}</h3><p class="muted" style="font-size:13px;margin-top:4px">${t("promo_hint")}</p>
     <div class="promo-cols"><div class="stack">
-      <div class="field"><label for="pNum">${t("promo_number")}</label><input id="pNum" name="n" type="number" min="1" max="99" value="${esc(p.number)}" dir="ltr" /></div>
+      <div class="field"><label for="pNum">${t("promo_number")}</label><input id="pNum" name="n" type="number" min="1" max="99" value="${esc(p.number)}" dir="ltr" readonly /></div>
       <div class="field"><label for="pFr">${t("promo_name_fr")}</label><input id="pFr" name="fr" dir="ltr" lang="fr" maxlength="80" value="${esc(p.name_fr || "")}" /></div>
       <div class="field"><label for="pAr">${t("promo_name_ar")}</label><input id="pAr" name="ar" dir="rtl" lang="ar" maxlength="80" value="${esc(p.name_ar || "")}" /></div>
       <div class="field"><label for="pLogo">${t("promo_logo")}</label>
@@ -2841,13 +2996,16 @@ function bindPromoAdmin() {
     e.preventDefault();
     const n = Number(f.n.value);
     if (!Number.isInteger(n) || n < 1) { toast(t("promo_number"), "err"); return; }
-    const payload = { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
+    const payload = { promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
     const oldLogo = state.promo.logo;
     if (pending instanceof File) {
       try { payload.promotion_logo_url = await uploadPromoLogo(pending); }
       catch (err) { toast(t("promo_logo_fail", { msg: err.message || err }), "err"); return; }
     } else if (pending === null) payload.promotion_logo_url = null;
-    const { data, error } = await db.from("promotion_settings").update(payload).eq("id", 1).select();
+    const target = state.legacyMode
+      ? rawDbFrom("promotion_settings").update(payload).eq("id", 1)
+      : rawDbFrom("promotions").update(payload).eq("id", state.promo.id);
+    const { data, error } = await target.select();
     if (error) { toast(/relation|schema cache|does not exist/i.test(error.message || "") ? t("promo_missing") : t("err_save_failed", { msg: error.message }), "err"); return; }
     if (!data || !data.length) { toast(t("promo_denied"), "err"); return; }   // RLS: aucune ligne modifiée
     if (payload.promotion_logo_url !== undefined && oldLogo && oldLogo !== payload.promotion_logo_url) removeStoredPhoto(oldLogo);
@@ -2925,7 +3083,7 @@ function trackVisit() {
     if (!vid) { vid = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12)); localStorage.setItem("iscae-vid", vid); }
     sessionStorage.setItem("iscae-visit-sent", "1");
     const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "mobile" : "desktop";
-    Promise.resolve(db.rpc("track_visit", { _visitor: vid, _lang: state.lang, _device: device, _path: location.pathname })).catch(() => {});
+    Promise.resolve(db.rpc("track_visit", { _visitor: vid, _lang: state.lang, _device: device, _path: location.pathname, _promotion_id: state.promo.id })).catch(() => {});
   } catch (e) { /* التتبع لا يعطّل الموقع أبداً */ }
 }
 
@@ -3065,7 +3223,7 @@ function renderStatsTab(panel) {
   (async () => {
     let daily = [], totals = null, err = "";
     const a = { _from: r.from.toISOString(), _to: r.end.toISOString() };
-    const [d1, d2] = await Promise.all([db.rpc("get_visit_stats", { ...a, _tz: STATS_TZ, _bucket: mode }), db.rpc("get_visit_totals", a)]);
+    const [d1, d2] = await Promise.all([db.rpc("get_visit_stats", { ...a, _tz: STATS_TZ, _bucket: mode, _promotion_id: state.promo.id }), db.rpc("get_visit_totals", { ...a, _promotion_id: state.promo.id })]);
     if (d1.error || d2.error) err = t("st_visits_missing"); else { daily = d1.data || []; totals = Array.isArray(d2.data) ? d2.data[0] : d2.data; }
     if (seq !== s.seq || state.tab !== "stats") return;
     drawStatsBody(r, daily, totals, err);
@@ -4087,7 +4245,8 @@ async function enablePush() {
       p_auth: subKey(sub, "auth"),
       p_device_id: notifDeviceId(),
       p_user_agent: navigator.userAgent.slice(0, 300),
-      p_lang: state.lang
+      p_lang: state.lang,
+      p_promotion_id: state.promo.id
     });
     if (error) throw error;
 
@@ -4159,7 +4318,8 @@ async function initNotifications() {
         p_auth: subKey(sub, "auth"),
         p_device_id: notifDeviceId(),
         p_user_agent: navigator.userAgent.slice(0, 300),
-        p_lang: state.lang
+        p_lang: state.lang,
+        p_promotion_id: state.promo.id
       });
       if (error) throw error;
     }
@@ -4183,7 +4343,7 @@ async function loadNotifications() {
   return data || [];
 }
 async function countActiveSubs() {
-  const { data, error } = await db.rpc("count_active_push_subscriptions");
+  const { data, error } = await db.rpc("count_active_push_subscriptions", { p_promotion_id: state.promo.id });
   if (error) {
     console.error("[Push] count devices failed:", error);
     return 0;
@@ -4243,7 +4403,7 @@ async function renderNotifsTab(panel) {
           "content-type": "application/json",
           "authorization": "Bearer " + session.access_token
         },
-        body: JSON.stringify({ title, body, url: url || null })
+        body: JSON.stringify({ title, body, url: url || null, promotion_id: state.promo.id })
       });
       let data = null;
       try { data = await res.json(); } catch (_) { data = null; }
@@ -4349,6 +4509,8 @@ async function init() {
   refreshInstallButton();
   const { data: { session } } = await db.auth.getSession();
   state.session = session || null;
+  await loadPromotion();
+  if (state.promoNotFound) toast(t("promo_missing"), "err");
   await loadPublicData();
   trackVisit();
   applyBranding();

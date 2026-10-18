@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { authenticateCaller, isSuperAdmin, json } from "@/lib/iscae-server";
+import { authenticateCaller, canManagePromotion, json } from "@/lib/iscae-server";
 import {
   assertVapidUsable,
   endpointLabel,
@@ -24,7 +24,7 @@ function restHeaders(token: string, extra: Record<string, string> = {}) {
 
 /** تسجيل الإشعار (يُشغّل أيضاً الإشعار الداخلي الفوري عبر Realtime) */
 async function insertNotification(
-  row: { title: string; body: string; url: string | null; created_by: string | null },
+  row: { title: string; body: string; url: string | null; created_by: string; sent_by: string; promotion_id: string },
   token: string,
 ): Promise<NotificationRow | null> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
@@ -45,10 +45,11 @@ async function insertNotification(
 
 async function updateNotificationStats(
   id: string,
+  promotionId: string,
   stats: { success_count: number; failure_count: number },
   token: string,
 ): Promise<void> {
-  await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${encodeURIComponent(id)}`, {
+  await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${encodeURIComponent(id)}&promotion_id=eq.${encodeURIComponent(promotionId)}`, {
     method: "PATCH",
     headers: restHeaders(token, { "content-type": "application/json", Prefer: "return=minimal" }),
     body: JSON.stringify({ ...stats, sent_at: new Date().toISOString() }),
@@ -58,13 +59,14 @@ async function updateNotificationStats(
 /** كل الأجهزة المفعّلة عبر RPC (متاحة للمشرف الرئيسي فقط بحسب SQL) */
 async function fetchActiveSubscriptions(
   token: string,
+  promotionId: string,
 ): Promise<{ subs: StoredPushSubscription[]; error: string | null }> {
   const url = `${SUPABASE_URL}/rest/v1/rpc/get_active_push_subscriptions`;
   const call = (qs: string) =>
     fetch(url + qs, {
       method: "POST",
       headers: restHeaders(token, { "content-type": "application/json" }),
-      body: "{}",
+      body: JSON.stringify({ p_promotion_id: promotionId }),
     });
 
   // PostgREST يقصر كل رد على 1000 صف (أو أقل): نجلب على دفعات مرتّبة بـ id ونتقدّم بعدد الصفوف المستلمة فعلاً.
@@ -97,12 +99,12 @@ async function fetchActiveSubscriptions(
   return { subs: Array.isArray(rows) ? rows : [], error: null };
 }
 
-async function deleteSubscriptions(ids: string[], token: string): Promise<void> {
+async function deleteSubscriptions(ids: string[], token: string, promotionId: string): Promise<void> {
   if (ids.length === 0) return;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/delete_push_subscriptions`, {
     method: "POST",
     headers: restHeaders(token, { "content-type": "application/json" }),
-    body: JSON.stringify({ p_ids: ids }),
+    body: JSON.stringify({ p_ids: ids, p_promotion_id: promotionId }),
   }).catch(() => null);
   if (!res || !res.ok) console.error("[Push] delete_push_subscriptions failed");
 }
@@ -154,10 +156,6 @@ export const Route = createFileRoute("/api/public/push/send")({
         if ("error" in auth) return auth.error;
         const { caller, token } = auth;
 
-        if (!isSuperAdmin(caller)) {
-          return json({ ok: false, error: "❌ إرسال الإشعارات متاح للمشرف الرئيسي فقط." }, 403);
-        }
-
         const vapid = await readVapidEnv();
         if (!vapid) {
           console.error("[Push] VAPID env missing on server");
@@ -197,18 +195,23 @@ export const Route = createFileRoute("/api/public/push/send")({
         const rawUrl = String(payload["url"] ?? "")
           .trim()
           .slice(0, 500);
+        const promotionId = String(payload["promotion_id"] ?? "").trim();
         if (!title || !body) return json({ ok: false, error: "❌ العنوان والنص مطلوبان." }, 400);
+        if (!/^[0-9a-f-]{36}$/i.test(promotionId)) return json({ ok: false, error: "❌ معرف الدفعة غير صالح." }, 400);
+        if (!canManagePromotion(caller, promotionId)) {
+          return json({ ok: false, error: "❌ إرسال الإشعارات غير مسموح خارج دفعتك." }, 403);
+        }
 
         const urlOk =
           !rawUrl || /^https?:\/\//i.test(rawUrl) || rawUrl.startsWith("./") || rawUrl.startsWith("#");
         const url = urlOk && rawUrl && rawUrl !== "null" ? rawUrl : null;
 
         const notif = await insertNotification(
-          { title, body, url, created_by: caller.admin ? caller.admin.id : null },
+          { title, body, url, created_by: caller.userId, sent_by: caller.userId, promotion_id: promotionId },
           token,
         );
 
-        const { subs, error: subsError } = await fetchActiveSubscriptions(token);
+        const { subs, error: subsError } = await fetchActiveSubscriptions(token, promotionId);
         if (subsError) {
           return json({ ok: false, sent: 0, failed: 0, removed: 0, error: `❌ ${subsError}` }, 500);
         }
@@ -217,7 +220,7 @@ export const Route = createFileRoute("/api/public/push/send")({
 
         if (subs.length === 0) {
           if (notif)
-            await updateNotificationStats(notif.id, { success_count: 0, failure_count: 0 }, token);
+            await updateNotificationStats(notif.id, promotionId, { success_count: 0, failure_count: 0 }, token);
           return json({
             ok: true,
             id: notif ? notif.id : null,
@@ -235,10 +238,11 @@ export const Route = createFileRoute("/api/public/push/send")({
           vapid,
         );
 
-        await deleteSubscriptions(goneIds, token);
+        await deleteSubscriptions(goneIds, token, promotionId);
         if (notif) {
           await updateNotificationStats(
             notif.id,
+            promotionId,
             { success_count: delivered, failure_count: failed },
             token,
           );

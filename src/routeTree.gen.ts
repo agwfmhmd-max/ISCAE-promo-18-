@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicPromotionsProvisionRouteImport } from './routes/api/public/promotions/provision'
 import { Route as ApiPublicPushSendRouteImport } from './routes/api/public/push/send'
 import { Route as ApiPublicPushVapidKeyRouteImport } from './routes/api/public/push/vapid-key'
 
@@ -18,6 +19,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPromotionsProvisionRoute =
+  ApiPublicPromotionsProvisionRouteImport.update({
+    id: '/api/public/promotions/provision',
+    path: '/api/public/promotions/provision',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPushSendRoute = ApiPublicPushSendRouteImport.update({
   id: '/api/public/push/send',
   path: '/api/public/push/send',
@@ -31,30 +38,47 @@ const ApiPublicPushVapidKeyRoute = ApiPublicPushVapidKeyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/promotions/provision': typeof ApiPublicPromotionsProvisionRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/promotions/provision': typeof ApiPublicPromotionsProvisionRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/promotions/provision': typeof ApiPublicPromotionsProvisionRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/push/send' | '/api/public/push/vapid-key'
+  fullPaths:
+    | '/'
+    | '/api/public/promotions/provision'
+    | '/api/public/push/send'
+    | '/api/public/push/vapid-key'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/push/send' | '/api/public/push/vapid-key'
-  id: '__root__' | '/' | '/api/public/push/send' | '/api/public/push/vapid-key'
+  to:
+    | '/'
+    | '/api/public/promotions/provision'
+    | '/api/public/push/send'
+    | '/api/public/push/vapid-key'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/public/promotions/provision'
+    | '/api/public/push/send'
+    | '/api/public/push/vapid-key'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicPromotionsProvisionRoute: typeof ApiPublicPromotionsProvisionRoute
   ApiPublicPushSendRoute: typeof ApiPublicPushSendRoute
   ApiPublicPushVapidKeyRoute: typeof ApiPublicPushVapidKeyRoute
 }
@@ -66,6 +90,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/promotions/provision': {
+      id: '/api/public/promotions/provision'
+      path: '/api/public/promotions/provision'
+      fullPath: '/api/public/promotions/provision'
+      preLoaderRoute: typeof ApiPublicPromotionsProvisionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/push/send': {
@@ -87,6 +118,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicPromotionsProvisionRoute: ApiPublicPromotionsProvisionRoute,
   ApiPublicPushSendRoute: ApiPublicPushSendRoute,
   ApiPublicPushVapidKeyRoute: ApiPublicPushVapidKeyRoute,
 }
