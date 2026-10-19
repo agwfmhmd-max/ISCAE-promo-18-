@@ -1040,7 +1040,11 @@ async function getTenantAccessToken() {
   const headers = bearer ? { Authorization: `Bearer ${bearer}` } : {};
   const response = await fetch(`/api/public/tenant-token?promotion=${encodeURIComponent(TENANT.number)}`, { headers, credentials: "same-origin", cache: "no-store" });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload.token) throw new Error(payload.error || "تعذر التحقق من نطاق الدفعة.");
+  if (!response.ok || !payload.token) {
+    const error = new Error(payload.error || "تعذر التحقق من نطاق الدفعة.");
+    error.status = response.status;
+    throw error;
+  }
   tenantTokenCache = { key, token: payload.token, until: Number(payload.expires_at || 0) * 1000 };
   return payload.token;
 }
@@ -1921,8 +1925,15 @@ async function loadAdmins() {
 /** Resolve the currently signed-in admin profile. */
 async function loadMe() {
   state.meMismatch = false;
+  state.meError = "";
   if (!state.session) { state.me = null; return; }
-  try { await getTenantAccessToken(); } catch (e) { state.meMismatch = true; state.me = null; return; }
+  try { await getTenantAccessToken(); } catch (e) {
+    const message = String(e?.message || "");
+    state.meMismatch = Number(e?.status) === 403 && /غير مخوّل للدخول إلى هذه الدفعة/.test(message);
+    state.meError = state.meMismatch ? "" : (message || t("toast_db_error"));
+    state.me = null;
+    return;
+  }
   const { data } = await rawFrom("admins").select("*").eq("user_id", state.session.user.id).maybeSingle();
   let me = data || null;
   /* رئيس دفعة/تخصص تابع لدفعة أخرى لا يدخل لوحة هذه الدفعة (المشرف العام يدخل أي دفعة) */
@@ -2276,7 +2287,9 @@ function loginModal() {
     await loadMe();
     if (!state.me) {
       await db.auth.signOut(); state.session = null;
-      toast(t(state.meMismatch ? "err_admin_other_promo" : "err_not_registered_admin"), "err"); return;
+      const message = state.meError || t(state.meMismatch ? "err_admin_other_promo" : "err_not_registered_admin");
+      state.meError = "";
+      toast(message, "err"); return;
     }
     closeModals();
     toast(t("welcome_msg", { name: adminName(state.me) }));
@@ -4774,6 +4787,7 @@ async function init() {
   if (state.session) {
     await loadMe();
     if (state.meMismatch) { await db.auth.signOut(); state.session = null; toast(t("err_admin_other_promo"), "err"); }
+    else if (state.meError) { toast(state.meError, "err"); state.meError = ""; }
     if (isSuper()) await loadAdmins();
   }
   syncHeader();
