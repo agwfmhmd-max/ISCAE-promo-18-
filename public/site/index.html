@@ -860,6 +860,16 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
 .st-total td{font-weight:900;background:var(--violet-50)}
 .lock-note{display:inline-block;font-size:12px;font-weight:700;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px dashed var(--stroke);white-space:nowrap}
 @media(max-width:640px){.st-filters{grid-template-columns:1fr 1fr}.hbar{grid-template-columns:minmax(70px,110px) 1fr auto}.ch-slot{min-height:160px}}
+
+/* ---- Multi-promo: بطاقات الدفعات (المشرف العام) ---- */
+.promo-cards{display:grid;gap:14px}
+.promo-card{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;border:1px solid var(--stroke);border-radius:20px;padding:16px;background:var(--surface-solid);box-shadow:var(--shadow-sm)}
+.promo-card .pc-logo{width:84px;height:84px;flex:none}.promo-card .pc-logo svg,.promo-card .pc-logo img{width:100%;height:100%;object-fit:contain}
+.promo-card .pc-main{flex:1;min-width:230px;display:flex;flex-direction:column;gap:5px}
+.promo-card .pc-link{color:var(--primary);font-weight:800;word-break:break-all}
+.promo-card .pc-heads{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.promo-card .pc-head{display:inline-flex;gap:6px;align-items:center;background:var(--violet-50);border-radius:12px;padding:2px 8px;font-size:12px}
+.promo-card .pc-actions{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -999,11 +1009,93 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
 const SUPABASE_URL = "https://httwzwtyjucqtjpjsvuh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dHd6d3R5anVjcXRqcGpzdnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNTY1OTMsImV4cCI6MjEwMDkzMjU5M30.C7kAem3bfJPXvi_7FsKfippVGFX1f3Em_oLbdUFu3O8";
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: "iscae18-auth" }
+
+/* ------------------------- 0-BIS. MULTI-PROMO: تحديد الدفعة من الرابط -------------------------
+   كل دفعة لها رابطها: iscae-promo-18.vercel.app ، iscae-promo-19.vercel.app ...
+   الموقع واحد، والدفعة تُحدَّد من اسم النطاق (أو ?promo=19 كرابط مؤقت)، وكل البيانات تُصفّى حسبها. */
+const PLATFORM_EMAIL = "agwfmhmd@gmail.com";   // المشرف العام Superviseurs
+const TENANT = (() => {
+  const host = String(location.hostname || "").toLowerCase();
+  let number = null, by = "default";
+  try {
+    const q = new URLSearchParams(location.search).get("promo");
+    if (q && /^\d{1,3}$/.test(q)) { number = Number(q); by = "query"; }
+  } catch (e) {}
+  if (number === null) {
+    const m = host.match(/^iscae-promo-(\d{1,3})(?:[.-]|$)/);
+    if (m) { number = Number(m[1]); by = "host"; }
+  }
+  return { host, number, by, id: null, legacy: false, ready: false, notFound: false };
+})();
+const tenantOn = () => !!TENANT.id && !TENANT.legacy;
+
+let db;
+let tenantTokenCache = { key: "", token: "", until: 0 };
+async function getTenantAccessToken() {
+  if (!db || TENANT.number == null) throw new Error("تعذر تحديد رقم الدفعة.");
+  const { data } = await db.auth.getSession();
+  const bearer = data?.session?.access_token || "";
+  const key = `${TENANT.number}:${bearer}`;
+  if (tenantTokenCache.key === key && tenantTokenCache.until > Date.now() + 15000) return tenantTokenCache.token;
+  const headers = bearer ? { Authorization: `Bearer ${bearer}` } : {};
+  const response = await fetch(`/api/public/tenant-token?promotion=${encodeURIComponent(TENANT.number)}`, { headers, credentials: "same-origin", cache: "no-store" });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.token) throw new Error(payload.error || "تعذر التحقق من نطاق الدفعة.");
+  tenantTokenCache = { key, token: payload.token, until: Number(payload.expires_at || 0) * 1000 };
+  return payload.token;
+}
+async function tenantFetch(input, init = {}) {
+  const requestUrl = new URL(typeof input === "string" ? input : input.url, location.href);
+  if (!/\/rest\/v1\/|\/storage\/v1\//.test(requestUrl.pathname)) return fetch(input, init);
+  const token = await getTenantAccessToken();
+  const headers = new Headers(input instanceof Request ? input.headers : undefined);
+  new Headers(init.headers || {}).forEach((value, name) => headers.set(name, value));
+  headers.set("Authorization", `Bearer ${token}`);
+  return fetch(input, { ...init, headers });
+}
+db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: "iscae" + (TENANT.number != null ? TENANT.number : 18) + "-auth" },
+  global: { fetch: tenantFetch }
 });
-/* إنشاء حسابات رؤساء التخصصات يتم عبر Edge Function آمنة (create-admin)
-   حيث يوجد Service Role Key على الخادم فقط — لا يوجد أي مفتاح سري هنا. */
+/* كل استعلام على جداول بيانات الدفعة يُصفّى تلقائياً بـ promotion_id، وكل إدراج يُختم بدفعة هذا الموقع.
+   (rawFrom = بدون تصفية: لجدول promotions ولمعرفة حساب المشرف ولوحة المشرف العام.) */
+const rawFrom = db.from.bind(db);
+const rawRpc = db.rpc.bind(db);
+/* نتيجة search_student قد تأتي من دفعة أخرى (نفس رقم التسجيل): نُبقي فقط ما ينتمي لطلاب هذه الدفعة المحمَّلين. */
+db.rpc = function (fn, args, opts) {
+  const q = rawRpc(fn, args, opts);
+  if (fn !== "search_student" || !tenantOn()) return q;
+  return Promise.resolve(q).then(r => {
+    if (!r || r.error || !r.data) return r;
+    const rows = Array.isArray(r.data) ? r.data : [r.data];
+    const mine = rows.filter(x => x && state.students.some(s => (x.id !== undefined && x.id !== null) ? s.id === x.id : String(s.registration_number).trim().toUpperCase() === String(x.registration_number || "").trim().toUpperCase()));
+    return { ...r, data: Array.isArray(r.data) ? mine : (mine[0] || null) };
+  });
+};
+const TENANT_TABLES = new Set(["specialties", "students", "ceremonies", "ceremony_card_types", "admins", "notifications", "settings", "promotion_settings", "push_subscriptions", "site_visits"]);
+db.from = function (table) {
+  const qb = rawFrom(table);
+  if (!TENANT_TABLES.has(table)) return qb;
+  const scope = b => (tenantOn() ? b.eq("promotion_id", TENANT.id) : b);
+  const inject = rows => {
+    if (!tenantOn()) return rows;
+    const one = r => (r && typeof r === "object" && r.promotion_id === undefined ? { ...r, promotion_id: TENANT.id } : r);
+    return Array.isArray(rows) ? rows.map(one) : one(rows);
+  };
+  return new Proxy(qb, {
+    get(target, prop) {
+      if (prop === "select") return (...a) => scope(target.select(...a));
+      if (prop === "update") return (...a) => scope(target.update(...a));
+      if (prop === "delete") return (...a) => scope(target.delete(...a));
+      if (prop === "insert") return (rows, o) => target.insert(inject(rows), o);
+      if (prop === "upsert") return (rows, o) => target.upsert(inject(rows), o);
+      const v = target[prop];
+      return typeof v === "function" ? v.bind(target) : v;
+    }
+  });
+};
+/* إنشاء حسابات رؤساء التخصصات يتم عبر API خادمي موثق ومقيّد بنطاق الدفعة.
+   مفتاح خدمة Supabase يبقى على الخادم ولا يُرسل إلى المتصفح. */
 // دالة إضافة رئيس التخصص (معدلة لتفادي خطأ event.preventDefault is not a function)
 async function handleAddAdmin(arg) {
   // 1) قد تُستدعى الدالة بحدث (event) من نموذج، أو بكائن بيانات جاهز.
@@ -1027,24 +1119,13 @@ async function handleAddAdmin(arg) {
   try {
     console.log("جاري إنشاء الحساب...");
 
-    // استدعاء الدالة الآمنة على الخادم باسم 'create-admin'
-    const { data, error } = await db.functions.invoke("create-admin", {
-      body: { email, password, full_name: name, name, specialty_id, phone, is_active }
+    const response = await fetch("/api/public/admin/create-admin", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${state.session?.access_token || ""}` },
+      body: JSON.stringify({ email, password, full_name: name, name, specialty_id, phone, is_active, promotion_id: TENANT.id })
     });
-
-    // إظهار الرسالة الحقيقية القادمة من الخادم بدل "non-2xx status code"
-    if (error) {
-      let serverMsg = "";
-      try {
-        if (error.context && typeof error.context.text === "function") {
-          const raw = await error.context.text();
-          try { const j = JSON.parse(raw); serverMsg = j.error || j.message || raw; }
-          catch { serverMsg = raw; }
-        }
-      } catch (_) {}
-      throw new Error(serverMsg || error.message || t("err_create_admin_function"));
-    }
-    if (data && data.error) throw new Error(data.error);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.error) throw new Error(data.error || t("err_create_admin_function"));
 
     // تفريغ الحقول بعد النجاح (إن وُجد النموذج)
     const form = document.getElementById("admin-form");
@@ -1108,7 +1189,8 @@ function mergeStudentWithLocalFresh(st) {
      لذلك نأخذ بيانات البحث/التخصص من الدالة، ونكملها بأعمدة students الكاملة المحمّلة بـ select(*). */
   return { ...local, ...st, certificate_name: rawCertName(local), sash_name: sashName(local) || sashName(st) };
 }
-const isSuper = () => state.me?.role === "super_admin";
+const isSuper = () => state.me?.role === "super_admin";          // رئيس دفعة (أو المشرف العام) — صلاحيات المشرف الرئيسي داخل الدفعة
+const isPlatform = () => !!(state.me && state.me.is_platform);   // المشرف العام Superviseurs — كل الدفعات
 
 /* ------------------------- 1B. I18N (عربي / فرنسي) ------------------------- */
 const I18N = {
@@ -1206,7 +1288,7 @@ const I18N = {
   nav_exports:{ar:"التصدير",fr:"Exportation"},
   nav_back_home:{ar:"← العودة للصفحة الرئيسية",fr:"→ Retour à l'accueil"},
   nav_home_mobile:{ar:"الرئيسية",fr:"Accueil"},
-  role_super_admin:{ar:"المشرف الرئيسي",fr:"Administrateur principal"},
+  role_super_admin:{ar:"رئيس الدفعة",fr:"Chef de promotion"},
   role_dept_admin_prefix:{ar:"رئيس تخصص — ",fr:"Chef de spécialité — "},
   kpi_students_count:{ar:"عدد الطلاب",fr:"Nombre d'étudiants"},
   kpi_specialties_count:{ar:"عدد التخصصات",fr:"Nombre de spécialités"},
@@ -1280,7 +1362,7 @@ const I18N = {
   th_email:{ar:"البريد",fr:"E-mail"},
   th_role:{ar:"الصلاحية",fr:"Rôle"},
   th_status:{ar:"الحالة",fr:"Statut"},
-  role_super:{ar:"مشرف رئيسي",fr:"Administrateur principal"},
+  role_super:{ar:"رئيس الدفعة",fr:"Chef de promotion"},
   role_dept:{ar:"رئيس تخصص",fr:"Chef de spécialité"},
   status_active:{ar:"نشط",fr:"Actif"},
   status_suspended:{ar:"موقوف",fr:"Suspendu"},
@@ -1432,13 +1514,13 @@ function t(key, vars) {
 
 function brandName() {
   const v = (state.settings && state.settings.platform_name || "").trim();
-  return v || "ISCAE 18ème Promotion";
+  return v || ("ISCAE " + promoNumberLabel("fr"));
 }
 /* ------------------------- PROMOTION — مصدر واحد (رقم ≠ اسم) -------------------------
    الرقم (18) واسم الدفعة (FR/AR، NULL حتى يحدده المشرف الرئيسي) يأتيان فقط من
    public.promotion_settings. كل واجهة تستعمل الدوال أدناه — لا نص مكرَّر. */
 const AR_ORD = {1:"الأولى",2:"الثانية",3:"الثالثة",4:"الرابعة",5:"الخامسة",6:"السادسة",7:"السابعة",8:"الثامنة",9:"التاسعة",10:"العاشرة",11:"الحادية عشر",12:"الثانية عشر",13:"الثالثة عشر",14:"الرابعة عشر",15:"الخامسة عشر",16:"السادسة عشر",17:"السابعة عشر",18:"الثامنة عشر",19:"التاسعة عشر",20:"العشرون"};
-state.promo = { number: 18, name_fr: null, name_ar: null, logo: null };
+state.promo = { number: TENANT.number != null ? TENANT.number : 18, name_fr: null, name_ar: null, logo: null };
 function promoNumberLabel(lang = state.lang, n = state.promo.number) {
   return lang === "fr" ? `${n}${n === 1 ? "ère" : "ème"} Promotion` : `الدفعة ${AR_ORD[n] || n}`;
 }
@@ -1480,12 +1562,41 @@ function promoLabel() {
   const nm = promoName();
   return nm ? `${promoNumberLabel()} — ${nm}` : promoNumberLabel();
 }
-async function loadPromotion() {
+/** الوضع القديم (قبل تنفيذ MULTI-PROMO.sql): دفعة واحدة من جدول promotion_settings. */
+async function loadPromotionLegacy() {
   try {
-    const { data, error } = await db.from("promotion_settings").select("*").eq("id", 1).maybeSingle();
+    const { data, error } = await rawFrom("promotion_settings").select("*").eq("id", 1).maybeSingle();
     state.promoReady = !error && !!data;
     if (state.promoReady) state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null, logo: data.promotion_logo_url || null };
   } catch (e) { state.promoReady = false; }
+}
+const isMissingRelation = e => !!e && (e.code === "42P01" || e.code === "PGRST205" || /relation|schema cache|does not exist|could not find the table/i.test(String(e.message || "")));
+function applyPromoRow(row) {
+  TENANT.id = row.id;
+  state.promo = { id: row.id, slug: row.slug, number: Number(row.number) || 18, name_fr: row.name_fr || null, name_ar: row.name_ar || null,
+    logo: row.logo_url && /^https?:\/\//i.test(row.logo_url) ? row.logo_url : null, domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default };
+  state.promoReady = true;
+}
+/** تحديد دفعة هذا الرابط: النطاق الدقيق ← رقم الدفعة في اسم النطاق ← الدفعة الافتراضية (localhost / نطاق مخصص). */
+async function resolveTenant() {
+  if (TENANT.ready) return;
+  const { data: authData } = await db.auth.getSession();
+  const headers = authData?.session?.access_token ? { Authorization: `Bearer ${authData.session.access_token}` } : {};
+  const number = TENANT.number != null ? TENANT.number : 18;
+  const response = await fetch(`/api/public/tenant-token?promotion=${encodeURIComponent(number)}`, { headers, credentials: "same-origin", cache: "no-store" });
+  const result = await response.json().catch(() => ({}));
+  if (response.status === 404) TENANT.notFound = true;
+  else if (response.status === 403) { TENANT.accessDenied = true; TENANT.notFound = true; }
+  else if (!response.ok || !result.promotion) throw new Error(result.error || "تعذر التحقق من الدفعة.");
+  else applyPromoRow(result.promotion);
+  TENANT.ready = true;
+}
+async function loadPromotion() {
+  if (!TENANT.ready) { await resolveTenant(); return; }
+  if (TENANT.legacy) return loadPromotionLegacy();
+  if (!TENANT.id) return;
+  const { data } = await rawFrom("promotions").select("*").eq("id", TENANT.id).maybeSingle();
+  if (data) { applyPromoRow(data); state.promo.logo = await signedStorageUrl(data.logo_url); }
 }
 
 Object.assign(I18N, {
@@ -1700,15 +1811,20 @@ async function fetchAllRows(makeQuery) {
   return { data: Array.from(rows.values()), error: null };
 }
 
+/** صف إعدادات الدفعة (الوضع القديم: الصف id = 1). */
+const legacyId = q => (tenantOn() ? q : q.eq("id", 1));
 async function loadPublicData() {
+  await resolveTenant();
+  if (TENANT.notFound) { state.publicLoaded = true; return; }      // دفعة غير موجودة: لا نجلب أي بيانات
   const [sp, st, se] = await Promise.all([
     db.from("specialties").select("*").order("created_at"),
     fetchAllRows(() => db.from("students").select("*", { count: "exact" }).order("order_index").order("id")),
-    db.from("settings").select("*").eq("id", 1).maybeSingle()
+    legacyId(db.from("settings").select("*")).maybeSingle()
   ]);
   if (sp.error) console.error(sp.error);
   state.specialties = sp.data || [];
   state.students    = st.data || [];
+  await signStudentPhotos(state.students);
   state.settings    = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null };
   await loadPromotion();
   await loadCeremonies();
@@ -1738,8 +1854,39 @@ const PHOTO_MAX = 5 * 1024 * 1024;
 
 /** رابط صورة الطالب المخزَّن في قاعدة البيانات (فارغ إن لم توجد صورة). */
 function photoUrl(st) {
-  const v = st && (st.photo_url || st.photo);
-  return v ? String(v).trim() : "";
+  const v = st && (st.photo_display_url || st.photo_url || st.photo);
+  const value = v ? String(v).trim() : "";
+  return value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:") ? value : "";
+}
+function photoRef(st) { return st && (st.photo_url || st.photo) ? String(st.photo_url || st.photo).trim() : ""; }
+function storageObjectPath(ref) {
+  const value = String(ref || "").trim();
+  const marker = `/${PHOTO_BUCKET}/`;
+  const at = value.indexOf(marker);
+  if (at >= 0) { try { return decodeURIComponent(value.slice(at + marker.length).split(/[?#]/)[0]); } catch (e) { return value.slice(at + marker.length).split(/[?#]/)[0]; } }
+  return value.startsWith("promotions/") || value.startsWith("students/") || value.startsWith("promotion/") ? value : null;
+}
+async function signedStorageUrl(ref) {
+  if (!ref) return "";
+  const path = storageObjectPath(ref);
+  if (!path) return String(ref);
+  const { data, error } = await db.storage.from(PHOTO_BUCKET).createSignedUrl(path, 3600);
+  if (error) { console.warn("signed photo URL", error); return ""; }
+  return data?.signedUrl || "";
+}
+async function signStudentPhotos(students) {
+  const paths = [...new Set((students || []).map(s => storageObjectPath(photoRef(s))).filter(Boolean))];
+  if (!paths.length) return;
+  for (let i = 0; i < paths.length; i += 100) {
+    const batch = paths.slice(i, i + 100);
+    const { data, error } = await db.storage.from(PHOTO_BUCKET).createSignedUrls(batch, 3600);
+    if (error) { console.warn("signed student photos", error); continue; }
+    const urls = new Map((data || []).filter(x => x.signedUrl).map(x => [x.path, x.signedUrl]));
+    for (const student of students || []) {
+      const path = storageObjectPath(photoRef(student));
+      if (path && urls.has(path)) student.photo_display_url = urls.get(path);
+    }
+  }
 }
 function validatePhotoFile(file) {
   const ok = PHOTO_MIME.includes((file.type || "").toLowerCase()) || /\.(jpe?g|png|webp)$/i.test(file.name || "");
@@ -1747,22 +1894,20 @@ function validatePhotoFile(file) {
   if (file.size > PHOTO_MAX) { toast(t("err_photo_size"), "err"); return false; }
   return true;
 }
-/** رفع الصورة إلى Supabase Storage وإرجاع الرابط العمومي (يُخزَّن الرابط فقط). */
+/** رفع الصورة إلى مجلد الدفعة؛ يُخزَّن المسار فقط وتُنشأ روابط عرض قصيرة الأجل. */
 async function uploadStudentPhoto(file) {
   const ext = ((file.name || "").split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-  const path = `students/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  if (!tenantOn()) throw new Error("تعذر تحديد الدفعة قبل رفع الصورة.");
+  const path = `promotions/${TENANT.id}/students/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await db.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
   if (error) throw error;
-  const { data } = db.storage.from(PHOTO_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  return path;
 }
 /** حذف الملف القديم من التخزين (تجاهل الأخطاء: قد يكون رابطاً خارجياً). */
 async function removeStoredPhoto(url) {
   try {
-    const marker = `/${PHOTO_BUCKET}/`;
-    const i = String(url || "").indexOf(marker);
-    if (i < 0) return;
-    const path = decodeURIComponent(String(url).slice(i + marker.length).split("?")[0]);
+    const path = storageObjectPath(url);
+    if (!path) return;
     await db.storage.from(PHOTO_BUCKET).remove([path]);
   } catch (e) { console.warn("photo remove", e); }
 }
@@ -1775,9 +1920,14 @@ async function loadAdmins() {
 
 /** Resolve the currently signed-in admin profile. */
 async function loadMe() {
+  state.meMismatch = false;
   if (!state.session) { state.me = null; return; }
-  const { data } = await db.from("admins").select("*").eq("user_id", state.session.user.id).maybeSingle();
-  state.me = data || null;
+  try { await getTenantAccessToken(); } catch (e) { state.meMismatch = true; state.me = null; return; }
+  const { data } = await rawFrom("admins").select("*").eq("user_id", state.session.user.id).maybeSingle();
+  let me = data || null;
+  /* رئيس دفعة/تخصص تابع لدفعة أخرى لا يدخل لوحة هذه الدفعة (المشرف العام يدخل أي دفعة) */
+  if (me && tenantOn() && !me.is_platform && me.promotion_id && me.promotion_id !== TENANT.id) { state.meMismatch = true; me = null; }
+  state.me = me;
 }
 
 /* ------------------------- 7. PUBLIC PAGE RENDER ------------------------- */
@@ -2126,7 +2276,7 @@ function loginModal() {
     await loadMe();
     if (!state.me) {
       await db.auth.signOut(); state.session = null;
-      toast(t("err_not_registered_admin"), "err"); return;
+      toast(t(state.meMismatch ? "err_admin_other_promo" : "err_not_registered_admin"), "err"); return;
     }
     closeModals();
     toast(t("welcome_msg", { name: adminName(state.me) }));
@@ -2178,7 +2328,9 @@ function showDash() {
 
 /* ------------------------- 11. DASHBOARD SHELL ------------------------- */
 function tabsForRole() {
-  const list = [{ k: "overview", n: t("nav_overview") }, { k: "students", n: t("nav_students") }];
+  const list = [{ k: "overview", n: t("nav_overview") }];
+  if (isPlatform()) list.push({ k: "promos", n: t("nav_promos") });
+  list.push({ k: "students", n: t("nav_students") });
   if (isSuper()) list.push({ k: "stats", n: t("nav_stats") }, { k: "specialties", n: t("tab_specialties") }, { k: "admins", n: t("nav_admins") }, { k: "cards", n: t("nav_cards") }, { k: "notifs", n: t("nav_notifs") }, { k: "settings", n: t("nav_settings") });
   list.push({ k: "exports", n: t("nav_exports") });
   return list;
@@ -2190,7 +2342,8 @@ function renderDash() {
   $("#sidebar").innerHTML = `
     <div class="side-user">
       <b>${esc(adminName(state.me))}</b>
-      <small>${isSuper() ? t("role_super_admin") : t("role_dept_admin_prefix") + esc(mySpec ? mySpec.name : "—")}</small>
+      <small>${isPlatform() ? t("role_platform") : isSuper() ? t("role_super_admin") : t("role_dept_admin_prefix") + esc(mySpec ? mySpec.name : "—")}</small>
+      <small style="display:block">${esc(promoLabel())}</small>
     </div>
     ${tabs.map(tb => `<button class="nav-item ${state.tab === tb.k ? "active" : ""}" data-tab="${tb.k}">${tb.n}</button>`).join("")}
     <button class="nav-item" data-home>${t("nav_back_home")}</button>
@@ -2205,6 +2358,7 @@ function renderDash() {
   const panel = $("#panel");
   ({
     overview: renderOverview,
+    promos: renderPromosTab,
     stats: renderStatsTab,
     students: renderStudents,
     specialties: renderSpecialties,
@@ -2364,6 +2518,7 @@ function studentModal(student, specs) {
   let pendingPhotoFile = null;                       // ملف جديد لم يُرفع بعد
   let photoCleared = false;                          // المستخدم حذف الصورة
   const oldPhoto = photoUrl(student);
+  const oldPhotoRef = photoRef(student);
   const thumb = m.querySelector("#stPhotoThumb");
   const fileInput = m.querySelector("#stPhotoFile");
   const urlInput = m.querySelector("#stPhotoUrl");
@@ -2393,7 +2548,7 @@ function studentModal(student, specs) {
     const f = Object.fromEntries(new FormData(e.target));
 
     /* رفع الصورة (إن وُجدت) قبل الحفظ */
-    let finalPhoto = photoCleared ? null : (oldPhoto || null);
+    let finalPhoto = photoCleared ? null : (oldPhotoRef || null);
     if (pendingPhotoFile) {
       const btn = e.target.querySelector('button[type="submit"]');
       if (btn) { btn.disabled = true; btn.textContent = t("msg_photo_uploading"); }
@@ -2447,7 +2602,7 @@ function studentModal(student, specs) {
       toast(isRankCollision(error) ? t("err_rank_conflict") : (/duplicate|unique/i.test(em) ? t("err_reg_duplicate") : t("err_save_failed", { msg: em })), "err"); return;
     }
     /* حذف الملف القديم من التخزين بعد نجاح الحفظ */
-    if (oldPhoto && (photoCleared || (pendingPhotoFile && finalPhoto !== oldPhoto))) await removeStoredPhoto(oldPhoto);
+    if (oldPhotoRef && (photoCleared || (pendingPhotoFile && finalPhoto !== oldPhotoRef))) await removeStoredPhoto(oldPhotoRef);
     closeModals(); toast(isEdit ? t("msg_student_updated") : t("msg_student_added"));
     await loadPublicData(); renderDash();
   };
@@ -2708,7 +2863,7 @@ function renderSettings(panel) {
     ${promoAdminHTML()}
     <form id="setForm" class="stack" style="max-width:720px">
       <div class="grid-2">
-        <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || "ISCAE 18ème Promotion")}" /></div>
+        <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || ("ISCAE " + promoNumberLabel("fr")))}" /></div>
       </div>
       <div class="grid-2">
         <div class="field"><label>${t("field_graduation_date")}</label><input name="graduation_date" type="datetime-local" value="${toLocalInput(s.graduation_date)}" /></div>
@@ -2753,7 +2908,7 @@ function renderSettings(panel) {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
     const basePayload = {
-      id: 1,
+      ...(tenantOn() ? {} : { id: 1 }),
       platform_name: f.platform_name.trim(),
       graduation_date: f.graduation_date ? new Date(f.graduation_date).toISOString() : null,
       night_party_date: f.night_party_date ? new Date(f.night_party_date).toISOString() : null,
@@ -2774,10 +2929,10 @@ function renderSettings(panel) {
       specialty_counts_override: Object.keys(specOverride).length ? specOverride : null
     };
 
-    let { error } = await db.from("settings").upsert({ ...basePayload, ...extraPayload }, { onConflict: "id" });
+    let { error } = await db.from("settings").upsert({ ...basePayload, ...extraPayload }, { onConflict: tenantOn() ? "promotion_id" : "id" });
     if (error && /column|schema cache|show_category_stats|total_graduates_override|specialty_counts_override/i.test(error.message || "")) {
       /* الأعمدة الجديدة غير موجودة بعد: نحفظ الإعدادات القديمة كما كانت وننبّه المشرف. */
-      const retry = await db.from("settings").upsert(basePayload, { onConflict: "id" });
+      const retry = await db.from("settings").upsert(basePayload, { onConflict: tenantOn() ? "promotion_id" : "id" });
       error = retry.error;
       if (!error) toast(t("warn_settings_columns"), "err");
     }
@@ -2796,9 +2951,10 @@ function promoPreviewHTML(lang, n, name) {
 /** رفع شعار الدفعة: التخزين أولاً، وإن رُفض (صلاحيات) نستعمل data-URL للملفات الصغيرة. */
 async function uploadPromoLogo(file) {
   const ext = ((file.name || "").split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
-  const path = `promotion/logo-${Date.now()}.${ext}`;
+  if (!tenantOn()) throw new Error("تعذر تحديد الدفعة قبل رفع الشعار.");
+  const path = `promotions/${TENANT.id}/logos/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await db.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
-  if (!error) return db.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+  if (!error) return path;
   if (file.size <= 350 * 1024) return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(error); r.readAsDataURL(file); });
   throw error;
 }
@@ -2808,7 +2964,7 @@ function promoAdminHTML() {
   return `<form id="promoForm" class="promo-admin" novalidate>
     <h3>${t("promo_mgmt")}</h3><p class="muted" style="font-size:13px;margin-top:4px">${t("promo_hint")}</p>
     <div class="promo-cols"><div class="stack">
-      <div class="field"><label for="pNum">${t("promo_number")}</label><input id="pNum" name="n" type="number" min="1" max="99" value="${esc(p.number)}" dir="ltr" /></div>
+      <div class="field"><label for="pNum">${t("promo_number")}</label><input id="pNum" name="n" type="number" min="1" max="999" value="${esc(p.number)}" dir="ltr" ${tenantOn() ? "readonly" : ""} /></div>
       <div class="field"><label for="pFr">${t("promo_name_fr")}</label><input id="pFr" name="fr" dir="ltr" lang="fr" maxlength="80" value="${esc(p.name_fr || "")}" /></div>
       <div class="field"><label for="pAr">${t("promo_name_ar")}</label><input id="pAr" name="ar" dir="rtl" lang="ar" maxlength="80" value="${esc(p.name_ar || "")}" /></div>
       <div class="field"><label for="pLogo">${t("promo_logo")}</label>
@@ -2842,12 +2998,18 @@ function bindPromoAdmin() {
     const n = Number(f.n.value);
     if (!Number.isInteger(n) || n < 1) { toast(t("promo_number"), "err"); return; }
     const payload = { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
+    if (tenantOn()) delete payload.promotion_number;     // رقم الدفعة ثابت: مرتبط برابطها
     const oldLogo = state.promo.logo;
     if (pending instanceof File) {
       try { payload.promotion_logo_url = await uploadPromoLogo(pending); }
       catch (err) { toast(t("promo_logo_fail", { msg: err.message || err }), "err"); return; }
     } else if (pending === null) payload.promotion_logo_url = null;
-    const { data, error } = await db.from("promotion_settings").update(payload).eq("id", 1).select();
+    let data, error;
+    if (tenantOn()) {
+      const mp = { name_fr: payload.promotion_name_fr, name_ar: payload.promotion_name_ar };
+      if (payload.promotion_logo_url !== undefined) mp.logo_url = payload.promotion_logo_url;
+      ({ data, error } = await rawFrom("promotions").update(mp).eq("id", TENANT.id).select());
+    } else ({ data, error } = await rawFrom("promotion_settings").update(payload).eq("id", 1).select());
     if (error) { toast(/relation|schema cache|does not exist/i.test(error.message || "") ? t("promo_missing") : t("err_save_failed", { msg: error.message }), "err"); return; }
     if (!data || !data.length) { toast(t("promo_denied"), "err"); return; }   // RLS: aucune ligne modifiée
     if (payload.promotion_logo_url !== undefined && oldLogo && oldLogo !== payload.promotion_logo_url) removeStoredPhoto(oldLogo);
@@ -2904,7 +3066,7 @@ function bindPhoneControl() {
   const chk = $("#phoneCtlChk"); if (!chk) return;
   chk.onchange = async () => {
     const v = chk.checked; chk.disabled = true;
-    const { data, error } = await db.from("settings").update({ show_phone_in_search: v }).eq("id", 1).select();
+    const { data, error } = await legacyId(db.from("settings").update({ show_phone_in_search: v })).select();
     chk.disabled = false;
     if (error || !data || !data.length) {
       chk.checked = !v;
@@ -2925,13 +3087,13 @@ function trackVisit() {
     if (!vid) { vid = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12)); localStorage.setItem("iscae-vid", vid); }
     sessionStorage.setItem("iscae-visit-sent", "1");
     const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "mobile" : "desktop";
-    Promise.resolve(db.rpc("track_visit", { _visitor: vid, _lang: state.lang, _device: device, _path: location.pathname })).catch(() => {});
+    Promise.resolve(db.rpc("track_visit", { _visitor: vid, _lang: state.lang, _device: device, _path: location.pathname, ...(tenantOn() ? { _promo: TENANT.id } : {}) })).catch(() => {});
   } catch (e) { /* التتبع لا يعطّل الموقع أبداً */ }
 }
 
 /* ---- اسم المشرف الرئيسي كما يظهر في صفحته ---- */
 const SUPER_ADMIN_NAME = "Mohamed Dah Agove";
-const adminName = a => !a ? "—" : (a.role === "super_admin" ? SUPER_ADMIN_NAME : (a.full_name || "—"));
+const adminName = a => !a ? "—" : ((a.is_platform || (TENANT.legacy && a.role === "super_admin")) ? SUPER_ADMIN_NAME : (a.full_name || "—"));
 
 /* ---- منع رئيس التخصص من تعديل/حذف طالب أضافه مشرف آخر (رئيسان لنفس التخصص) ----
    المشرف الرئيسي: كل الصلاحيات. طلاب بلا مُنشئ مسجَّل (قديمون) يبقون قابلين للتعديل كما كانوا. */
@@ -3064,7 +3226,7 @@ function renderStatsTab(panel) {
   const mode = bucketMode(r.days.length);
   (async () => {
     let daily = [], totals = null, err = "";
-    const a = { _from: r.from.toISOString(), _to: r.end.toISOString() };
+    const a = { _from: r.from.toISOString(), _to: r.end.toISOString(), ...(tenantOn() ? { _promo: TENANT.id } : {}) };
     const [d1, d2] = await Promise.all([db.rpc("get_visit_stats", { ...a, _tz: STATS_TZ, _bucket: mode }), db.rpc("get_visit_totals", a)]);
     if (d1.error || d2.error) err = t("st_visits_missing"); else { daily = d1.data || []; totals = Array.isArray(d2.data) ? d2.data[0] : d2.data; }
     if (seq !== s.seq || state.tab !== "stats") return;
@@ -3119,7 +3281,7 @@ function drawStatsBody(r, daily, totals, err) {
   const xl = $("#stXlsx"); if (xl) xl.onclick = () => {
     if (!logRows.length) return toast(t("toast_no_export_data"), "info");
     const ws = XLSX.utils.json_to_sheet(logRows.map(x => ({ [t("st_datetime")]: fmtDT(x.created_at), [t("th_specialty")]: specName(x.specialty_id), [t("th_full_name")]: x.full_name, [t("th_reg_number")]: x.registration_number, [t("st_registered_by")]: registrarName(x.created_by) })));
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inscriptions"); XLSX.writeFile(wb, `ISCAE18-stats-${dayKey(new Date())}.xlsx`); toast(t("toast_excel_downloaded"));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inscriptions"); XLSX.writeFile(wb, `ISCAE${state.promo.number}-stats-${dayKey(new Date())}.xlsx`); toast(t("toast_excel_downloaded"));
   };
 }
 
@@ -3164,7 +3326,7 @@ function exportCSV(specId, label) {
   const csv = "\uFEFF" + [head.join(",")]
     .concat(rows.map(r => head.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(",")))
     .join("\n");
-  downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `ISCAE18-${label}.csv`);
+  downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `ISCAE${state.promo.number}-${label}.csv`);
   toast(t("toast_csv_downloaded"));
 }
 
@@ -3174,7 +3336,7 @@ function exportExcel(specId, label) {
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Etudiants");
-  XLSX.writeFile(wb, `ISCAE18-${label}.xlsx`);
+  XLSX.writeFile(wb, `ISCAE${state.promo.number}-${label}.xlsx`);
   toast(t("toast_excel_downloaded"));
 }
 
@@ -4087,7 +4249,8 @@ async function enablePush() {
       p_auth: subKey(sub, "auth"),
       p_device_id: notifDeviceId(),
       p_user_agent: navigator.userAgent.slice(0, 300),
-      p_lang: state.lang
+      p_lang: state.lang,
+      ...(tenantOn() ? { p_promo: TENANT.id } : {})
     });
     if (error) throw error;
 
@@ -4133,7 +4296,7 @@ function toggleNotifications() {
 function subscribeNotifRealtime() {
   try {
     db.channel("iscae-notifications-live")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", ...(tenantOn() ? { filter: "promotion_id=eq." + TENANT.id } : {}) }, (payload) => {
         const n = payload && payload.new;
         if (!n) return;
         toast((n.title || "") + (n.body ? " — " + n.body : ""));
@@ -4159,7 +4322,8 @@ async function initNotifications() {
         p_auth: subKey(sub, "auth"),
         p_device_id: notifDeviceId(),
         p_user_agent: navigator.userAgent.slice(0, 300),
-        p_lang: state.lang
+        p_lang: state.lang,
+        ...(tenantOn() ? { p_promo: TENANT.id } : {})
       });
       if (error) throw error;
     }
@@ -4183,7 +4347,7 @@ async function loadNotifications() {
   return data || [];
 }
 async function countActiveSubs() {
-  const { data, error } = await db.rpc("count_active_push_subscriptions");
+  const { data, error } = await db.rpc("count_active_push_subscriptions", tenantOn() ? { p_promo: TENANT.id } : {});
   if (error) {
     console.error("[Push] count devices failed:", error);
     return 0;
@@ -4243,7 +4407,7 @@ async function renderNotifsTab(panel) {
           "content-type": "application/json",
           "authorization": "Bearer " + session.access_token
         },
-        body: JSON.stringify({ title, body, url: url || null })
+        body: JSON.stringify({ title, body, url: url || null, promotion_id: tenantOn() ? TENANT.id : null })
       });
       let data = null;
       try { data = await res.json(); } catch (_) { data = null; }
@@ -4301,6 +4465,8 @@ async function pwaApplyIcons(ic) {
   const base = new URL("manifest.json", document.baseURI);
   let m; try { const r = await fetch(base.href, { cache: "no-store" }); m = await r.json(); } catch (e) { return; }
   const abs = v => new URL(v, base).href;
+  m.name = "ISCAE — " + promoLabel(); m.short_name = "ISCAE " + state.promo.number;
+  m.description = t("meta_desc", { promo: promoLabel() });
   if (m.start_url) m.start_url = abs(m.start_url);
   if (m.scope) m.scope = abs(m.scope);
   m.icons = [
@@ -4323,7 +4489,7 @@ async function pwaApplyIcons(ic) {
 /** يُستدعى من applyBranding: يعيد توليد الأيقونات فقط عند تغيّر الشعار/رقم الدفعة. */
 async function syncPwaIcons() {
   if (!state.promoReady) return;
-  const key = (state.promo.logo || "default") + "|" + state.promo.number;
+  const key = (state.promo.logo || "default") + "|" + state.promo.number + "|" + promoLabel();
   if (key === pwaIconKey) return;
   pwaIconKey = key; const token = ++pwaIconToken;
   try {
@@ -4340,29 +4506,284 @@ function restorePwaIcons() {
   try { const c = JSON.parse(localStorage.getItem(PWA_ICON_CACHE) || "null"); if (c && c.ic && c.ic.i512) pwaApplyIcons(c.ic); } catch (e) {}
 }
 
+/* ------------------------- 18-TER. إدارة الدفعات (المشرف العام Superviseurs) -------------------------
+   المشرف العام ينشئ دفعة جديدة برقمها فيُنشأ تلقائياً: رابطها iscae-promo-N.vercel.app وشعارها (حسب الرقم)
+   وإعداداتها، ثم يعيّن رئيس الدفعة الذي يملك داخل دفعته صلاحيات المشرف الرئيسي السابقة. */
+Object.assign(I18N, {
+  nav_promos:{ar:"الدفعات",fr:"Promotions"},
+  role_platform:{ar:"المشرف العام (Superviseurs)",fr:"Superviseur général"},
+  err_admin_other_promo:{ar:"هذا الحساب تابع لدفعة أخرى — افتح رابط دفعتك للدخول.",fr:"Ce compte appartient à une autre promotion — ouvrez le lien de votre promotion."},
+  err_forbidden_platform:{ar:"هذه العملية مخصّصة للمشرف العام (Superviseurs) فقط.",fr:"Opération réservée au Superviseur général."},
+  promo_not_found_title:{ar:"هذه الدفعة غير موجودة",fr:"Cette promotion n'existe pas"},
+  promo_not_found_text:{ar:"لا توجد دفعة بالرقم {n}. تأكد من الرابط.",fr:"Aucune promotion portant le numéro {n}. Vérifiez le lien."},
+  promo_access_denied:{ar:"هذا الحساب غير مخوّل للدخول إلى هذه الدفعة. افتح رابط دفعتك.",fr:"Ce compte n'est pas autorisé pour cette promotion. Ouvrez le lien de votre promotion."},
+  promos_title:{ar:"إدارة الدفعات",fr:"Gestion des promotions"},
+  promos_intro:{ar:"أنشئ دفعة جديدة برقمها: يُنشأ رابطها iscae-promo-N.vercel.app وشعارها تلقائياً، وتكون بياناتها مستقلة تماماً عن بقية الدفعات. رئيس الدفعة له صلاحيات المشرف الرئيسي داخل دفعته فقط.",fr:"Créez une promotion par son numéro : son lien iscae-promo-N.vercel.app et son emblème sont générés automatiquement ; ses données sont totalement séparées. Le chef de promotion a les droits de l'administrateur principal dans sa promotion uniquement."},
+  promos_new:{ar:"+ إنشاء دفعة جديدة",fr:"+ Nouvelle promotion"},
+  promos_empty:{ar:"لا توجد دفعات.",fr:"Aucune promotion."},
+  promos_default_badge:{ar:"الدفعة الأولى (الأصلية)",fr:"Promotion d'origine"},
+  promos_students:{ar:"طالب",fr:"étudiants"}, promos_specialties:{ar:"تخصص",fr:"spécialités"},
+  promos_admins:{ar:"مشرف",fr:"admins"}, promos_subs:{ar:"مشترك بالتنبيهات",fr:"abonnés notifs"},
+  promos_heads:{ar:"رئيس الدفعة",fr:"Chef de promotion"},
+  promos_no_head:{ar:"لا يوجد رئيس دفعة بعد",fr:"Aucun chef de promotion"},
+  promos_open:{ar:"فتح الموقع",fr:"Ouvrir le site"},
+  promos_copy:{ar:"نسخ الرابط",fr:"Copier le lien"},
+  promos_add_head:{ar:"+ رئيس دفعة",fr:"+ Chef de promotion"},
+  promos_remove_head:{ar:"إزالة",fr:"Retirer"},
+  promos_link_domain:{ar:"ربط الرابط",fr:"Lier le domaine"},
+  promos_delete:{ar:"حذف الدفعة",fr:"Supprimer"},
+  promos_dom_active:{ar:"الرابط يعمل",fr:"Lien actif"},
+  promos_dom_pending:{ar:"الرابط قيد الربط",fr:"Lien en attente"},
+  promos_dom_manual:{ar:"أضِف النطاق يدوياً في Vercel",fr:"Ajouter le domaine manuellement dans Vercel"},
+  promos_dom_error:{ar:"تعذّر ربط الرابط",fr:"Échec du lien"},
+  promos_temp_link:{ar:"رابط مؤقت يعمل فوراً",fr:"Lien provisoire immédiat"},
+  promos_modal_title:{ar:"إنشاء دفعة جديدة",fr:"Créer une promotion"},
+  promos_field_number:{ar:"رقم الدفعة",fr:"Numéro de la promotion"},
+  promos_logo_auto:{ar:"الشعار يُنشأ تلقائياً حسب الرقم (يمكن لرئيس الدفعة تغييره لاحقاً).",fr:"L'emblème est généré automatiquement selon le numéro (modifiable ensuite)."},
+  promos_head_section:{ar:"رئيس الدفعة (اختياري الآن)",fr:"Chef de promotion (facultatif)"},
+  promos_head_modal:{ar:"إضافة رئيس دفعة",fr:"Ajouter un chef de promotion"},
+  promos_create:{ar:"إنشاء الدفعة",fr:"Créer la promotion"},
+  promos_creating:{ar:"جارٍ الإنشاء…",fr:"Création…"},
+  promos_err_exists:{ar:"هذه الدفعة موجودة مسبقاً.",fr:"Cette promotion existe déjà."},
+  promos_err_number:{ar:"أدخل رقم دفعة صحيحاً (1 – 999).",fr:"Saisissez un numéro valide (1 – 999)."},
+  promos_err_head_incomplete:{ar:"أكمل بيانات رئيس الدفعة (الاسم والبريد وكلمة المرور) أو اتركها كلها فارغة.",fr:"Complétez les infos du chef (nom, e-mail, mot de passe) ou laissez-les vides."},
+  promos_err_missing:{ar:"نفّذ ملف MULTI-PROMO.sql في Supabase أولاً.",fr:"Exécutez d'abord MULTI-PROMO.sql dans Supabase."},
+  promos_created:{ar:"تم إنشاء الدفعة {n}",fr:"Promotion {n} créée"},
+  promos_head_created:{ar:"تم إنشاء حساب رئيس الدفعة",fr:"Compte du chef de promotion créé"},
+  promos_head_removed:{ar:"تمت إزالة رئيس الدفعة",fr:"Chef de promotion retiré"},
+  promos_head_remove_title:{ar:"إزالة رئيس الدفعة",fr:"Retirer le chef de promotion"},
+  promos_head_remove_text:{ar:"سيفقد {name} صلاحية الدخول إلى لوحة الدفعة. (حساب الدخول نفسه يبقى في Supabase).",fr:"{name} perdra l'accès au tableau de bord de la promotion. (Le compte de connexion reste dans Supabase.)"},
+  promos_delete_title:{ar:"حذف الدفعة",fr:"Supprimer la promotion"},
+  promos_delete_text:{ar:"سيُحذف رابط الدفعة {n} وإعداداتها ومشرفوها. لا يمكن حذف دفعة فيها طلاب.",fr:"Le lien, les réglages et les admins de la promotion {n} seront supprimés. Impossible si elle contient des étudiants."},
+  promos_deleted:{ar:"تم حذف الدفعة",fr:"Promotion supprimée"},
+  promos_err_has_students:{ar:"لا يمكن حذف دفعة فيها طلاب.",fr:"Impossible de supprimer une promotion contenant des étudiants."},
+  promos_err_default:{ar:"لا يمكن حذف الدفعة الأصلية.",fr:"La promotion d'origine ne peut pas être supprimée."},
+  promos_result_title:{ar:"تم إنشاء الدفعة",fr:"Promotion créée"},
+  promos_result_link:{ar:"رابط الدفعة",fr:"Lien de la promotion"},
+  promos_result_head:{ar:"رئيس الدفعة",fr:"Chef de promotion"},
+  promos_result_head_none:{ar:"لم يُنشأ بعد — أضِفه من بطاقة الدفعة.",fr:"Pas encore créé — ajoutez-le depuis la carte."},
+  promos_link_ok:{ar:"تم ربط الرابط",fr:"Domaine lié"},
+  promos_th_name:{ar:"الاسم",fr:"Nom"}, promos_th_email:{ar:"البريد",fr:"E-mail"}, promos_th_pw:{ar:"كلمة المرور",fr:"Mot de passe"}, promos_th_phone:{ar:"الهاتف",fr:"Téléphone"},
+  promos_close:{ar:"إغلاق",fr:"Fermer"}
+});
+
+const promoHostOf = p => String(p.domain || (p.slug + ".vercel.app")).toLowerCase();
+/** رابط الدفعة: النطاق الرسمي إن رُبط، وإلا رابط مؤقت يعمل فوراً على هذا المشروع. */
+function promoLinkOf(p) {
+  return (p.is_default || p.domain_status === "active") ? `https://${promoHostOf(p)}/` : `${location.origin}/site/index.html?promo=${p.number}`;
+}
+async function authedFetch(path, method, body) {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) throw new Error(t("err_notif_send"));
+  const res = await fetch(path, { method, headers: { "content-type": "application/json", authorization: "Bearer " + session.access_token }, body: JSON.stringify(body || {}) });
+  let data = null; try { data = await res.json(); } catch (e) {}
+  return { res, data };
+}
+async function provisionPromoDomain(promotionId) {
+  try {
+    const { res, data } = await authedFetch("/api/public/promo/provision", "POST", { promotion_id: promotionId });
+    return { ok: !!(res.ok && data && data.ok), status: data && data.status, domain: data && data.domain, error: data && data.error };
+  } catch (e) { return { ok: false, status: "manual", error: String(e && e.message || e) }; }
+}
+/** إنشاء حساب رئيس دفعة: مسار الخادم (مفتاح الخدمة) أولاً، وإلا signUp + دالة SQL كاحتياط. */
+async function createPromoHead(p) {
+  let out = null, srvErr = "";
+  try {
+    const { res, data } = await authedFetch("/api/public/admin/create-head", "POST", p);
+    if (res.ok && data && data.ok) return data;
+    if (data && data.code !== "no_service_key" && res.status !== 404 && res.status !== 405) srvErr = data.error || "";
+    if (srvErr) throw new Error(srvErr.replace(/^❌\s*/, ""));
+  } catch (e) { if (srvErr) throw e; }
+  const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "iscae-tmp-signup" } });
+  const { data, error } = await tmp.auth.signUp({ email: p.email, password: p.password, options: { data: { full_name: p.full_name } } });
+  if (error) throw error;
+  const u = data && data.user;
+  if (!u || !u.id || (Array.isArray(u.identities) && u.identities.length === 0)) throw new Error(t("promos_th_email") + ": already registered");
+  const r = await db.rpc("platform_attach_admin", { _user_id: u.id, _email: p.email, _full_name: p.full_name, _phone: p.phone || null, _role: "super_admin", _promotion_id: p.promotion_id, _specialty_id: null });
+  if (r.error) throw r.error;
+  return { ok: true, user_id: u.id };
+}
+async function loadPromosData() {
+  const [pr, ov, hd] = await Promise.all([
+    rawFrom("promotions").select("*").order("number"),
+    db.rpc("platform_promotions_overview"),
+    rawFrom("admins").select("*").eq("role", "super_admin").eq("is_platform", false).order("created_at")
+  ]);
+  if (pr.error) throw pr.error;
+  const stats = {}; (ov.data || []).forEach(x => { stats[x.promotion_id] = x; });
+  return { list: pr.data || [], stats, heads: hd.data || [] };
+}
+function promoDomBadge(p) {
+  if (p.is_default || p.domain_status === "active") return `<span class="tag tag-B">${t("promos_dom_active")}</span>`;
+  const k = { manual: ["tag-C", "promos_dom_manual"], error: ["tag-C", "promos_dom_error"] }[p.domain_status] || ["tag-D", "promos_dom_pending"];
+  return `<span class="tag ${k[0]}">${t(k[1])}</span>`;
+}
+async function renderPromosTab(panel) {
+  if (!isPlatform()) { panel.innerHTML = `<div class="empty">${t("err_forbidden_platform")}</div>`; return; }
+  panel.innerHTML = `<div class="panel-head"><h2>${t("promos_title")}</h2></div><div class="empty">…</div>`;
+  let d;
+  try { d = await loadPromosData(); }
+  catch (e) { panel.innerHTML = `<div class="panel-head"><h2>${t("promos_title")}</h2></div><div class="empty">${isMissingRelation(e) ? t("promos_err_missing") : esc(e.message || e)}</div>`; return; }
+  if (state.tab !== "promos") return;
+  panel.innerHTML = `
+    <div class="panel-head"><h2>${t("promos_title")}</h2><button class="btn btn-primary btn-sm" id="newPromo">${t("promos_new")}</button></div>
+    <p class="muted" style="font-size:13px;margin-bottom:16px">${t("promos_intro")}</p>
+    <div class="promo-cards">${d.list.map(p => {
+      const st = d.stats[p.id] || {}, heads = d.heads.filter(h => h.promotion_id === p.id), nm = state.lang === "fr" ? p.name_fr : p.name_ar;
+      const link = promoLinkOf(p), temp = !(p.is_default || p.domain_status === "active");
+      return `<div class="promo-card">
+        <div class="pc-logo">${promoLogoHTML(/^https?:\/\//i.test(p.logo_url || "") ? p.logo_url : null, p.number)}</div>
+        <div class="pc-main">
+          <b>${esc(promoNumberLabel(state.lang, p.number))}${nm ? " — " + esc(nm) : ""}</b>
+          ${p.is_default ? `<span class="tag tag-A">${t("promos_default_badge")}</span>` : ""} ${promoDomBadge(p)}
+          <a class="pc-link" dir="ltr" href="${esc(link)}" target="_blank" rel="noopener">${esc(link.replace(/^https?:\/\//, ""))}</a>
+          ${temp ? `<small class="muted">${t("promos_temp_link")} · ${esc(promoHostOf(p))}</small>` : ""}
+          <small class="muted">${st.students ?? 0} ${t("promos_students")} · ${st.specialties ?? 0} ${t("promos_specialties")} · ${st.admins ?? 0} ${t("promos_admins")} · ${st.subscribers ?? 0} ${t("promos_subs")}</small>
+          <div class="pc-heads"><small><b>${t("promos_heads")}:</b></small> ${heads.length ? heads.map(h => `<span class="pc-head">${esc(h.full_name || "—")} <bdi dir="ltr">(${esc(h.email || "")})</bdi> <button class="btn btn-ghost btn-sm" data-rmhead="${h.id}">${t("promos_remove_head")}</button></span>`).join("") : `<small class="muted">${t("promos_no_head")}</small>`}</div>
+        </div>
+        <div class="pc-actions">
+          <a class="btn btn-primary btn-sm" href="${esc(link)}" target="_blank" rel="noopener">${t("promos_open")}</a>
+          <button class="btn btn-ghost btn-sm" data-copy="${esc(link)}">${t("promos_copy")}</button>
+          <button class="btn btn-emerald btn-sm" data-addhead="${p.id}">${t("promos_add_head")}</button>
+          ${p.is_default ? "" : `<button class="btn btn-ghost btn-sm" data-linkdom="${p.id}">${t("promos_link_domain")}</button><button class="btn btn-danger btn-sm" data-delpromo="${p.id}">${t("promos_delete")}</button>`}
+        </div></div>`;
+    }).join("") || `<div class="empty">${t("promos_empty")}</div>`}</div>`;
+
+  $("#newPromo").onclick = () => promoCreateModal(d.list);
+  $$("[data-copy]", panel).forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast(t("link_copied")); } catch (e) { window.prompt(b.dataset.copy, b.dataset.copy); } });
+  $$("[data-addhead]", panel).forEach(b => b.onclick = () => promoHeadModal(d.list.find(x => x.id === b.dataset.addhead)));
+  $$("[data-rmhead]", panel).forEach(b => b.onclick = async () => {
+    const h = d.heads.find(x => x.id === b.dataset.rmhead);
+    if (!h || !await confirmDialog(t("promos_head_remove_title"), t("promos_head_remove_text", { name: h.full_name || h.email }))) return;
+    const { error } = await rawFrom("admins").delete().eq("id", h.id);
+    if (error) { toast(t("err_delete_failed", { msg: error.message }), "err"); return; }
+    toast(t("promos_head_removed")); renderPromosTab(panel);
+  });
+  $$("[data-linkdom]", panel).forEach(b => b.onclick = async () => {
+    b.disabled = true; const r = await provisionPromoDomain(b.dataset.linkdom);
+    toast(r.ok ? t("promos_link_ok") : (r.error || t("promos_dom_error")), r.ok ? "ok" : "err"); renderPromosTab(panel);
+  });
+  $$("[data-delpromo]", panel).forEach(b => b.onclick = async () => {
+    const p = d.list.find(x => x.id === b.dataset.delpromo);
+    if (!p || !await confirmDialog(t("promos_delete_title"), t("promos_delete_text", { n: p.number }))) return;
+    const { error } = await db.rpc("platform_delete_promotion", { _id: p.id });
+    if (error) { const m = String(error.message || ""); toast(/HAS_STUDENTS/.test(m) ? t("promos_err_has_students") : /DEFAULT_PROMO/.test(m) ? t("promos_err_default") : t("err_delete_failed", { msg: m }), "err"); return; }
+    authedFetch("/api/public/promo/provision", "DELETE", { domain: promoHostOf(p) }).catch(() => {});
+    toast(t("promos_deleted")); renderPromosTab(panel);
+  });
+}
+function headFieldsHTML() {
+  return `<div class="grid-2">
+      <div class="field"><label>${t("promos_th_name")}</label><input name="h_name" autocomplete="off" /></div>
+      <div class="field"><label>${t("promos_th_phone")}</label><input name="h_phone" dir="ltr" autocomplete="off" /></div>
+    </div><div class="grid-2">
+      <div class="field"><label>${t("promos_th_email")}</label><input name="h_email" type="email" dir="ltr" autocomplete="off" /></div>
+      <div class="field"><label>${t("promos_th_pw")}</label><input name="h_pw" type="password" dir="ltr" minlength="6" autocomplete="new-password" /></div></div>`;
+}
+const readHead = f => ({ full_name: String(f.h_name || "").trim(), email: String(f.h_email || "").trim().toLowerCase(), password: String(f.h_pw || ""), phone: String(f.h_phone || "").trim() });
+function promoCreateModal(existing) {
+  const next = Math.max(17, ...existing.map(x => x.number)) + 1;
+  const m = openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_modal_title")}</h3></div>
+    <form class="modal-body" id="pcForm">
+      <div class="grid-2"><div class="field"><label>${t("promos_field_number")}</label><input name="n" type="number" min="1" max="999" required dir="ltr" value="${next}" /></div>
+        <div class="field"><label>${t("promo_name_fr")}</label><input name="fr" dir="ltr" maxlength="80" /></div></div>
+      <div class="field"><label>${t("promo_name_ar")}</label><input name="ar" dir="rtl" maxlength="80" /></div>
+      <div class="row" style="gap:14px;align-items:center"><div class="logo-prev" id="pcLogo" style="width:84px;height:84px"></div><small class="muted">${t("promos_logo_auto")}<br><b dir="ltr" id="pcUrl"></b></small></div>
+      <h4 style="font-weight:800;margin-top:6px">${t("promos_head_section")}</h4>${headFieldsHTML()}
+      <button class="btn btn-primary btn-block" type="submit" id="pcSave">${t("promos_create")}</button>
+    </form><div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div></div>`);
+  m.querySelector("[data-close]").onclick = closeModals;
+  const f = m.querySelector("#pcForm");
+  const prev = () => { const n = Number(f.n.value) || 0; m.querySelector("#pcLogo").innerHTML = n > 0 ? defaultPromoLogo(n) : ""; m.querySelector("#pcUrl").textContent = n > 0 ? `iscae-promo-${n}.vercel.app` : ""; };
+  f.n.addEventListener("input", prev); prev();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const v = Object.fromEntries(new FormData(f)), n = Number(v.n), head = readHead(v);
+    if (!Number.isInteger(n) || n < 1 || n > 999) { toast(t("promos_err_number"), "err"); return; }
+    const anyHead = head.full_name || head.email || head.password;
+    if (anyHead && !(head.full_name && head.email && head.password.length >= 6)) { toast(t("promos_err_head_incomplete"), "err"); return; }
+    const btn = $("#pcSave"); btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${t("promos_creating")}`;
+    try {
+      const { data, error } = await db.rpc("platform_create_promotion", { _number: n, _name_fr: String(v.fr || "").trim() || null, _name_ar: String(v.ar || "").trim() || null });
+      if (error) { const em = String(error.message || ""); throw new Error(/PROMO_EXISTS/.test(em) ? t("promos_err_exists") : isMissingRelation(error) ? t("promos_err_missing") : em); }
+      const promo = Array.isArray(data) ? data[0] : data;
+      const prov = await provisionPromoDomain(promo.id);
+      let headMsg = t("promos_result_head_none");
+      if (anyHead) {
+        try { await createPromoHead({ ...head, promotion_id: promo.id }); headMsg = `${head.full_name} — ${head.email}`; }
+        catch (err) { headMsg = "⚠ " + (err.message || err); }
+      }
+      const fresh = (await rawFrom("promotions").select("*").eq("id", promo.id).maybeSingle()).data || promo;
+      const link = promoLinkOf(fresh);
+      closeModals(); toast(t("promos_created", { n }));
+      openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_result_title")} — ${esc(promoNumberLabel(state.lang, n))}</h3></div>
+        <div class="modal-body"><div class="row" style="gap:14px;align-items:center"><div class="logo-prev" style="width:84px;height:84px">${defaultPromoLogo(n)}</div>
+        <div class="stack" style="gap:6px"><b>${t("promos_result_link")}</b><a dir="ltr" href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:800">${esc(link)}</a>
+        ${prov.ok ? "" : `<small class="muted">${esc(prov.error || "")}</small>`}</div></div>
+        <p><b>${t("promos_result_head")}:</b> ${esc(headMsg)}</p></div>
+        <div class="modal-foot"><button class="btn btn-primary" data-close>${t("promos_close")}</button></div></div>`).querySelector("[data-close]").onclick = closeModals;
+      if (state.tab === "promos") renderPromosTab($("#panel"));
+    } catch (err) {
+      toast(err.message || String(err), "err"); btn.disabled = false; btn.textContent = t("promos_create");
+    }
+  };
+}
+function promoHeadModal(p) {
+  if (!p) return;
+  const m = openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_head_modal")} — ${esc(promoNumberLabel(state.lang, p.number))}</h3></div>
+    <form class="modal-body" id="phForm">${headFieldsHTML()}<button class="btn btn-primary btn-block" type="submit" id="phSave">${t("btn_save")}</button></form>
+    <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div></div>`);
+  m.querySelector("[data-close]").onclick = closeModals;
+  const f = m.querySelector("#phForm");
+  f.querySelectorAll("input").forEach(i => { if (i.name !== "h_phone") i.required = true; });
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const head = readHead(Object.fromEntries(new FormData(f)));
+    if (!(head.full_name && head.email && head.password.length >= 6)) { toast(t("promos_err_head_incomplete"), "err"); return; }
+    const btn = $("#phSave"); btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${t("btn_saving")}`;
+    try { await createPromoHead({ ...head, promotion_id: p.id }); closeModals(); toast(t("promos_head_created")); if (state.tab === "promos") renderPromosTab($("#panel")); }
+    catch (err) { toast(t("err_generic", { msg: err.message || err }), "err"); btn.disabled = false; btn.textContent = t("btn_save"); }
+  };
+}
+
 /* ------------------------- 19. BOOTSTRAP ------------------------- */
+function showPromoNotFound() {
+  const num = TENANT.number;
+  $("#pagePublic").innerHTML = `<div class="container"><div class="gempty" role="alert" style="margin:80px auto;max-width:520px"><b>${esc(t("promo_not_found_title"))}</b>
+    <p>${esc(TENANT.accessDenied ? t("promo_access_denied") : t("promo_not_found_text", { n: num != null ? num : "" }))}</p></div></div>`;
+  ["btnLogin", "btnLoginText", "btnFooterLogin", "btnInstall", "btnNotif"].forEach(id => { const el = $("#" + id); if (el) el.classList.add("hidden"); });
+}
 async function init() {
   restorePwaIcons();
   initTheme();
   applyLangAttrs();
   applyStaticI18n();
+  applyBranding();                 // رقم الدفعة من الرابط فوراً (قبل وصول البيانات) لتفادي ظهور «18» مؤقتاً
   refreshInstallButton();
   const { data: { session } } = await db.auth.getSession();
   state.session = session || null;
   await loadPublicData();
+  if (TENANT.notFound) { showPromoNotFound(); return; }
+  try { await db.realtime.setAuth(await getTenantAccessToken()); } catch (err) { console.warn("tenant realtime auth", err); }
   trackVisit();
   applyBranding();
   renderStats();
   renderEvents();
   runSearch();
   routeFromHash();
-  if (state.session) { await loadMe(); if (isSuper()) await loadAdmins(); }
+  if (state.session) {
+    await loadMe();
+    if (state.meMismatch) { await db.auth.signOut(); state.session = null; toast(t("err_admin_other_promo"), "err"); }
+    if (isSuper()) await loadAdmins();
+  }
   syncHeader();
   initNotifications();
 }
 init().catch(err => { console.error(err); toast(t("toast_db_error"), "err"); });
 
 db.auth.onAuthStateChange((event, session) => {
+  tenantTokenCache = { key: "", token: "", until: 0 };
+  if (session && TENANT.id) setTimeout(() => getTenantAccessToken().then(token => db.realtime.setAuth(token)).catch(err => console.warn("tenant realtime auth", err)), 0);
   if (event === "SIGNED_OUT") { state.session = null; state.me = null; syncHeader(); }
 });
 </script>

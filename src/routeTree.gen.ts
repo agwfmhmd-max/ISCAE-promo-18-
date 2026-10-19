@@ -10,12 +10,30 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicPromoProvisionRouteImport } from './routes/api/public/promo/provision'
+import { Route as ApiPublicAdminCreateHeadRouteImport } from './routes/api/public/admin/create-head'
+import { Route as ApiPublicAdminCreateAdminRouteImport } from './routes/api/public/admin/create-admin'
 import { Route as ApiPublicPushSendRouteImport } from './routes/api/public/push/send'
 import { Route as ApiPublicPushVapidKeyRouteImport } from './routes/api/public/push/vapid-key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPromoProvisionRoute = ApiPublicPromoProvisionRouteImport.update({
+  id: '/api/public/promo/provision',
+  path: '/api/public/promo/provision',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAdminCreateHeadRoute = ApiPublicAdminCreateHeadRouteImport.update({
+  id: '/api/public/admin/create-head',
+  path: '/api/public/admin/create-head',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAdminCreateAdminRoute = ApiPublicAdminCreateAdminRouteImport.update({
+  id: '/api/public/admin/create-admin',
+  path: '/api/public/admin/create-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPushSendRoute = ApiPublicPushSendRouteImport.update({
@@ -31,30 +49,42 @@ const ApiPublicPushVapidKeyRoute = ApiPublicPushVapidKeyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
+  '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
+  '/api/public/promo/provision': typeof ApiPublicPromoProvisionRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
+  '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
+  '/api/public/promo/provision': typeof ApiPublicPromoProvisionRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
+  '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
+  '/api/public/promo/provision': typeof ApiPublicPromoProvisionRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/push/send' | '/api/public/push/vapid-key'
+  fullPaths: '/' | '/api/public/admin/create-head' | '/api/public/admin/create-admin' | '/api/public/promo/provision' | '/api/public/push/send' | '/api/public/push/vapid-key'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/push/send' | '/api/public/push/vapid-key'
-  id: '__root__' | '/' | '/api/public/push/send' | '/api/public/push/vapid-key'
+  to: '/' | '/api/public/admin/create-head' | '/api/public/admin/create-admin' | '/api/public/promo/provision' | '/api/public/push/send' | '/api/public/push/vapid-key'
+  id: '__root__' | '/' | '/api/public/admin/create-head' | '/api/public/admin/create-admin' | '/api/public/promo/provision' | '/api/public/push/send' | '/api/public/push/vapid-key'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicAdminCreateHeadRoute: typeof ApiPublicAdminCreateHeadRoute
+  ApiPublicAdminCreateAdminRoute: typeof ApiPublicAdminCreateAdminRoute
+  ApiPublicPromoProvisionRoute: typeof ApiPublicPromoProvisionRoute
   ApiPublicPushSendRoute: typeof ApiPublicPushSendRoute
   ApiPublicPushVapidKeyRoute: typeof ApiPublicPushVapidKeyRoute
 }
@@ -66,6 +96,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/admin/create-head': {
+      id: '/api/public/admin/create-head'
+      path: '/api/public/admin/create-head'
+      fullPath: '/api/public/admin/create-head'
+      preLoaderRoute: typeof ApiPublicAdminCreateHeadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/admin/create-admin': {
+      id: '/api/public/admin/create-admin'
+      path: '/api/public/admin/create-admin'
+      fullPath: '/api/public/admin/create-admin'
+      preLoaderRoute: typeof ApiPublicAdminCreateAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/promo/provision': {
+      id: '/api/public/promo/provision'
+      path: '/api/public/promo/provision'
+      fullPath: '/api/public/promo/provision'
+      preLoaderRoute: typeof ApiPublicPromoProvisionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/push/send': {
@@ -87,6 +138,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicAdminCreateHeadRoute: ApiPublicAdminCreateHeadRoute,
+  ApiPublicAdminCreateAdminRoute: ApiPublicAdminCreateAdminRoute,
+  ApiPublicPromoProvisionRoute: ApiPublicPromoProvisionRoute,
   ApiPublicPushSendRoute: ApiPublicPushSendRoute,
   ApiPublicPushVapidKeyRoute: ApiPublicPushVapidKeyRoute,
 }

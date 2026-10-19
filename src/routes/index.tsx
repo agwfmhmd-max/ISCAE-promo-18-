@@ -6,8 +6,10 @@ const SITE_URL = "/site/index.html";
 export const Route = createFileRoute("/")({
   // التحويل من الخادم مباشرة (HTTP redirect) — لا يعتمد على تشغيل JavaScript
   // ولا على اكتمال hydration، فلا تبقى الصفحة عالقة على رابط «ISCAE 18ème Promotion».
-  beforeLoad: () => {
-    throw redirect({ href: SITE_URL, statusCode: 302 });
+  beforeLoad: ({ location }) => {
+    // نحافظ على ?promo=N (رابط الدفعة المؤقت) عند التحويل
+    const search = typeof location?.searchStr === "string" ? location.searchStr : "";
+    throw redirect({ href: SITE_URL + search, statusCode: 302 });
   },
   head: () => ({
     meta: [
@@ -28,7 +30,11 @@ export const Route = createFileRoute("/")({
       { httpEquiv: "refresh", content: `0;url=${SITE_URL}` },
     ],
     // احتياط 2: تحويل فوري بسكربت مضمَّن في <head> قبل تحميل حزمة React
-    scripts: [{ children: `window.location.replace(${JSON.stringify(SITE_URL)});` }],
+    scripts: [
+      {
+        children: `window.location.replace(${JSON.stringify(SITE_URL)} + window.location.search);`,
+      },
+    ],
   }),
   component: Index,
 });
@@ -36,7 +42,7 @@ export const Route = createFileRoute("/")({
 /** الموقع الحقيقي (ملف واحد ثابت) يُخدَم من public/site/index.html */
 function Index() {
   useEffect(() => {
-    window.location.replace(SITE_URL);
+    window.location.replace(SITE_URL + window.location.search);
   }, []);
 
   return (

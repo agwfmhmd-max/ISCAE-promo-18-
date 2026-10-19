@@ -47,9 +47,9 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; }
-  catch (e) { payload = { title: 'ISCAE 18', body: event.data ? event.data.text() : '' }; }
+  catch (e) { payload = { title: 'ISCAE', body: event.data ? event.data.text() : '' }; }
 
-  const title = payload.title || 'ISCAE 18ème Promotion';
+  const title = payload.title || 'ISCAE';
   const options = {
     body: payload.body || '',
     icon: payload.icon || './icon-192.png',
