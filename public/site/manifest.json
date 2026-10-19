@@ -1,6 +1,6 @@
 {
-  "name": "ISCAE — 18ème Promotion",
-  "short_name": "ISCAE 18",
+  "name": "ISCAE — Promotion",
+  "short_name": "ISCAE",
   "description": "Plateforme officielle de remise des diplômes de l'ISCAE — annuaire des diplômés.",
   "start_url": "./index.html",
   "scope": "./",

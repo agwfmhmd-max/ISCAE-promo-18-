@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { authenticateCaller, isSuperAdmin, json } from "@/lib/iscae-server";
+import { authenticateCaller, canManagePromotion, fetchPromotion, isSuperAdmin, json } from "@/lib/iscae-server";
 import {
   assertVapidUsable,
   endpointLabel,
@@ -24,7 +24,13 @@ function restHeaders(token: string, extra: Record<string, string> = {}) {
 
 /** تسجيل الإشعار (يُشغّل أيضاً الإشعار الداخلي الفوري عبر Realtime) */
 async function insertNotification(
-  row: { title: string; body: string; url: string | null; created_by: string | null },
+  row: {
+    title: string;
+    body: string;
+    url: string | null;
+    created_by: string | null;
+    promotion_id: string | null;
+  },
   token: string,
 ): Promise<NotificationRow | null> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
@@ -58,13 +64,14 @@ async function updateNotificationStats(
 /** كل الأجهزة المفعّلة عبر RPC (متاحة للمشرف الرئيسي فقط بحسب SQL) */
 async function fetchActiveSubscriptions(
   token: string,
+  promotionId: string,
 ): Promise<{ subs: StoredPushSubscription[]; error: string | null }> {
   const url = `${SUPABASE_URL}/rest/v1/rpc/get_active_push_subscriptions`;
   const call = (qs: string) =>
     fetch(url + qs, {
       method: "POST",
       headers: restHeaders(token, { "content-type": "application/json" }),
-      body: "{}",
+      body: JSON.stringify({ p_promo: promotionId }),
     });
 
   // PostgREST يقصر كل رد على 1000 صف (أو أقل): نجلب على دفعات مرتّبة بـ id ونتقدّم بعدد الصفوف المستلمة فعلاً.
@@ -110,7 +117,7 @@ async function deleteSubscriptions(ids: string[], token: string): Promise<void> 
 /** إرسال مستقل لكل جهاز، على دفعات صغيرة — فشل جهاز لا يوقف البقية */
 async function sendToAll(
   subs: StoredPushSubscription[],
-  payload: { id: string | null; title: string; body: string; url?: string },
+  payload: { id: string | null; title: string; body: string; url?: string; icon?: string },
   vapid: VapidKeys,
 ): Promise<{ delivered: number; failed: number; goneIds: string[]; errors: PushError[] }> {
   let delivered = 0;
@@ -143,8 +150,9 @@ async function sendToAll(
 }
 
 /**
- * إرسال إشعار من المشرف الرئيسي إلى كل الأجهزة المفعّلة.
- * كل شيء داخل خادم الموقع (Cloudflare Worker) — بدون Edge Functions وبدون Node.
+ * إرسال إشعار من رئيس الدفعة (أو المشرف العام Superviseurs) إلى الأجهزة المفعّلة
+ * في «تلك الدفعة فقط». كل دفعة لها مشتركوها وإشعاراتها المستقلة.
+ * كل شيء داخل خادم الموقع — بدون Edge Functions.
  */
 export const Route = createFileRoute("/api/public/push/send")({
   server: {
@@ -155,8 +163,26 @@ export const Route = createFileRoute("/api/public/push/send")({
         const { caller, token } = auth;
 
         if (!isSuperAdmin(caller)) {
-          return json({ ok: false, error: "❌ إرسال الإشعارات متاح للمشرف الرئيسي فقط." }, 403);
+          return json({ ok: false, error: "❌ إرسال الإشعارات متاح لرئيس الدفعة فقط." }, 403);
         }
+
+        let payload: Record<string, unknown>;
+        try {
+          payload = (await request.json()) as Record<string, unknown>;
+        } catch {
+          return json({ ok: false, error: "❌ طلب غير صالح." }, 400);
+        }
+
+        /* الدفعة المستهدفة: يحددها الموقع الذي أُرسل منه الطلب، ويتحقق الخادم من أن المرسل يديرها. */
+        const promotionId = String(payload["promotion_id"] ?? "").trim();
+        if (!/^[0-9a-f-]{36}$/i.test(promotionId)) {
+          return json({ ok: false, error: "❌ الدفعة غير محددة." }, 400);
+        }
+        if (!canManagePromotion(caller, promotionId)) {
+          return json({ ok: false, error: "❌ لا تملك صلاحية الإرسال لهذه الدفعة." }, 403);
+        }
+        const promotion = await fetchPromotion(promotionId, token);
+        if (!promotion) return json({ ok: false, error: "❌ الدفعة غير موجودة." }, 404);
 
         const vapid = await readVapidEnv();
         if (!vapid) {
@@ -181,13 +207,6 @@ export const Route = createFileRoute("/api/public/push/send")({
           );
         }
 
-        let payload: Record<string, unknown>;
-        try {
-          payload = (await request.json()) as Record<string, unknown>;
-        } catch {
-          return json({ ok: false, error: "❌ طلب غير صالح." }, 400);
-        }
-
         const title = String(payload["title"] ?? "")
           .trim()
           .slice(0, MAX_TITLE);
@@ -203,17 +222,23 @@ export const Route = createFileRoute("/api/public/push/send")({
           !rawUrl || /^https?:\/\//i.test(rawUrl) || rawUrl.startsWith("./") || rawUrl.startsWith("#");
         const url = urlOk && rawUrl && rawUrl !== "null" ? rawUrl : null;
 
+        /* أيقونة الإشعار: شعار الدفعة المرفوع إن وُجد؛ الدفعات غير الافتراضية بلا شعار تستعمل شعار المعهد
+           (الأيقونة الثابتة الافتراضية للموقع خاصة بالدفعة الافتراضية). */
+        let icon: string | undefined;
+        if (promotion.logo_url && /^https?:\/\//i.test(promotion.logo_url)) icon = promotion.logo_url;
+        else if (!promotion.is_default) icon = `${new URL(request.url).origin}/site/brand/logo-iscae.png`;
+
         const notif = await insertNotification(
-          { title, body, url, created_by: caller.admin ? caller.admin.id : null },
+          { title, body, url, created_by: caller.admin ? caller.admin.id : null, promotion_id: promotion.id },
           token,
         );
 
-        const { subs, error: subsError } = await fetchActiveSubscriptions(token);
+        const { subs, error: subsError } = await fetchActiveSubscriptions(token, promotion.id);
         if (subsError) {
           return json({ ok: false, sent: 0, failed: 0, removed: 0, error: `❌ ${subsError}` }, 500);
         }
 
-        console.log(`[Push] subscriptions count: ${subs.length}`);
+        console.log(`[Push] promotion ${promotion.number} — subscriptions count: ${subs.length}`);
 
         if (subs.length === 0) {
           if (notif)
@@ -231,7 +256,13 @@ export const Route = createFileRoute("/api/public/push/send")({
 
         const { delivered, failed, goneIds, errors } = await sendToAll(
           subs,
-          { id: notif ? notif.id : null, title, body, ...(url ? { url } : {}) },
+          {
+            id: notif ? notif.id : null,
+            title,
+            body,
+            ...(url ? { url } : {}),
+            ...(icon ? { icon } : {}),
+          },
           vapid,
         );
 
