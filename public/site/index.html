@@ -8,6 +8,8 @@
   try{
     var lg = localStorage.getItem("iscae-lang");
     var th = localStorage.getItem("iscae-theme");
+    var pal = localStorage.getItem("iscae-palette");
+    if (pal && /^[a-z0-9-]+$/.test(pal)) document.documentElement.setAttribute("data-palette", pal);
     if (th === "dark" || (!th && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark");
     if (lg === "fr") { document.documentElement.setAttribute("lang","fr"); document.documentElement.setAttribute("dir","ltr"); }
   }catch(e){}
@@ -72,6 +74,58 @@ html.dark{
   --shadow-lg:0 20px 25px -5px rgba(0,0,0,0.5);
   --grad-soft:linear-gradient(180deg,#0f172a 0%,#020617 100%);
 }
+
+/* لوحات الهوية البصرية — تُطبّق على الواجهة العامة ولوحة المشرف معاً. */
+html[data-palette="royal-gold"] {
+  --violet-50:#eef3f8; --violet-100:#dce7f1; --violet-300:#9fb7cc;
+  --violet-500:#28547a; --violet-600:#1b4164; --violet-700:#102744;
+  --emerald:#2f6690; --emerald-dark:#24516f; --bg:#f7f5ef; --bg-2:#fffdf8;
+  --surface:rgba(255,253,248,.86); --surface-solid:#fffdf8; --stroke:rgba(16,39,68,.14);
+  --text:#172536; --muted:#617083; --gold:#c5a253; --ink:#102744; --ink-2:#1d456d;
+  --primary:#1b4164; --secondary:#2f6690; --accent:#c5a253;
+  --grad-primary:linear-gradient(135deg,#102744 0%,#1b4164 58%,#c5a253 150%);
+  --grad-emerald:linear-gradient(135deg,#2f6690 0%,#4d86aa 100%);
+  --grad-soft:linear-gradient(180deg,#f7f5ef 0%,#eef3f8 100%); --ring:0 0 0 4px rgba(197,162,83,.24);
+}
+html[data-palette="emerald-gold"] {
+  --violet-50:#edf7f3; --violet-100:#d4eee5; --violet-300:#8bcbb5;
+  --violet-500:#087f68; --violet-600:#066653; --violet-700:#064c40;
+  --emerald:#0b9f78; --emerald-dark:#08765d; --bg:#f5f7f3; --bg-2:#fffefa;
+  --surface:rgba(255,254,250,.88); --surface-solid:#fffefa; --stroke:rgba(6,76,64,.14);
+  --text:#17352e; --muted:#61756f; --gold:#d5b66a; --ink:#064c40; --ink-2:#0b6657;
+  --primary:#087f68; --secondary:#0b9f78; --accent:#d5b66a;
+  --grad-primary:linear-gradient(135deg,#064c40 0%,#087f68 62%,#d5b66a 150%);
+  --grad-emerald:linear-gradient(135deg,#0b9f78 0%,#36b990 100%);
+  --grad-soft:linear-gradient(180deg,#f5f7f3 0%,#edf7f3 100%); --ring:0 0 0 4px rgba(11,159,120,.22);
+}
+html[data-palette="sky-white"] {
+  --violet-50:#eef8fd; --violet-100:#d8effb; --violet-300:#8bcbe8;
+  --violet-500:#0789bd; --violet-600:#066b98; --violet-700:#10213d;
+  --emerald:#0789bd; --emerald-dark:#066b98; --bg:#f7fafc; --bg-2:#ffffff;
+  --surface:rgba(255,255,255,.9); --surface-solid:#ffffff; --stroke:rgba(16,33,61,.13);
+  --text:#17263d; --muted:#65758a; --gold:#d6b35d; --ink:#10213d; --ink-2:#1b406b;
+  --primary:#0789bd; --secondary:#55bde1; --accent:#d6b35d;
+  --grad-primary:linear-gradient(135deg,#10213d 0%,#0789bd 68%,#d6b35d 150%);
+  --grad-emerald:linear-gradient(135deg,#0789bd 0%,#55bde1 100%);
+  --grad-soft:linear-gradient(180deg,#f7fafc 0%,#eef8fd 100%); --ring:0 0 0 4px rgba(7,137,189,.2);
+}
+html[data-palette="burgundy-ivory"] {
+  --violet-50:#fbf1ef; --violet-100:#f4ded9; --violet-300:#d59b91;
+  --violet-500:#9a3540; --violet-600:#7d2732; --violet-700:#641d27;
+  --emerald:#b27832; --emerald-dark:#8f5b24; --bg:#faf7f0; --bg-2:#fffdf8;
+  --surface:rgba(255,253,248,.9); --surface-solid:#fffdf8; --stroke:rgba(100,29,39,.14);
+  --text:#38252a; --muted:#7f6c6e; --gold:#c5a253; --ink:#641d27; --ink-2:#8b303b;
+  --primary:#9a3540; --secondary:#b27832; --accent:#c5a253;
+  --grad-primary:linear-gradient(135deg,#641d27 0%,#9a3540 62%,#c5a253 150%);
+  --grad-emerald:linear-gradient(135deg,#9a6a2f 0%,#d3ad61 100%);
+  --grad-soft:linear-gradient(180deg,#faf7f0 0%,#fbf1ef 100%); --ring:0 0 0 4px rgba(197,162,83,.24);
+}
+html.dark[data-palette="royal-gold"],html.dark[data-palette="emerald-gold"],html.dark[data-palette="sky-white"],html.dark[data-palette="burgundy-ivory"] {
+  --bg:#111b2a; --bg-2:#1b2b40; --surface:rgba(27,43,64,.82); --surface-solid:#1b2b40;
+  --text:#f7f5ef; --muted:#aab7c5; --stroke:rgba(220,231,241,.14);
+  --grad-soft:linear-gradient(180deg,#111b2a 0%,#0b1320 100%);
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
@@ -870,6 +924,11 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
 .promo-card .pc-heads{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .promo-card .pc-head{display:inline-flex;gap:6px;align-items:center;background:var(--violet-50);border-radius:12px;padding:2px 8px;font-size:12px}
 .promo-card .pc-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.theme-settings{margin:6px 0 22px;padding:18px;border:1px solid var(--border);border-radius:22px;background:var(--surface)}
+.theme-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}
+.theme-settings-head h3{font-weight:900;margin:0}.theme-settings-head p{color:var(--muted);font-size:13px;margin-top:4px}
+.theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.theme-choice{position:relative;display:flex;align-items:center;gap:12px;text-align:start;padding:12px;border:2px solid var(--stroke);border-radius:18px;background:var(--surface-solid);transition:.2s;cursor:pointer}.theme-choice:hover{border-color:var(--violet-300);transform:translateY(-2px)}.theme-choice.selected{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent)}.theme-swatches{display:flex;gap:4px;flex:none}.theme-swatches i{display:block;width:22px;height:42px;border-radius:6px}.theme-choice-copy{display:flex;flex-direction:column;gap:2px}.theme-choice-copy b{font-size:13px}.theme-choice-copy small{font-size:11px;color:var(--muted)}.theme-check{margin-inline-start:auto;opacity:0;color:var(--gold);font-weight:900}.theme-choice.selected .theme-check{opacity:1}.theme-preview-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.8fr);gap:16px;align-items:stretch;margin-top:14px}.theme-live-preview{overflow:hidden;border:1px solid var(--stroke);border-radius:18px;background:var(--bg-2);box-shadow:var(--shadow-sm);min-height:145px}.tlp-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--stroke);color:var(--text);font-size:12px}.tlp-head span{font-size:10px;color:var(--muted)}.tlp-hero{padding:18px 16px;background:linear-gradient(135deg,var(--ink),var(--primary));color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px}.tlp-hero small{font-weight:800}.tlp-hero strong{background:var(--accent);color:var(--ink);padding:7px 10px;border-radius:9px;font-size:11px}.tlp-body{display:flex;align-items:center;gap:14px;padding:15px}.tlp-card{display:flex;gap:4px;align-items:flex-end;height:36px}.tlp-card i,.tlp-card em{width:14px;height:32px;border-radius:4px;display:block}.tlp-card span{width:14px;height:24px;border-radius:4px;background:var(--violet-100);display:block}.tlp-lines{display:flex;flex-direction:column;gap:6px;flex:1}.tlp-lines b{height:6px;border-radius:5px;background:var(--violet-100);display:block}.tlp-lines b:nth-child(2){width:72%}.tlp-lines b:nth-child(3){width:48%}@media(max-width:720px){.theme-grid,.theme-preview-wrap{grid-template-columns:1fr}.theme-settings-head{display:block}}
 </style>
 </head>
 <body>
@@ -1385,6 +1444,20 @@ const I18N = {
   delete_admin_title:{ar:"حذف مشرف",fr:"Supprimer un administrateur"},
   delete_admin_text:{ar:"سيتم إلغاء صلاحيات «{name}».",fr:"Les droits de « {name} » seront révoqués."},
   msg_admin_deleted:{ar:"تم حذف المشرف",fr:"Administrateur supprimé"},
+  theme_title:{ar:"ألوان المنصة",fr:"Couleurs de la plateforme"},
+  theme_note:{ar:"اختر هوية لونية ثم شاهد المعاينة قبل تطبيقها على جميع الزوار والمشرفين.",fr:"Choisissez une identité puis prévisualisez-la avant de l'appliquer à tous les visiteurs et administrateurs."},
+  theme_apply:{ar:"تطبيق هذه اللوحة",fr:"Appliquer cette palette"},
+  theme_applied:{ar:"تم تطبيق ألوان المنصة للجميع",fr:"Les couleurs de la plateforme sont appliquées à tous"},
+  theme_preview_title:{ar:"معاينة مباشرة",fr:"Aperçu en direct"},
+  theme_royal_gold:{ar:"الأزرق الملكي والذهبي الأكاديمي",fr:"Bleu royal et or académique"},
+  theme_royal_gold_desc:{ar:"فخم · أكاديمي · احترافي",fr:"Prestige · académique · professionnel"},
+  theme_emerald_gold:{ar:"الأخضر الزمردي والذهبي",fr:"Émeraude et or"},
+  theme_emerald_gold_desc:{ar:"التميّز · الطموح · الرقي",fr:"Excellence · ambition · élégance"},
+  theme_sky_white:{ar:"الأبيض والأزرق السماوي",fr:"Blanc et bleu ciel"},
+  theme_sky_white_desc:{ar:"البساطة · الوضوح · التكنولوجيا",fr:"Simplicité · clarté · technologie"},
+  theme_burgundy_ivory:{ar:"العنابي والعاجي والذهبي",fr:"Bordeaux, ivoire et or"},
+  theme_burgundy_ivory_desc:{ar:"الهيبة · الأصالة · الفخامة",fr:"Prestige · tradition · luxe"},
+  theme_db_note:{ar:"يتطلب حفظ الألوان لجميع الأجهزة تشغيل ملف THEME-PALETTE.sql في Supabase مرة واحدة.",fr:"Pour synchroniser les couleurs sur tous les appareils, exécutez une seule fois THEME-PALETTE.sql dans Supabase."},
   settings_title:{ar:"الإعدادات العامة",fr:"Paramètres généraux"},
   field_platform_name:{ar:"اسم المنصة",fr:"Nom de la plateforme"},
   field_promotion_name:{ar:"اسم الدفعة",fr:"Nom de la promotion"},
@@ -1689,7 +1762,42 @@ function updateThemeIcon() {
   const btn = $("#btnTheme");
   if (btn) btn.innerHTML = isDark ? iconSun : iconMoon;
 }
+const THEME_PALETTES = {
+  "royal-gold": { label: "theme_royal_gold", desc: "theme_royal_gold_desc", swatches: ["#102744", "#C5A253", "#FAF7EF", "#2F6690"] },
+  "emerald-gold": { label: "theme_emerald_gold", desc: "theme_emerald_gold_desc", swatches: ["#064C40", "#D5B66A", "#F5F7F3", "#0B9F78"] },
+  "sky-white": { label: "theme_sky_white", desc: "theme_sky_white_desc", swatches: ["#10213D", "#0789BD", "#FFFFFF", "#D6B35D"] },
+  "burgundy-ivory": { label: "theme_burgundy_ivory", desc: "theme_burgundy_ivory_desc", swatches: ["#641D27", "#C5A253", "#FAF7F0", "#B27832"] }
+};
+const DEFAULT_PALETTE = "royal-gold";
+function applyPalette(name, persist = false) {
+  const key = THEME_PALETTES[name] ? name : DEFAULT_PALETTE;
+  document.documentElement.setAttribute("data-palette", key);
+  if (persist) localStorage.setItem("iscae-palette", key);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", THEME_PALETTES[key].swatches[0]);
+  return key;
+}
+function currentPalette() {
+  return document.documentElement.getAttribute("data-palette") || state.settings?.theme_preset || DEFAULT_PALETTE;
+}
+function palettePreviewHTML(key, selected) {
+  const p = THEME_PALETTES[key];
+  return `<button type="button" class="theme-choice ${selected ? "selected" : ""}" data-theme-choice="${key}" aria-pressed="${selected}">
+    <span class="theme-swatches">${p.swatches.map(c => `<i style="background:${c}" title="${c}"></i>`).join("")}</span>
+    <span class="theme-choice-copy"><b>${t(p.label)}</b><small>${t(p.desc)}</small></span>
+    <span class="theme-check">✓</span>
+  </button>`;
+}
+function themePreviewHTML(key) {
+  const p = THEME_PALETTES[key];
+  return `<div class="theme-live-preview" data-theme-preview="${key}">
+    <div class="tlp-head"><b>ISCAE</b><span>${t("theme_preview_title")}</span></div>
+    <div class="tlp-hero"><small>18ème Promotion</small><strong>${t("hero_cta") || "البحث عن خريج"}</strong></div>
+    <div class="tlp-body"><div class="tlp-card"><i style="background:${p.swatches[0]}"></i><span></span><em style="background:${p.swatches[1]}"></em></div><div class="tlp-lines"><b></b><b></b><b></b></div></div>
+  </div>`;
+}
 function initTheme() {
+  applyPalette(localStorage.getItem("iscae-palette") || DEFAULT_PALETTE);
   const saved = localStorage.getItem("iscae-theme");
   if (saved === "dark" || (!saved && matchMedia("(prefers-color-scheme: dark)").matches)) {
     document.documentElement.classList.add("dark");
@@ -1829,7 +1937,8 @@ async function loadPublicData() {
   state.specialties = sp.data || [];
   state.students    = st.data || [];
   await signStudentPhotos(state.students);
-  state.settings    = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null };
+  state.settings    = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE };
+  applyPalette(state.settings.theme_preset || DEFAULT_PALETTE, true);
   await loadPromotion();
   await loadCeremonies();
   state.publicLoaded = true;
@@ -2874,6 +2983,11 @@ function renderSettings(panel) {
     <div class="panel-head"><h2>${t("settings_title")}</h2></div>
     ${phoneControlHTML()}
     ${promoAdminHTML()}
+    <section class="theme-settings" id="themeSettings">
+      <div class="theme-settings-head"><div><h3>${t("theme_title")}</h3><p>${t("theme_note")}</p></div><span class="tag tag-A">${esc(currentPalette())}</span></div>
+      <div class="theme-grid">${Object.keys(THEME_PALETTES).map(k => palettePreviewHTML(k, k === currentPalette())).join("")}</div>
+      <div class="theme-preview-wrap"><div id="themeLivePreview">${themePreviewHTML(currentPalette())}</div><div class="theme-db-note"><p class="muted" style="font-size:12px;line-height:1.7">${t("theme_db_note")}</p><button type="button" class="btn btn-primary btn-sm" id="applyThemePalette">${t("theme_apply")}</button></div></div>
+    </section>
     <form id="setForm" class="stack" style="max-width:720px">
       <div class="grid-2">
         <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || ("ISCAE " + promoNumberLabel("fr")))}" /></div>
@@ -2915,6 +3029,19 @@ function renderSettings(panel) {
         </div>` : ""}
       <button class="btn btn-primary" type="submit" style="align-self:flex-start">${t("btn_save_settings")}</button>
     </form>`;
+  let pendingPalette = currentPalette();
+  const refreshThemeChooser = () => {
+    $$("[data-theme-choice]", $("#themeSettings")).forEach(b => { const on = b.dataset.themeChoice === pendingPalette; b.classList.toggle("selected", on); b.setAttribute("aria-pressed", String(on)); });
+    const preview = $("#themeLivePreview"); if (preview) preview.innerHTML = themePreviewHTML(pendingPalette);
+  };
+  $$("[data-theme-choice]", $("#themeSettings")).forEach(b => b.onclick = () => { pendingPalette = applyPalette(b.dataset.themeChoice); refreshThemeChooser(); });
+  $("#applyThemePalette").onclick = async () => {
+    const payload = { ...(tenantOn() ? {} : { id: 1 }), theme_preset: pendingPalette };
+    const result = await db.from("settings").upsert(payload, { onConflict: tenantOn() ? "promotion_id" : "id" });
+    if (result.error) { toast(t("err_save_failed", { msg: result.error.message }), "err"); return; }
+    state.settings = { ...(state.settings || {}), theme_preset: pendingPalette };
+    applyPalette(pendingPalette, true); toast(t("theme_applied"));
+  };
   bindPromoAdmin();
   bindPhoneControl();
   $("#setForm").onsubmit = async e => {
@@ -2927,7 +3054,8 @@ function renderSettings(panel) {
       night_party_date: f.night_party_date ? new Date(f.night_party_date).toISOString() : null,
       cat_a_limit: Number(f.cat_a_limit) || 0,
       cat_b_limit: Number(f.cat_b_limit) || 0,
-      cat_c_limit: Number(f.cat_c_limit) || 0
+      cat_c_limit: Number(f.cat_c_limit) || 0,
+      theme_preset: pendingPalette
     };
     /* الحقول الجديدة: إخفاء الفئات + الأعداد اليدوية (فارغ = تلقائي كما كان) */
     const specOverride = {};
@@ -2951,7 +3079,8 @@ function renderSettings(panel) {
     }
     if (error) { toast(t("err_save_failed", { msg: error.message }), "err"); return; }
     toast(t("msg_settings_saved"));
-    await loadPublicData(); applyBranding(); renderStats(); renderEvents(); renderDash();
+    applyPalette(pendingPalette, true);
+    await loadPublicData(); applyPalette(state.settings?.theme_preset || pendingPalette, true); applyBranding(); renderStats(); renderEvents(); renderDash();
   };
 }
 
