@@ -2,6 +2,8 @@
   "name": "ISCAE — Promotion",
   "short_name": "ISCAE",
   "description": "Plateforme officielle de remise des diplômes de l'ISCAE — annuaire des diplômés.",
+  "author": "Mohamed Dah Agove",
+  "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -29,19 +31,13 @@
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
       "src": "./icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "./icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

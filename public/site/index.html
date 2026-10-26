@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<!-- Developer: Mohamed Dah Agove -->
 <meta charset="UTF-8" />
 <script>
 /* تطبيق اللغة المحفوظة فوراً قبل الرسم لتفادي أي وميض بصري عند تبديل الاتجاه RTL/LTR */
@@ -1573,16 +1574,29 @@ const I18N = {
   install_modal_ios_text:{ar:"لإضافة المنصة إلى شاشتك الرئيسية اتّبع الخطوات التالية.",fr:"Pour ajouter la plateforme à votre écran d'accueil, suivez ces étapes."},
   install_step1:{ar:"اضغط على زر المشاركة في المتصفح",fr:"Appuyez sur le bouton Partager du navigateur"},
   install_step2:{ar:"اختر «إضافة إلى الشاشة الرئيسية»",fr:"Choisissez « Sur l'écran d'accueil »"},
-  install_step3:{ar:"اضغط «إضافة» لتأكيد التثبيت",fr:"Appuyez sur « Ajouter » pour confirmer"},
+  install_step3:{ar:"اضغط «إضافة»، وفعّل «فتح كتطبيق ويب» إذا ظهر الخيار",fr:"Appuyez sur « Ajouter » et activez « Ouvrir comme app web » si l'option apparaît"},
   btn_install_now:{ar:"تثبيت الآن",fr:"Installer maintenant"},
   msg_app_installed:{ar:"تم تثبيت التطبيق بنجاح",fr:"Application installée avec succès"},
+  msg_install_accepted:{ar:"وافق المتصفح على التثبيت. أكمل أي خطوة تأكيد يعرضها.",fr:"Le navigateur a accepté l'installation. Terminez toute confirmation affichée."},
   install_banner_title:{ar:"ثبّت تطبيق المنصة",fr:"Installez l'application"},
   install_banner_text:{ar:"أضف المنصة إلى شاشتك الرئيسية للوصول السريع دون متصفح.",fr:"Ajoutez la plateforme à votre écran d'accueil pour un accès rapide."},
   btn_later:{ar:"لاحقاً",fr:"Plus tard"},
   install_modal_generic_text:{ar:"لتثبيت المنصة على جهازك، افتح قائمة المتصفح واتبع الخطوات التالية.",fr:"Pour installer la plateforme, ouvrez le menu du navigateur et suivez ces étapes."},
   install_gstep1:{ar:"افتح قائمة المتصفح (⋮ أو ⋯)",fr:"Ouvrez le menu du navigateur (⋮ ou ⋯)"},
-  install_gstep2:{ar:"اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»",fr:"Choisissez « Installer l'application » ou « Ajouter à l'écran d'accueil »"},
-  install_gstep3:{ar:"أكّد التثبيت",fr:"Confirmez l'installation"},
+  install_gstep2:{ar:"اختر «تثبيت التطبيق» إن ظهر، وإلا «إضافة إلى الشاشة الرئيسية»",fr:"Choisissez « Installer l'application » si l'option existe, sinon « Ajouter à l'écran d'accueil »"},
+  install_gstep3:{ar:"أكّد الاختيار؛ وقد يضيف بعض المتصفحات اختصاراً فقط لا تطبيقاً مستقلاً",fr:"Confirmez ; certains navigateurs n'ajoutent qu'un raccourci, pas une application autonome"},
+  install_modal_chrome_text:{ar:"على Chrome Android المؤهل قد يظهر «تثبيت التطبيق». إذا لم يظهر إلا «إضافة إلى الشاشة الرئيسية»، فقد يوفّر الجهاز اختصاراً فقط.",fr:"Sur Chrome Android compatible, « Installer l'application » peut apparaître. Si seul « Ajouter à l'écran d'accueil » apparaît, l'appareil peut ne proposer qu'un raccourci."},
+  install_chrome_step1:{ar:"افتح قائمة Chrome (⋮)",fr:"Ouvrez le menu Chrome (⋮)"},
+  install_chrome_step2:{ar:"اختر «تثبيت التطبيق» إذا ظهر؛ وإلا تحقق من «إضافة إلى الشاشة الرئيسية»",fr:"Choisissez « Installer l'application » si disponible ; sinon vérifiez « Ajouter à l'écran d'accueil »"},
+  install_chrome_step3:{ar:"أكّد التثبيت؛ توفر التطبيق المستقل يتوقف أيضاً على دعم الجهاز",fr:"Confirmez ; la disponibilité d'une application autonome dépend aussi de l'appareil"},
+  install_modal_samsung_text:{ar:"في Samsung Internet استخدم زر + في شريط العنوان إن ظهر، أو افتح القائمة. يختلف تثبيت التطبيق المستقل حسب إصدار المتصفح والجهاز.",fr:"Dans Samsung Internet, utilisez le bouton + de la barre d'adresse s'il apparaît, ou ouvrez le menu. L'installation autonome dépend de la version et de l'appareil."},
+  install_samsung_step1:{ar:"اضغط + في شريط العنوان، أو افتح قائمة Samsung Internet",fr:"Appuyez sur + dans la barre d'adresse ou ouvrez le menu Samsung Internet"},
+  install_samsung_step2:{ar:"اختر «الشاشة الرئيسية» أو «تثبيت التطبيق» إذا ظهر",fr:"Choisissez « Écran d'accueil » ou « Installer l'application » si disponible"},
+  install_samsung_step3:{ar:"أكّد الإضافة؛ قد تكون أيقونة شاشة رئيسية بحسب الجهاز",fr:"Confirmez ; selon l'appareil, l'icône peut être un raccourci"},
+  install_modal_android_text:{ar:"تختلف الخيارات في Firefox وEdge وOpera وغيرها. كثير منها يضيف اختصاراً إلى الشاشة الرئيسية بدلاً من تطبيق مستقل.",fr:"Les options diffèrent dans Firefox, Edge, Opera et autres. Beaucoup ajoutent un raccourci à l'écran d'accueil plutôt qu'une application autonome."},
+  install_android_step1:{ar:"افتح قائمة المتصفح (⋮ أو ≡)",fr:"Ouvrez le menu du navigateur (⋮ ou ≡)"},
+  install_android_step2:{ar:"اختر «تثبيت التطبيق» إن توفر، وإلا «إضافة إلى الشاشة الرئيسية»",fr:"Choisissez « Installer l'application » si disponible, sinon « Ajouter à l'écran d'accueil »"},
+  install_android_step3:{ar:"أكّد الإضافة؛ قد ينشئ المتصفح اختصاراً فقط",fr:"Confirmez ; le navigateur peut ne créer qu'un raccourci"},
   field_show_category_stats:{ar:"إظهار خانة عدد كل فئة في الصفحة الرئيسية",fr:"Afficher les compteurs de catégories sur la page d'accueil"},
   graduates_counts_title:{ar:"أعداد الخريجين (اختياري)",fr:"Nombre de DIPLÔMÉ (optionnel)"},
   graduates_counts_note:{ar:"اترك الحقول فارغة ليتم الحساب تلقائياً من قاعدة البيانات كما هو الحال الآن.",fr:"Laissez les champs vides pour un calcul automatique depuis la base de données, comme actuellement."},
@@ -2182,13 +2196,21 @@ function specialtyOverrides() {
   return raw;
 }
 /** Real number of students of a specialty, as stored in the database. */
-function autoSpecialtyCount(specId) {
-  return state.students.filter(s => s.specialty_id === specId).length;
+function studentCountsBySpecialty() {
+  const counts = new Map();
+  state.students.forEach(student => {
+    if (student.specialty_id == null) return;
+    counts.set(student.specialty_id, (counts.get(student.specialty_id) || 0) + 1);
+  });
+  return counts;
+}
+function autoSpecialtyCount(specId, counts = null) {
+  return counts ? (counts.get(specId) || 0) : state.students.filter(s => s.specialty_id === specId).length;
 }
 /** Displayed number for a specialty: manual value if defined, otherwise automatic. */
-function displaySpecialtyCount(specId) {
-  const ov = specialtyOverrides()[specId];
-  return hasOverride(ov) ? Number(ov) : autoSpecialtyCount(specId);
+function displaySpecialtyCount(specId, counts = null, overrides = specialtyOverrides()) {
+  const ov = overrides[specId];
+  return hasOverride(ov) ? Number(ov) : autoSpecialtyCount(specId, counts);
 }
 /** Displayed total of graduates: manual value if defined, otherwise automatic. */
 function displayTotalGraduates() {
@@ -2205,6 +2227,9 @@ function renderStats() {
   const specs = state.specialties.length;
   const cats  = { A: 0, B: 0, C: 0, D: 0 };
   state.students.forEach(s => cats[categoryOf(s.order_index)]++);
+  const countBySpecialty = studentCountsBySpecialty();
+  const overrides = specialtyOverrides();
+  const specialtyCounts = state.specialties.map(sp => displaySpecialtyCount(sp.id, countBySpecialty, overrides));
 
   $("#statsGrid").innerHTML = `
     ${statCard("c-violet", total, t("stat_graduate"), iconUsers)}
@@ -2214,10 +2239,10 @@ function renderStats() {
       ${statCard("c-amber", cats.C + cats.D, t("stat_cat_cd"), iconStar)}` : ""}
   `;
 
-  const maxCount = Math.max(...state.specialties.map(sp => displaySpecialtyCount(sp.id)), 1);
+  const maxCount = Math.max(...specialtyCounts, 1);
   $("#specGrid").innerHTML = state.specialties.length
-    ? `<div class="chart-grid">` + state.specialties.map(sp => {
-        const n = displaySpecialtyCount(sp.id);
+    ? `<div class="chart-grid">` + state.specialties.map((sp, index) => {
+        const n = specialtyCounts[index];
         const p = (n / maxCount) * 100;
         const barColor = sp.color || '#7C3AED';
         return `
@@ -3127,6 +3152,7 @@ async function deleteAdmin(id) {
 function renderSettings(panel) {
   const s = state.settings || {};
   const ovs = specialtyOverrides();
+  const studentCounts = studentCountsBySpecialty();
   panel.innerHTML = `
     <div class="panel-head"><h2>${t("settings_title")}</h2></div>
     ${phoneControlHTML()}
@@ -3172,7 +3198,7 @@ function renderSettings(panel) {
             const ov = ovs[sp.id];
             return `<div class="field">
               <label>${esc(sp.name)}</label>
-              <input data-spec-count="${esc(sp.id)}" type="number" min="0" placeholder="${t("placeholder_auto", { n: autoSpecialtyCount(sp.id) })}" value="${hasOverride(ov) ? Number(ov) : ""}" />
+              <input data-spec-count="${esc(sp.id)}" type="number" min="0" placeholder="${t("placeholder_auto", { n: autoSpecialtyCount(sp.id, studentCounts) })}" value="${hasOverride(ov) ? Number(ov) : ""}" />
             </div>`;
           }).join("")}
         </div>` : ""}
@@ -3239,17 +3265,22 @@ function renderSettings(panel) {
       specialty_counts_override: Object.keys(specOverride).length ? specOverride : null
     };
 
+    let saveExtraSettings = true;
     let { error } = await db.from("settings").upsert({ ...basePayload, ...extraPayload }, { onConflict: tenantOn() ? "promotion_id" : "id" });
     if (error && /column|schema cache|show_category_stats|total_graduates_override|specialty_counts_override/i.test(error.message || "")) {
       /* الأعمدة الجديدة غير موجودة بعد: نحفظ الإعدادات القديمة كما كانت وننبّه المشرف. */
       const retry = await db.from("settings").upsert(basePayload, { onConflict: tenantOn() ? "promotion_id" : "id" });
       error = retry.error;
-      if (!error) toast(t("warn_settings_columns"), "err");
+      if (!error) { saveExtraSettings = false; toast(t("warn_settings_columns"), "err"); }
     }
     if (error) { toast(t("err_save_failed", { msg: error.message }), "err"); return; }
+    state.settings = { ...(state.settings || {}), ...basePayload, ...(saveExtraSettings ? extraPayload : {}) };
+    if (!saveExtraSettings) {
+      delete state.settings.show_category_stats;
+      delete state.settings.total_graduates_override;
+      delete state.settings.specialty_counts_override;
+    }
     toast(t("msg_settings_saved"));
-    applyPalette(pendingPalette, true);
-    await loadPublicData();
     if (state.settings?.theme_preset === "custom") applyCustomPalette(state.settings.theme_custom_color || pendingCustomColor, true);
     else applyPalette(state.settings?.theme_preset || pendingPalette, true);
     applyBranding(); renderStats(); renderEvents(); openDashboardTab("settings");
@@ -4304,20 +4335,38 @@ async function redistributeCeremony(ceremonyId, silentConfirm) {
 
 /* ------------------------- 18. PWA: التثبيت وSERVICE WORKER ------------------------- */
 let deferredInstallPrompt = null;
-const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-const isStandaloneMode = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-/* حالة «التطبيق مثبَّت»: تبقى محفوظة في المتصفح كي يختفي زر التثبيت وشريطه حتى عند فتح الموقع من تبويب المتصفح. */
-const INSTALLED_FLAG = "iscae-app-installed";
-const readInstalledFlag = () => { try { return localStorage.getItem(INSTALLED_FLAG) === "1"; } catch (e) { return false; } };
-const setInstalledFlag = (on) => { try { on ? localStorage.setItem(INSTALLED_FLAG, "1") : localStorage.removeItem(INSTALLED_FLAG); } catch (e) {} };
-const isRunningAsApp = () => isStandaloneMode() || ["fullscreen", "minimal-ui", "window-controls-overlay"].some(m => window.matchMedia(`(display-mode: ${m})`).matches);
-const isAppInstalled = () => isRunningAsApp() || readInstalledFlag();
-if (isRunningAsApp()) setInstalledFlag(true);
+let installPromptBusy = false;
+let installConfirmedThisSession = false;
+const installUa = navigator.userAgent || "";
+const isIOSDevice = /iphone|ipad|ipod/i.test(installUa) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const displayModeMatches = mode => {
+  try { return !!(window.matchMedia && window.matchMedia(`(display-mode: ${mode})`).matches); }
+  catch (e) { return false; }
+};
+const isStandaloneMode = () => displayModeMatches("standalone") || navigator.standalone === true;
+const isRunningAsApp = () => isStandaloneMode() || ["fullscreen", "minimal-ui", "window-controls-overlay"].some(displayModeMatches);
+const isAppInstalled = () => isRunningAsApp() || installConfirmedThisSession;
+/* لا نحتفظ بعلامة مثبتة دائمة: إزالة التطبيق لا تحذف localStorage في كثير من المتصفحات. */
+try { localStorage.removeItem("iscae-app-installed"); } catch (e) {}
+if (isRunningAsApp()) installConfirmedThisSession = true;
 
-function installModal(generic) {
-  const steps = generic
-    ? [t("install_gstep1"), t("install_gstep2"), t("install_gstep3")]
-    : [t("install_step1"), t("install_step2"), t("install_step3")];
+function installGuideMode() {
+  if (isIOSDevice) return "ios";
+  if (!/android/i.test(installUa)) return "generic";
+  if (/SamsungBrowser/i.test(installUa)) return "samsung";
+  if (/Chrome\//i.test(installUa) && !/(EdgA|OPR|Vivaldi|Brave|Firefox|Fennec)/i.test(installUa)) return "chrome";
+  return "android";
+}
+
+function installModal(mode = installGuideMode()) {
+  const guides = {
+    ios: { text: "install_modal_ios_text", steps: ["install_step1", "install_step2", "install_step3"] },
+    chrome: { text: "install_modal_chrome_text", steps: ["install_chrome_step1", "install_chrome_step2", "install_chrome_step3"] },
+    samsung: { text: "install_modal_samsung_text", steps: ["install_samsung_step1", "install_samsung_step2", "install_samsung_step3"] },
+    android: { text: "install_modal_android_text", steps: ["install_android_step1", "install_android_step2", "install_android_step3"] },
+    generic: { text: "install_modal_generic_text", steps: ["install_gstep1", "install_gstep2", "install_gstep3"] }
+  };
+  const guide = guides[mode] || guides.generic;
   const m = openModal(`
     <div class="modal install-hint-modal" style="max-width:420px">
       <div class="modal-head">
@@ -4325,9 +4374,9 @@ function installModal(generic) {
         <h3>${t("install_modal_title")}</h3>
       </div>
       <div class="modal-body">
-        <p class="muted">${generic ? t("install_modal_generic_text") : t("install_modal_ios_text")}</p>
+        <p class="muted">${t(guide.text)}</p>
         <div class="steps">
-          ${steps.map((s, i) => `<div class="step"><b>${i + 1}</b><span>${esc(s)}</span></div>`).join("")}
+          ${guide.steps.map((key, i) => `<div class="step"><b>${i + 1}</b><span>${esc(t(key))}</span></div>`).join("")}
         </div>
       </div>
       <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_close")}</button></div>
@@ -4356,37 +4405,30 @@ function refreshInstallButton() {
   }
 }
 
-/** تنفيذ التثبيت: نافذة المتصفح إن توفرت، وإلا شرح الخطوات. */
+/** استخدم طلب التثبيت مرة واحدة عند توفره، وإلا اعرض خطوات المنصة الحالية. */
 async function triggerInstall() {
-  console.log('[Install] triggerInstall called, deferredInstallPrompt:', !!deferredInstallPrompt);
-  if (deferredInstallPrompt) {
-    try {
-      deferredInstallPrompt.prompt();
-      const { outcome } = await deferredInstallPrompt.userChoice;
-      console.log('[Install] Installation outcome:', outcome);
-      if (outcome === "accepted") {
-        setInstalledFlag(true);
-        toast(t("msg_app_installed"));
-        deferredInstallPrompt = null;
-        refreshInstallButton();
-      }
-    } catch (err) {
-      console.error('[Install] Error during installation:', err);
-      toast(t("msg_app_installed"));
-    }
-  } else {
-    // If not supported directly, show instructions
-    console.log('[Install] No deferredInstallPrompt, showing instructions');
-    installModal(!isIOSDevice);
+  if (installPromptBusy) return;
+  const promptEvent = deferredInstallPrompt;
+  if (!promptEvent) { installModal(); return; }
+  deferredInstallPrompt = null;
+  installPromptBusy = true;
+  try {
+    promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    if (choice && choice.outcome === "accepted") toast(t("msg_install_accepted"));
+  } catch (err) {
+    console.warn("[Install] Native prompt failed; showing browser instructions", err);
+    installModal();
+  } finally {
+    installPromptBusy = false;
+    refreshInstallButton();
   }
 }
 
-window.addEventListener("beforeinstallprompt", (e) => {
-  console.log('[Install] beforeinstallprompt event fired');
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  /* المتصفح يعرض التثبيت فقط إذا لم يكن التطبيق مثبَّتاً → نصحّح الحالة المحفوظة (مثلاً بعد إلغاء التثبيت). */
-  if (!isRunningAsApp()) setInstalledFlag(false);
+window.addEventListener("beforeinstallprompt", (event) => {
+  if (isAppInstalled()) return;
+  event.preventDefault();
+  deferredInstallPrompt = event;
   refreshInstallButton();
 });
 
@@ -4400,8 +4442,7 @@ $("#ibClose").onclick = () => {
 };
 
 window.addEventListener("appinstalled", () => {
-  console.log('[Install] App installed successfully');
-  setInstalledFlag(true);
+  installConfirmedThisSession = true;
   deferredInstallPrompt = null;
   installBannerDismissed = true;
   refreshInstallButton();
@@ -4410,17 +4451,12 @@ window.addEventListener("appinstalled", () => {
 
 /* إن فُتح التطبيق/تبدّل وضع العرض أثناء الجلسة، حدّث الزر والشريط فوراً */
 try {
-  ["standalone", "fullscreen", "minimal-ui"].forEach(m => {
+  ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"].forEach(m => {
+    if (!window.matchMedia) return;
     const mq = window.matchMedia(`(display-mode: ${m})`);
-    const h = () => { if (isRunningAsApp()) setInstalledFlag(true); refreshInstallButton(); };
+    const h = () => { if (isRunningAsApp()) installConfirmedThisSession = true; refreshInstallButton(); };
     mq.addEventListener ? mq.addEventListener("change", h) : mq.addListener && mq.addListener(h);
   });
-} catch (e) {}
-/* كشف إضافي (كروم/أندرويد): هل التطبيق مثبَّت؟ إن أمكن التحقق من المتصفح مباشرة */
-try {
-  if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(apps => {
-    if (apps && apps.length) { setInstalledFlag(true); refreshInstallButton(); }
-  }).catch(() => {});
 } catch (e) {}
 
 if ("serviceWorker" in navigator) {
@@ -4781,6 +4817,7 @@ async function pwaApplyIcons(ic) {
   const abs = v => new URL(v, base).href;
   m.name = "ISCAE — " + promoLabel(); m.short_name = "ISCAE " + state.promo.number;
   m.description = t("meta_desc", { promo: promoLabel() });
+  if (m.id) m.id = abs(m.id);
   if (m.start_url) m.start_url = abs(m.start_url);
   if (m.scope) m.scope = abs(m.scope);
   m.icons = [
