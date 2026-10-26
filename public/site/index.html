@@ -2578,6 +2578,30 @@ function tabsForRole() {
 }
 
 let dashboardRendering = false;
+function markActiveDashboardTab(tab) {
+  $$('[data-tab]').forEach(b => {
+    const active = b.dataset.tab === tab;
+    b.classList.toggle("active", active);
+    b.classList.toggle("btn-primary", active);
+    b.classList.toggle("btn-ghost", !active);
+  });
+}
+function openDashboardTab(tab) {
+  state.tab = tab;
+  if (tab !== "settings") { renderDash(); return; }
+  const panel = $("#panel");
+  if (!panel) return;
+  markActiveDashboardTab(tab);
+  panel.setAttribute("aria-busy", "true");
+  try {
+    renderSettings(panel);
+  } catch (error) {
+    console.error("[ISCAE] settings render failed", error);
+    panel.innerHTML = `<div class="panel-head"><h2>${t("settings_title")}</h2></div><div class="empty">تعذّر فتح الإعدادات. أعد تحميل الصفحة وحاول مرة أخرى.</div>`;
+  } finally {
+    panel.removeAttribute("aria-busy");
+  }
+}
 function renderDash() {
   if (dashboardRendering) return;
   dashboardRendering = true;
@@ -2597,7 +2621,7 @@ function renderDash() {
     `<button class="btn ${state.tab === tb.k ? "btn-primary" : "btn-ghost"} btn-sm" data-tab="${tb.k}">${tb.n}</button>`
   ).join("") + `<button class="btn btn-ghost btn-sm" data-home>${t("nav_home_mobile")}</button>`;
 
-  $$("[data-tab]").forEach(b => b.onclick = () => { state.tab = b.dataset.tab; renderDash(); });
+  $$(`[data-tab]`).forEach(b => b.onclick = () => openDashboardTab(b.dataset.tab));
   $$("[data-home]").forEach(b => b.onclick = () => showPublic());
 
   const panel = $("#panel");
@@ -3225,7 +3249,10 @@ function renderSettings(panel) {
     if (error) { toast(t("err_save_failed", { msg: error.message }), "err"); return; }
     toast(t("msg_settings_saved"));
     applyPalette(pendingPalette, true);
-    await loadPublicData(); applyPalette(state.settings?.theme_preset || pendingPalette, true); applyBranding(); renderStats(); renderEvents(); renderDash();
+    await loadPublicData();
+    if (state.settings?.theme_preset === "custom") applyCustomPalette(state.settings.theme_custom_color || pendingCustomColor, true);
+    else applyPalette(state.settings?.theme_preset || pendingPalette, true);
+    applyBranding(); renderStats(); renderEvents(); openDashboardTab("settings");
   };
 }
 
