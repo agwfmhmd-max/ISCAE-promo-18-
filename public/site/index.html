@@ -1714,17 +1714,17 @@ function defaultPromoLogo(n) {
     return `<line x1="${x2.toFixed(1)}" y1="${y2.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"/><circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="1.6"/>`; }).join("");
   const bars = [6, 9, 12, 15].map((h, i) => `<rect x="${29.5 + i * 5.6}" y="${90 - h}" width="4" height="${h}" rx="1"/>`).join("");
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(promoNumberLabel())}">
-    <defs><linearGradient id="pg${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c4df0"/><stop offset=".55" stop-color="#3a1691"/><stop offset="1" stop-color="#1b0b4d"/></linearGradient>
-    <linearGradient id="gg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e0a0"/><stop offset="1" stop-color="#c9a24a"/></linearGradient>
-    <radialGradient id="sh${u}" cx=".35" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+    <defs><linearGradient id="pg${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#012328"/><stop offset=".55" stop-color="#001013"/><stop offset="1" stop-color="#000000"/></linearGradient>
+    <linearGradient id="gg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13878a"/><stop offset="1" stop-color="#04656c"/></linearGradient>
+    <radialGradient id="sh${u}" cx=".35" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
     <circle cx="60" cy="60" r="58" fill="url(#gg${u})"/><circle cx="60" cy="60" r="55.5" fill="url(#pg${u})"/><circle cx="60" cy="60" r="55.5" fill="url(#sh${u})"/>
-    <circle cx="60" cy="60" r="44.5" fill="none" stroke="#f6e0a0" stroke-opacity=".38" stroke-width=".8"/>
-    <g stroke="#f6e0a0" stroke-opacity=".55" stroke-width=".9" fill="#f6e0a0" fill-opacity=".8">${nodes}</g>
+    <circle cx="60" cy="60" r="44.5" fill="none" stroke="#04656c" stroke-opacity=".38" stroke-width=".8"/>
+    <g stroke="#04656c" stroke-opacity=".55" stroke-width=".9" fill="#04656c" fill-opacity=".8">${nodes}</g>
     <g fill="url(#gg${u})"><polygon points="60,13 80,21.5 60,30 40,21.5"/><path d="M48.5 25.5v6.5c0 2.6 5 4.8 11.5 4.8s11.5-2.2 11.5-4.8v-6.5L60 31z" opacity=".78"/><rect x="78.6" y="21.5" width="1.5" height="9.5"/><circle cx="79.4" cy="33" r="1.9"/></g>
-    <text x="60" y="${fs > 30 ? 64 : 62}" text-anchor="middle" font-family="'Plus Jakarta Sans',Tajawal,sans-serif" font-weight="800" font-size="${fs}" fill="url(#gg${u})">${esc(n)}</text>
-    <g><line x1="44" y1="69.5" x2="56" y2="69.5" stroke="#f6e0a0" stroke-opacity=".6" stroke-width=".8"/><line x1="64" y1="69.5" x2="76" y2="69.5" stroke="#f6e0a0" stroke-opacity=".6" stroke-width=".8"/><rect x="58" y="67.5" width="4" height="4" transform="rotate(45 60 69.5)" fill="#f6e0a0"/></g>
+    <text x="60" y="${fs > 30 ? 64 : 62}" text-anchor="middle" font-family="'Plus Jakarta Sans',Tajawal,sans-serif" font-weight="800" font-size="${fs}" fill="#04656c">${esc(n)}</text>
+    <g><line x1="44" y1="69.5" x2="56" y2="69.5" stroke="#04656c" stroke-opacity=".6" stroke-width=".8"/><line x1="64" y1="69.5" x2="76" y2="69.5" stroke="#04656c" stroke-opacity=".6" stroke-width=".8"/><rect x="58" y="67.5" width="4" height="4" transform="rotate(45 60 69.5)" fill="#04656c"/></g>
     <g fill="url(#gg${u})">${bars}</g>
-    <polyline points="29,80 35,76 41,78 51,70" fill="none" stroke="#f6e0a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,68.6 47.6,69.4 51.6,73.4" fill="#f6e0a0"/>
+    <polyline points="29,80 35,76 41,78 51,70" fill="none" stroke="#04656c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,68.6 47.6,69.4 51.6,73.4" fill="#04656c"/>
     <g fill="none" stroke="url(#gg${u})" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M76 76l-6 6.5 6 6.5"/><path d="M84 74.5l-4.5 16"/><path d="M87.5 76l6 6.5-6 6.5" transform="translate(-0.5 0)"/></g>
     <text x="60" y="105" text-anchor="middle" font-family="'Plus Jakarta Sans',sans-serif" font-weight="800" font-size="8" letter-spacing="3.2" fill="#fff" fill-opacity=".9">ISCAE</text></svg>`;
 }
@@ -4778,7 +4778,7 @@ async function renderNotifsTab(panel) {
 /* ------------------------- 18b. APP ICON = PROMO LOGO -------------------------
    أيقونة التثبيت (PWA) وأيقونة التبويب (favicon) وأيقونة iOS تُولَّد من شعار الدفعة نفسه،
    فإذا غيّر المشرف الرئيسي الشعار تتغير الأيقونة تلقائياً (manifest ديناميكي). */
-const PWA_ICON_CACHE = "iscae-pwa-icons-v1";
+const PWA_ICON_CACHE = "iscae-pwa-icons-v2-teal";
 let pwaIconKey = "", pwaIconToken = 0, pwaManifestUrl = "";
 function pwaLoadImg(src, cors) {
   return new Promise((res, rej) => {
@@ -4845,7 +4845,7 @@ async function syncPwaIcons() {
   pwaIconKey = key; const token = ++pwaIconToken;
   try {
     const img = await pwaLogoImage(); if (token !== pwaIconToken) return;
-    const BG = "#180a42";
+    const BG = "#000000";
     const ic = { f16: pwaDraw(img, 16, null, 1), f32: pwaDraw(img, 32, null, 1), a180: pwaDraw(img, 180, BG, .8),
                  i192: pwaDraw(img, 192, BG, .74), i512: pwaDraw(img, 512, BG, .74) };
     await pwaApplyIcons(ic);
