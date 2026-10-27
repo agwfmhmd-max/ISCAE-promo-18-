@@ -1,13 +1,15 @@
-// Network-Only Strategy: لا تخزين مؤقت للبيانات الحيوية
-// كل طلب يذهب مباشرة للإنترنت
+// Developer: Mohamed Dah Agove
+// ISCAE_SW_BUILD makes the branding-capable worker script version explicit.
+const ISCAE_SW_BUILD = "iscae-promo-brand-live-v3";
+// Network-Only Strategy: لا يخزّن هذا العامل manifest أو الشعار أو أيقونات التطبيق؛ تُطلب دائماً من الشبكة.
 
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing');
+  console.log("[Service Worker] Installing", ISCAE_SW_BUILD);
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating');
+  console.log("[Service Worker] Activating", ISCAE_SW_BUILD);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(

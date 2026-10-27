@@ -874,6 +874,18 @@ html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
 .logo-edit{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .logo-prev{width:96px;height:96px;flex:none;border-radius:16px;border:1px dashed var(--violet-300);display:grid;place-items:center;padding:6px;background:var(--surface-solid)}
 .logo-prev svg,.logo-prev img{width:100%;height:100%;object-fit:contain}
+.logo-editor{display:grid;grid-template-columns:minmax(170px,280px) minmax(220px,1fr);gap:14px;align-items:start}
+.logo-canvas-shell{width:100%;max-width:280px;border:1px solid var(--stroke);border-radius:16px;overflow:hidden;background-color:#fff;background-image:linear-gradient(45deg,#e8edf3 25%,transparent 25%),linear-gradient(-45deg,#e8edf3 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e8edf3 75%),linear-gradient(-45deg,transparent 75%,#e8edf3 75%);background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0}
+.logo-editor-canvas{display:block;width:100%;height:auto;aspect-ratio:1;touch-action:none;user-select:none;cursor:crosshair}
+.logo-editor-controls{display:grid;gap:10px;min-width:0}
+.logo-control-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.logo-control-row label{font-size:12px;font-weight:800;color:var(--muted)}
+.logo-editor-controls input[type=color]{width:42px;height:38px;padding:3px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface-solid);cursor:pointer}
+.logo-editor-controls input[type=range]{max-width:150px;accent-color:var(--primary)}
+.logo-editor-controls input[type=text]{min-width:0;flex:1;padding:9px 10px;border:1px solid var(--stroke);border-radius:10px;background:var(--bg-2);color:var(--text)}
+.logo-tool[aria-pressed="true"]{border-color:var(--primary);background:var(--primary);color:#fff}
+.logo-editor-status{min-height:1.5em;font-size:12px;color:var(--muted);line-height:1.6}
+@media(max-width:640px){.logo-editor{grid-template-columns:minmax(0,1fr)}.logo-canvas-shell{max-width:min(100%,300px);margin-inline:auto}.logo-editor-controls{width:100%}}
 .mda{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:4px 10px 4px 12px;min-height:30px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:11.5px;font-weight:600;text-decoration:none;transition:transform .2s var(--ease),border-color .2s,box-shadow .2s}
 .mda b{display:inline-grid;place-items:center;height:20px;padding:0 9px;border-radius:999px;background:linear-gradient(135deg,var(--ink-2),var(--primary));color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.2em;box-shadow:inset 0 0 0 1px rgba(201,162,74,.65)}
 .mda svg{color:#22a559}
@@ -1746,14 +1758,18 @@ async function loadPromotionLegacy() {
   try {
     const { data, error } = await rawFrom("promotion_settings").select("*").eq("id", 1).maybeSingle();
     state.promoReady = !error && !!data;
-    if (state.promoReady) state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null, logo: data.promotion_logo_url || null };
+    if (state.promoReady) {
+      state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null,
+        logo_source: data.promotion_logo_url || null, logo: await signedStorageUrl(data.promotion_logo_url) };
+    }
   } catch (e) { state.promoReady = false; }
 }
 const isMissingRelation = e => !!e && (e.code === "42P01" || e.code === "PGRST205" || /relation|schema cache|does not exist|could not find the table/i.test(String(e.message || "")));
 function applyPromoRow(row) {
   TENANT.id = row.id;
   state.promo = { id: row.id, slug: row.slug, number: Number(row.number) || 18, name_fr: row.name_fr || null, name_ar: row.name_ar || null,
-    logo: row.logo_url && /^https?:\/\//i.test(row.logo_url) ? row.logo_url : null, domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default };
+    logo_source: row.logo_url || null, logo: row.logo_url && /^https?:\/\//i.test(row.logo_url) ? row.logo_url : null,
+    domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default };
   state.promoReady = true;
 }
 /** تحديد دفعة هذا الرابط: النطاق الدقيق ← رقم الدفعة في اسم النطاق ← الدفعة الافتراضية (localhost / نطاق مخصص). */
@@ -1811,7 +1827,21 @@ Object.assign(I18N, {
   promo_missing:{ar:"جدول promotion_settings غير موجود: نفّذ PROMOTION.sql في Supabase أولاً.",fr:"Table promotion_settings absente : exécutez d'abord PROMOTION.sql dans Supabase."},
   promo_denied:{ar:"غير مصرّح: للمشرف الرئيسي فقط.",fr:"Non autorisé : administrateur principal uniquement."},
   promo_logo:{ar:"شعار الدفعة",fr:"Logo de la promotion"},
-  promo_logo_hint:{ar:"PNG أو JPG أو WebP (حتى 5 ميغابايت). يظهر بارزاً في الصفحة الرئيسية. بدون شعار يظهر الشعار الافتراضي.",fr:"PNG, JPG ou WebP (5 Mo max). Affiché en évidence sur l'accueil. Sans logo, l'emblème par défaut est utilisé."},
+  promo_logo_hint:{ar:"ارفع PNG أو JPG أو WebP (حتى 5 ميغابايت)، أو غيّر اللون، أضف كتابة/رسماً، أو امسح جزءاً بالممحاة. تظهر التغييرات للجميع بعد الحفظ.",fr:"Importez un PNG, JPG ou WebP (5 Mo max), recolorez-le, ajoutez du texte/du dessin ou effacez une partie. Les changements sont visibles par tous après l'enregistrement."},
+  promo_logo_color:{ar:"لون الشعار/القلم",fr:"Couleur du logo/crayon"},
+  promo_logo_include_white:{ar:"تلوين الأبيض أيضاً (للخلفية الشفافة)",fr:"Recolorer aussi le blanc (logo sur fond transparent)"},
+  promo_logo_apply_color:{ar:"تطبيق اللون على الشعار",fr:"Appliquer la couleur au logo"},
+  promo_logo_tool_draw:{ar:"قلم الرسم",fr:"Crayon"},
+  promo_logo_tool_erase:{ar:"ممحاة",fr:"Gomme"},
+  promo_logo_brush:{ar:"حجم الأداة",fr:"Taille de l'outil"},
+  promo_logo_add_text:{ar:"إضافة كتابة",fr:"Ajouter du texte"},
+  promo_logo_text_placeholder:{ar:"اكتب ما تريد إضافته إلى الشعار",fr:"Texte à ajouter au logo"},
+  promo_logo_undo:{ar:"تراجع",fr:"Annuler"},
+  promo_logo_restore:{ar:"إلغاء التعديلات غير المحفوظة",fr:"Annuler les modifications non enregistrées"},
+  promo_logo_editor_hint:{ar:"اسحب على المعاينة للرسم أو للمسح. احفظ لتطبيق الشعار على كل الزوار والأجهزة.",fr:"Dessinez ou effacez en faisant glisser sur l'aperçu. Enregistrez pour appliquer le logo à tous les visiteurs et appareils."},
+  promo_logo_edit_load_fail:{ar:"تعذر تحرير نسخة الشعار الحالية؛ ارفعها من جديد ثم تابع التعديل.",fr:"Impossible de modifier le logo actuel ; importez-le à nouveau pour continuer."},
+  promo_logo_empty_text:{ar:"اكتب النص الذي تريد إضافته أولاً.",fr:"Saisissez d'abord le texte à ajouter."},
+  promo_logo_saved_live:{ar:"تم حفظ الشعار وإرساله إلى الزوار المتصلين.",fr:"Logo enregistré et envoyé aux visiteurs connectés."},
   promo_logo_reset:{ar:"العودة للشعار الافتراضي",fr:"Revenir à l'emblème par défaut"},
   promo_logo_fail:{ar:"تعذّر رفع الشعار: {msg}",fr:"Échec de l'envoi du logo : {msg}"},
   promo_hint:{ar:"اترك اسم الدفعة فارغاً إذا لم يُحدَّد بعد — لن يظهر أي اسم للزوار.",fr:"Laissez le nom vide s'il n'est pas encore défini — aucun nom ne sera affiché aux visiteurs."}
@@ -3303,6 +3333,7 @@ async function uploadPromoLogo(file) {
   if (file.size <= 350 * 1024) return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(error); r.readAsDataURL(file); });
   throw error;
 }
+let refreshPromoLogoEditor = null;
 function promoAdminHTML() {
   if (!isSuper()) return "";
   const p = state.promo;
@@ -3313,54 +3344,177 @@ function promoAdminHTML() {
       <div class="field"><label for="pFr">${t("promo_name_fr")}</label><input id="pFr" name="fr" dir="ltr" lang="fr" maxlength="80" value="${esc(p.name_fr || "")}" /></div>
       <div class="field"><label for="pAr">${t("promo_name_ar")}</label><input id="pAr" name="ar" dir="rtl" lang="ar" maxlength="80" value="${esc(p.name_ar || "")}" /></div>
       <div class="field"><label for="pLogo">${t("promo_logo")}</label>
-        <div class="logo-edit"><div class="logo-prev" id="logoPrev"></div>
-          <div class="stack" style="gap:8px;min-width:0"><input id="pLogo" type="file" accept="image/png,image/jpeg,image/webp" />
-          <button type="button" class="btn btn-ghost btn-sm" id="pLogoReset" style="align-self:flex-start">${t("promo_logo_reset")}</button>
-          <small class="muted">${t("promo_logo_hint")}</small></div></div></div>
-      <button class="btn btn-primary" type="submit" style="align-self:flex-start">${t("promo_save")}</button>
+        <div class="logo-editor">
+          <div class="logo-canvas-shell"><canvas class="logo-editor-canvas" id="logoCanvas" width="512" height="512" role="img" aria-label="${esc(t("promo_logo"))}"></canvas></div>
+          <div class="logo-editor-controls">
+            <input id="pLogo" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" aria-label="${esc(t("promo_logo"))}" />
+            <div class="logo-control-row"><label for="logoColor">${t("promo_logo_color")}</label><input id="logoColor" type="color" value="#04656c" /><label><input id="logoIncludeWhite" type="checkbox" /> ${t("promo_logo_include_white")}</label><button type="button" class="btn btn-ghost btn-sm" id="logoRecolor">${t("promo_logo_apply_color")}</button></div>
+            <div class="logo-control-row"><button type="button" class="btn btn-ghost btn-sm logo-tool" data-logo-tool="draw" aria-pressed="true">${t("promo_logo_tool_draw")}</button><button type="button" class="btn btn-ghost btn-sm logo-tool" data-logo-tool="erase" aria-pressed="false">${t("promo_logo_tool_erase")}</button><label for="logoBrush">${t("promo_logo_brush")}</label><input id="logoBrush" type="range" min="3" max="72" value="18" /></div>
+            <div class="logo-control-row"><input id="logoText" type="text" maxlength="32" placeholder="${esc(t("promo_logo_text_placeholder"))}" aria-label="${esc(t("promo_logo_text_placeholder"))}" /><button type="button" class="btn btn-ghost btn-sm" id="logoAddText">${t("promo_logo_add_text")}</button></div>
+            <div class="logo-control-row"><button type="button" class="btn btn-ghost btn-sm" id="logoUndo">${t("promo_logo_undo")}</button><button type="button" class="btn btn-ghost btn-sm" id="logoRestore">${t("promo_logo_restore")}</button><button type="button" class="btn btn-ghost btn-sm" id="pLogoReset">${t("promo_logo_reset")}</button></div>
+            <small class="logo-editor-status" id="logoEditorStatus" role="status" aria-live="polite">${t("promo_logo_editor_hint")}</small>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit" id="promoSave" style="align-self:flex-start">${t("promo_save")}</button>
     </div><div><p class="muted" style="font-size:13px;font-weight:700;margin-bottom:8px">${t("promo_preview")}</p>
       <div class="stack" id="promoPreview" aria-live="polite"></div></div></div></form>`;
 }
+function canvasToLogoFile(canvas) {
+  return new Promise((resolve, reject) => {
+    const done = blob => blob ? resolve(new File([blob], `iscae-logo-${Date.now()}.png`, { type: "image/png" })) : reject(new Error("تعذر تجهيز صورة الشعار."));
+    try {
+      if (canvas.toBlob) canvas.toBlob(done, "image/png");
+      else fetch(canvas.toDataURL("image/png")).then(r => r.blob()).then(done, reject);
+    } catch (e) { reject(e); }
+  });
+}
 function bindPromoAdmin() {
   const f = $("#promoForm"); if (!f) return;
+  const canvas = $("#logoCanvas"), ctx = canvas && canvas.getContext("2d", { willReadFrequently: true });
+  if (!canvas || !ctx) return;
+  const status = $("#logoEditorStatus"), color = $("#logoColor"), brush = $("#logoBrush");
+  let pending;             // undefined = unchanged · null = return to generated logo · File = replacement
+  let dirty = false, ready = false, tool = "draw", drawing = false, history = [];
+  const setStatus = text => { if (status) status.textContent = text; };
+  const defaultLogoSource = () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(defaultPromoLogo(Math.max(1, Number(f.n.value) || state.promo.number)).replace("<svg ", '<svg width="512" height="512" '));
+  const commitEdit = () => { dirty = true; setStatus(t("promo_logo_editor_hint")); };
+  const takeSnapshot = () => { try { history.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (history.length > 8) history.shift(); } catch (e) {} };
+  const drawSource = async source => {
+    let objectUrl = "";
+    try {
+      if (source instanceof Blob) { objectUrl = URL.createObjectURL(source); source = objectUrl; }
+      else if (typeof source === "string" && /^https?:\/\//i.test(source)) {
+        const r = await fetch(source, { mode: "cors", cache: "no-store" });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        objectUrl = URL.createObjectURL(await r.blob()); source = objectUrl;
+      }
+      const image = new Image(); image.decoding = "async";
+      await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("logo decode failed")); image.src = source; });
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const max = canvas.width * .92, iw = image.naturalWidth || image.width || 1, ih = image.naturalHeight || image.height || 1;
+      const scale = Math.min(max / iw, max / ih), w = iw * scale, h = ih * scale;
+      ctx.drawImage(image, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      ready = true; dirty = false; history = []; setStatus(t("promo_logo_editor_hint"));
+    } finally { if (objectUrl) URL.revokeObjectURL(objectUrl); }
+  };
+  const loadCurrent = async () => {
+    const source = pending === null ? defaultLogoSource() : (pending instanceof File ? pending : (state.promo.logo || defaultLogoSource()));
+    try { await drawSource(source); }
+    catch (err) {
+      ready = false; ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setStatus(t("promo_logo_edit_load_fail")); console.warn("[Logo editor] source could not be loaded", err);
+    }
+  };
   const prev = () => {
     const n = Math.max(1, Number(f.n.value) || state.promo.number);
     $("#promoPreview").innerHTML = promoPreviewHTML("fr", n, f.fr.value.trim()) + promoPreviewHTML("ar", n, f.ar.value.trim());
   };
-  let pending;   // undefined = inchangé · null = retirer · File = nouveau logo
-  const showLogo = () => {
-    const box = $("#logoPrev"); if (!box) return;
-    const n = Math.max(1, Number(f.n.value) || state.promo.number);
-    if (pending instanceof File) { if (box._u) URL.revokeObjectURL(box._u); box._u = URL.createObjectURL(pending); box.innerHTML = `<img src="${box._u}" alt="" />`; }
-    else box.innerHTML = promoLogoHTML(pending === null ? "" : state.promo.logo, n);
+  refreshPromoLogoEditor = async () => {
+    if (f.isConnected && pending === undefined && !dirty) await loadCurrent();
   };
-  f.addEventListener("input", () => { prev(); if (!(pending instanceof File) && !state.promo.logo) showLogo(); });
-  $("#pLogo").onchange = e => { const file = e.target.files[0]; if (!file) return; if (!validatePhotoFile(file)) { e.target.value = ""; return; } pending = file; showLogo(); };
-  $("#pLogoReset").onclick = () => { pending = null; $("#pLogo").value = ""; showLogo(); };
-  prev(); showLogo();
+  f.addEventListener("input", e => {
+    if (["pNum", "pFr", "pAr"].includes(e.target.id)) {
+      prev();
+      if (e.target.id === "pNum" && (pending === null || (!state.promo.logo && !(pending instanceof File)))) loadCurrent();
+    }
+  });
+  $("#pLogo").onchange = async e => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    if (!validatePhotoFile(file)) { e.target.value = ""; return; }
+    pending = file;
+    await loadCurrent();
+  };
+  $("#pLogoReset").onclick = async () => { pending = null; $("#pLogo").value = ""; await loadCurrent(); };
+  $("#logoRestore").onclick = async () => { pending = undefined; dirty = false; $("#pLogo").value = ""; await loadCurrent(); };
+  $("#logoRecolor").onclick = () => {
+    if (!ready) { toast(t("promo_logo_edit_load_fail"), "err"); return; }
+    const hex = normalizeHex(color.value); if (!hex) return;
+    const rgb = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+    try {
+      takeSnapshot(); const image = ctx.getImageData(0, 0, canvas.width, canvas.height), d = image.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 8) continue;
+        if (!$("#logoIncludeWhite").checked && d[i] > 246 && d[i + 1] > 246 && d[i + 2] > 246) continue;
+        const l = (d[i] * .2126 + d[i + 1] * .7152 + d[i + 2] * .0722) / 255;
+        const shade = .38 + .62 * l;
+        d[i] = Math.round(rgb[0] * shade); d[i + 1] = Math.round(rgb[1] * shade); d[i + 2] = Math.round(rgb[2] * shade);
+      }
+      ctx.putImageData(image, 0, 0); commitEdit();
+    } catch (e) { toast(t("promo_logo_edit_load_fail"), "err"); }
+  };
+  $("#logoAddText").onclick = () => {
+    if (!ready) { toast(t("promo_logo_edit_load_fail"), "err"); return; }
+    const text = $("#logoText").value.trim(); if (!text) { toast(t("promo_logo_empty_text"), "err"); return; }
+    takeSnapshot();
+    const size = Math.max(18, Math.min(68, Math.round(Number(brush.value) * 2.2)));
+    ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.direction = state.lang === "ar" ? "rtl" : "ltr";
+    ctx.font = `800 ${size}px Tajawal, system-ui, sans-serif`;
+    let fit = size; while (ctx.measureText(text).width > canvas.width * .82 && fit > 12) { fit -= 2; ctx.font = `800 ${fit}px Tajawal, system-ui, sans-serif`; }
+    ctx.lineJoin = "round"; ctx.lineWidth = Math.max(2, fit * .08); ctx.strokeStyle = "#ffffff"; ctx.strokeText(text, canvas.width / 2, canvas.height * .84);
+    ctx.fillStyle = normalizeHex(color.value) || "#04656c"; ctx.fillText(text, canvas.width / 2, canvas.height * .84); ctx.restore();
+    $("#logoText").value = ""; commitEdit();
+  };
+  $("#logoUndo").onclick = () => {
+    const last = history.pop(); if (!last) return;
+    ctx.putImageData(last, 0, 0); dirty = history.length > 0; setStatus(dirty ? t("promo_logo_editor_hint") : t("promo_logo_restore"));
+  };
+  $$('[data-logo-tool]', f).forEach(button => button.onclick = () => {
+    tool = button.dataset.logoTool;
+    $$('[data-logo-tool]', f).forEach(b => { const active = b === button; b.setAttribute("aria-pressed", String(active)); b.classList.toggle("logo-tool-active", active); });
+    canvas.style.cursor = tool === "erase" ? "cell" : "crosshair";
+  });
+  const point = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
+  canvas.onpointerdown = e => {
+    if (!ready) return;
+    e.preventDefault(); drawing = true; canvas.setPointerCapture(e.pointerId); takeSnapshot();
+    const p = point(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = Math.max(3, Number(brush.value));
+    ctx.globalCompositeOperation = tool === "erase" ? "destination-out" : "source-over"; ctx.strokeStyle = normalizeHex(color.value) || "#04656c"; ctx.lineTo(p.x + .01, p.y + .01); ctx.stroke();
+  };
+  canvas.onpointermove = e => { if (!drawing) return; e.preventDefault(); const p = point(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+  const stopDrawing = () => { if (!drawing) return; drawing = false; ctx.closePath(); ctx.globalCompositeOperation = "source-over"; commitEdit(); };
+  canvas.onpointerup = stopDrawing; canvas.onpointercancel = stopDrawing; canvas.onlostpointercapture = stopDrawing;
+  prev(); loadCurrent();
   f.onsubmit = async e => {
     e.preventDefault();
     const n = Number(f.n.value);
     if (!Number.isInteger(n) || n < 1) { toast(t("promo_number"), "err"); return; }
+    if (dirty && !ready) { toast(t("promo_logo_edit_load_fail"), "err"); return; }
+    const btn = $("#promoSave"), oldButton = btn.innerHTML, controls = [...f.querySelectorAll("input, button")];
+    controls.forEach(control => { control.disabled = true; });
+    canvas.style.pointerEvents = "none";
+    btn.innerHTML = `<span class="spinner"></span> ${t("btn_saving")}`;
     const payload = { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
-    if (tenantOn()) delete payload.promotion_number;     // رقم الدفعة ثابت: مرتبط برابطها
-    const oldLogo = state.promo.logo;
-    if (pending instanceof File) {
-      try { payload.promotion_logo_url = await uploadPromoLogo(pending); }
-      catch (err) { toast(t("promo_logo_fail", { msg: err.message || err }), "err"); return; }
-    } else if (pending === null) payload.promotion_logo_url = null;
-    let data, error;
-    if (tenantOn()) {
-      const mp = { name_fr: payload.promotion_name_fr, name_ar: payload.promotion_name_ar };
-      if (payload.promotion_logo_url !== undefined) mp.logo_url = payload.promotion_logo_url;
-      ({ data, error } = await rawFrom("promotions").update(mp).eq("id", TENANT.id).select());
-    } else ({ data, error } = await rawFrom("promotion_settings").update(payload).eq("id", 1).select());
-    if (error) { toast(/relation|schema cache|does not exist/i.test(error.message || "") ? t("promo_missing") : t("err_save_failed", { msg: error.message }), "err"); return; }
-    if (!data || !data.length) { toast(t("promo_denied"), "err"); return; }   // RLS: aucune ligne modifiée
-    if (payload.promotion_logo_url !== undefined && oldLogo && oldLogo !== payload.promotion_logo_url) removeStoredPhoto(oldLogo);
-    pending = undefined;
-    await loadPromotion(); applyBranding(); renderStats(); renderEvents(); showLogo();
-    toast(t("promo_saved"));
+    if (tenantOn()) delete payload.promotion_number;
+    const oldLogo = state.promo.logo_source || state.promo.logo || null;
+    let newLogo = null, uploadStage = false;
+    try {
+      if (pending instanceof File && !dirty) { uploadStage = true; newLogo = await uploadPromoLogo(pending); uploadStage = false; payload.promotion_logo_url = newLogo; }
+      else if (dirty) { const file = await canvasToLogoFile(canvas); uploadStage = true; newLogo = await uploadPromoLogo(file); uploadStage = false; payload.promotion_logo_url = newLogo; }
+      else if (pending === null) payload.promotion_logo_url = null;
+      let data, error;
+      if (tenantOn()) {
+        const mp = { name_fr: payload.promotion_name_fr, name_ar: payload.promotion_name_ar };
+        if (payload.promotion_logo_url !== undefined) mp.logo_url = payload.promotion_logo_url;
+        ({ data, error } = await rawFrom("promotions").update(mp).eq("id", TENANT.id).select());
+      } else ({ data, error } = await rawFrom("promotion_settings").update(payload).eq("id", 1).select());
+      if (error) throw error;
+      if (!data || !data.length) throw new Error(t("promo_denied"));
+      if (tenantOn()) {
+        applyPromoRow(data[0]);
+        state.promo.logo = await signedStorageUrl(data[0].logo_url);
+      } else await loadPromotion();
+      const obsoleteLogo = payload.promotion_logo_url !== undefined && oldLogo && oldLogo !== payload.promotion_logo_url ? oldLogo : null;
+      pending = undefined; dirty = false; history = []; $("#pLogo").value = "";
+      applyBranding(); renderStats(); renderEvents(); prev();
+      setStatus(t("promo_logo_saved_live")); toast(t("promo_saved"));
+      notifyPromoBrandChange();
+      if (obsoleteLogo) setTimeout(() => removeStoredPhoto(obsoleteLogo), 5 * 60 * 1000);
+    } catch (err) {
+      if (newLogo && newLogo !== oldLogo) removeStoredPhoto(newLogo);
+      if (uploadStage) toast(t("promo_logo_fail", { msg: err.message || err }), "err");
+      else toast(/relation|schema cache|does not exist/i.test(err.message || "") ? t("promo_missing") : t("err_save_failed", { msg: err.message || err }), "err");
+    } finally { canvas.style.pointerEvents = ""; controls.forEach(control => { control.disabled = false; }); btn.innerHTML = oldButton; }
   };
 }
 
@@ -4335,6 +4489,8 @@ async function redistributeCeremony(ceremonyId, silentConfirm) {
 
 /* ------------------------- 18. PWA: التثبيت وSERVICE WORKER ------------------------- */
 let deferredInstallPrompt = null;
+let pwaIconsReady = false;
+const PWA_INSTALL_FALLBACK_AT = Date.now() + 8000;
 let installPromptBusy = false;
 let installConfirmedThisSession = false;
 const installUa = navigator.userAgent || "";
@@ -4389,7 +4545,7 @@ try { installBannerDismissed = sessionStorage.getItem("iscae-install-dismissed")
 
 /** زر التثبيت في الأعلى + الشريط السفلي يظهران لكل زائر ما لم يكن التطبيق مثبتاً. */
 function refreshInstallButton() {
-  const show = !isAppInstalled();
+  const show = !isAppInstalled() && (pwaIconsReady || Date.now() >= PWA_INSTALL_FALLBACK_AT);
   const btn = $("#btnInstall");
   if (btn) btn.classList.toggle("hidden", !show);
   const heroBtn = $("#heroInstall");
@@ -4404,6 +4560,7 @@ function refreshInstallButton() {
     if (bc) bc.textContent = t("btn_later");
   }
 }
+setTimeout(() => { if (!pwaIconsReady) refreshInstallButton(); }, 8100);
 
 /** استخدم طلب التثبيت مرة واحدة عند توفره، وإلا اعرض خطوات المنصة الحالية. */
 async function triggerInstall() {
@@ -4461,9 +4618,10 @@ try {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js")
+    navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" })
       .then((registration) => {
-        console.log('[Service Worker] Registered successfully');
+        registration.update().catch(err => console.warn("[Service Worker] Update check failed:", err));
+        console.log('[Service Worker] Registered/updated successfully');
       })
       .catch((err) => {
         console.error('[Service Worker] Registration failed:', err);
@@ -4778,7 +4936,7 @@ async function renderNotifsTab(panel) {
 /* ------------------------- 18b. APP ICON = PROMO LOGO -------------------------
    أيقونة التثبيت (PWA) وأيقونة التبويب (favicon) وأيقونة iOS تُولَّد من شعار الدفعة نفسه،
    فإذا غيّر المشرف الرئيسي الشعار تتغير الأيقونة تلقائياً (manifest ديناميكي). */
-const PWA_ICON_CACHE = "iscae-pwa-icons-v2-teal";
+const PWA_ICON_CACHE = "iscae-pwa-icons-v3-live-editor";
 let pwaIconKey = "", pwaIconToken = 0, pwaManifestUrl = "";
 function pwaLoadImg(src, cors) {
   return new Promise((res, rej) => {
@@ -4840,8 +4998,9 @@ async function pwaApplyIcons(ic) {
 /** يُستدعى من applyBranding: يعيد توليد الأيقونات فقط عند تغيّر الشعار/رقم الدفعة. */
 async function syncPwaIcons() {
   if (!state.promoReady) return;
-  const key = (state.promo.logo || "default") + "|" + state.promo.number + "|" + promoLabel();
-  if (key === pwaIconKey) return;
+  const key = (state.promo.logo_source || state.promo.logo || "default") + "|" + state.promo.number + "|" + promoLabel();
+  if (key === pwaIconKey) { pwaIconsReady = true; refreshInstallButton(); return; }
+  pwaIconsReady = false; refreshInstallButton();
   pwaIconKey = key; const token = ++pwaIconToken;
   try {
     const img = await pwaLogoImage(); if (token !== pwaIconToken) return;
@@ -4850,7 +5009,11 @@ async function syncPwaIcons() {
                  i192: pwaDraw(img, 192, BG, .74), i512: pwaDraw(img, 512, BG, .74) };
     await pwaApplyIcons(ic);
     try { localStorage.setItem(PWA_ICON_CACHE, JSON.stringify({ key, ic })); } catch (e) {}
-  } catch (e) { if (token === pwaIconToken) pwaIconKey = ""; console.warn("[PWA icons]", e); }
+    if (token === pwaIconToken) { pwaIconsReady = true; refreshInstallButton(); }
+  } catch (e) {
+    if (token === pwaIconToken) { pwaIconKey = ""; pwaIconsReady = true; refreshInstallButton(); }
+    console.warn("[PWA icons]", e);
+  }
 }
 /** تطبيق آخر أيقونات محفوظة فوراً عند الفتح (قبل وصول بيانات الدفعة) لتسبق حدث التثبيت. */
 function restorePwaIcons() {
@@ -5097,6 +5260,58 @@ function promoHeadModal(p) {
   };
 }
 
+/* Live promotion identity synchronization. Broadcasts contain no trusted logo data; each viewer reloads the public DB row. */
+let promoBrandChannel = null, promoBrandChannelStatus = "", promoBrandRefreshPromise = null, promoBrandFallbackTimer = null;
+function promoBrandTopic() {
+  const id = TENANT.legacy ? "legacy" : String(TENANT.id || "default");
+  return "iscae-promo-brand-" + id.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+function promoBrandSignature() {
+  const p = state.promo || {};
+  return JSON.stringify([p.id || null, p.number, p.name_fr || null, p.name_ar || null, p.logo_source || null]);
+}
+function startPromoBrandFallback() {
+  if (promoBrandFallbackTimer) return;
+  promoBrandFallbackTimer = setInterval(() => { if (!document.hidden) refreshPromoBrandFromServer(); }, 45000);
+}
+async function refreshPromoBrandFromServer() {
+  if (promoBrandRefreshPromise || !TENANT.ready || TENANT.notFound) return promoBrandRefreshPromise;
+  promoBrandRefreshPromise = (async () => {
+    const before = promoBrandSignature(), beforeUrl = state.promo.logo;
+    try {
+      await loadPromotion();
+      if (before !== promoBrandSignature() || beforeUrl !== state.promo.logo) {
+        applyBranding(); refreshInstallButton();
+        if (refreshPromoLogoEditor) await refreshPromoLogoEditor();
+      }
+    } catch (e) { console.warn("[Promotion branding] refresh failed", e); }
+  })();
+  try { await promoBrandRefreshPromise; } finally { promoBrandRefreshPromise = null; }
+}
+function subscribePromoBrandRealtime() {
+  if (promoBrandChannel || !db || !TENANT.ready || TENANT.notFound) return;
+  const topic = promoBrandTopic();
+  promoBrandChannel = db.channel(topic, { config: { broadcast: { ack: false, self: false } } })
+    .on("broadcast", { event: "brand-updated" }, () => refreshPromoBrandFromServer())
+    .subscribe(status => {
+      promoBrandChannelStatus = status;
+      if (status === "SUBSCRIBED") {
+        if (promoBrandFallbackTimer) { clearInterval(promoBrandFallbackTimer); promoBrandFallbackTimer = null; }
+      } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) startPromoBrandFallback();
+    });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPromoBrandFromServer(); });
+}
+function notifyPromoBrandChange(attempt = 0) {
+  if (!promoBrandChannel || promoBrandChannelStatus !== "SUBSCRIBED") {
+    if (attempt < 20) setTimeout(() => notifyPromoBrandChange(attempt + 1), 250);
+    else console.warn("[Promotion branding] realtime was not ready; visibility refresh/fallback will reconcile clients");
+    return;
+  }
+  promoBrandChannel.send({ type: "broadcast", event: "brand-updated", payload: { promotion_id: state.promo.id || null, at: Date.now() } })
+    .then(result => { if (result !== "ok") console.warn("[Promotion branding] broadcast status", result); })
+    .catch(err => console.warn("[Promotion branding] broadcast failed", err));
+}
+
 /* ------------------------- 19. BOOTSTRAP ------------------------- */
 function showPromoNotFound() {
   const num = TENANT.number;
@@ -5116,6 +5331,7 @@ async function init() {
   await loadPublicData();
   if (TENANT.notFound) { showPromoNotFound(); return; }
   try { await db.realtime.setAuth(await getTenantAccessToken()); } catch (err) { console.warn("tenant realtime auth", err); }
+  subscribePromoBrandRealtime();
   trackVisit();
   applyBranding();
   renderStats();
