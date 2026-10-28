@@ -886,6 +886,28 @@ html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
 .logo-tool[aria-pressed="true"]{border-color:var(--primary);background:var(--primary);color:#fff}
 .logo-editor-status{min-height:1.5em;font-size:12px;color:var(--muted);line-height:1.6}
 @media(max-width:640px){.logo-editor{grid-template-columns:minmax(0,1fr)}.logo-canvas-shell{max-width:min(100%,300px);margin-inline:auto}.logo-editor-controls{width:100%}}
+.promo-device-preview{margin-top:18px;padding:14px;border:1px solid var(--stroke);border-radius:18px;background:var(--surface-solid)}
+.promo-device-head{display:grid;gap:10px;margin-bottom:14px}.promo-device-head>b{font-size:13px;font-weight:900}
+.promo-device-tabs{display:flex;flex-wrap:wrap;gap:6px}.promo-device-tabs [aria-selected="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+.device-frame{position:relative;margin:0 auto;padding:9px;border:2px solid #273144;background:#111827;box-shadow:0 18px 42px -24px rgba(0,0,0,.75);transition:width .25s ease,border-radius .25s ease}
+.device-frame[data-device="phone"]{width:min(100%,230px);border-radius:30px}.device-frame[data-device="tablet"]{width:min(100%,360px);border-radius:24px}.device-frame[data-device="desktop"]{width:100%;max-width:520px;border-radius:14px}
+.device-camera{position:absolute;z-index:2;top:11px;left:50%;width:36px;height:5px;transform:translateX(-50%);border-radius:8px;background:#374151}
+.device-screen{position:relative;overflow:hidden;aspect-ratio:9/16;border-radius:21px;background:linear-gradient(160deg,#091a31,#102b4b 65%,#0c182a);color:#fff;padding:23px 12px 14px;display:flex;flex-direction:column}
+.device-frame[data-device="tablet"] .device-screen{aspect-ratio:4/3;padding:20px 18px 12px;border-radius:16px}
+.device-frame[data-device="desktop"] .device-screen{aspect-ratio:16/9;padding:18px 24px 12px;border-radius:8px}
+.device-topbar{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:900;opacity:.9;border-bottom:1px solid rgba(255,255,255,.14);padding-bottom:7px}
+.device-menu{letter-spacing:2px}.device-hero-preview{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:5px;min-height:0;padding:8px 2px}
+.device-hero-preview img{width:clamp(52px,24%,86px);aspect-ratio:1;object-fit:contain;border-radius:20%;background:rgba(255,255,255,.94);padding:4px;box-shadow:0 5px 18px rgba(0,0,0,.28)}
+.device-hero-preview strong{font-size:clamp(15px,4vw,25px);line-height:1.3}.device-hero-preview b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e5c86d;font-size:clamp(11px,3vw,17px)}
+.device-hero-preview small{font-size:9px;opacity:.78}.device-preview-content{display:flex;gap:6px;align-items:center;justify-content:center;padding:8px;border-radius:10px;background:rgba(255,255,255,.09)}
+.device-preview-content i{display:block;width:25%;height:5px;border-radius:8px;background:rgba(255,255,255,.35)}.device-preview-content i:first-child{background:#25aaa2}
+.device-homebar{width:64px;height:4px;margin:7px auto 0;border-radius:99px;background:#cbd5e1;opacity:.85}
+.device-frame[data-device="desktop"] .device-camera,.device-frame[data-device="tablet"] .device-camera{display:none}
+.promo-device-note{display:block;margin-top:10px;color:var(--muted);font-size:11px;line-height:1.55}
+.hero2-logo.promo-logo-enter{animation:promoLogoEntrance .78s cubic-bezier(.2,.75,.25,1) both;transform-origin:center}
+@keyframes promoLogoEntrance{0%{opacity:0;transform:translateY(14px) scale(.78) rotate(-7deg);filter:drop-shadow(0 0 0 rgba(4,101,108,0))}65%{opacity:1;transform:translateY(-2px) scale(1.035) rotate(1deg)}100%{opacity:1;transform:translateY(0) scale(1) rotate(0);filter:drop-shadow(0 18px 30px rgba(0,0,0,.55))}}
+@media(prefers-reduced-motion:reduce){.hero2-logo.promo-logo-enter{animation:none}}
+@media(max-width:640px){.promo-device-preview{padding:12px}.device-frame[data-device="tablet"]{width:min(100%,330px)}}
 .mda{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:4px 10px 4px 12px;min-height:30px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:11.5px;font-weight:600;text-decoration:none;transition:transform .2s var(--ease),border-color .2s,box-shadow .2s}
 .mda b{display:inline-grid;place-items:center;height:20px;padding:0 9px;border-radius:999px;background:linear-gradient(135deg,var(--ink-2),var(--primary));color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.2em;box-shadow:inset 0 0 0 1px rgba(201,162,74,.65)}
 .mda svg{color:#22a559}
@@ -1209,10 +1231,25 @@ const rawRpc = db.rpc.bind(db);
 db.rpc = function (fn, args, opts) {
   const q = rawRpc(fn, args, opts);
   if (fn !== "search_student" || !tenantOn()) return q;
-  return Promise.resolve(q).then(r => {
+  return Promise.resolve(q).then(async r => {
     if (!r || r.error || !r.data) return r;
     const rows = Array.isArray(r.data) ? r.data : [r.data];
-    const mine = rows.filter(x => x && state.students.some(s => (x.id !== undefined && x.id !== null) ? s.id === x.id : String(s.registration_number).trim().toUpperCase() === String(x.registration_number || "").trim().toUpperCase()));
+    let mine;
+    if (state.students.length || !state.publicCacheActive) {
+      mine = rows.filter(x => x && state.students.some(s => (x.id !== undefined && x.id !== null) ? s.id === x.id : String(s.registration_number).trim().toUpperCase() === String(x.registration_number || "").trim().toUpperCase()));
+    } else {
+      // In the warm-launch path, verify RPC rows through the tenant-scoped students table instead of trusting an empty local list.
+      mine = (await Promise.all(rows.map(async x => {
+        if (!x) return null;
+        const key = x.id !== undefined && x.id !== null ? "id" : "registration_number";
+        const value = key === "id" ? x.id : String(x.registration_number || "").trim().toUpperCase();
+        if (!value) return null;
+        try {
+          const { data, error } = await db.from("students").select("id").eq(key, value).maybeSingle();
+          return !error && data ? x : null;
+        } catch (error) { return null; }
+      }))).filter(Boolean);
+    }
     return { ...r, data: Array.isArray(r.data) ? mine : (mine[0] || null) };
   });
 };
@@ -1291,6 +1328,8 @@ const state = {
   admins: [],
   students: [],
   settings: null,
+  publicSummary: null,       // aggregated public counts only; never student rows or session data
+  publicCacheActive: false,  // true only while stale aggregate data is shown during revalidation
   ceremonies: [],          // [{...ceremony, card_types:[...]}]
   cardsReady: false,       // false quand les tables des cartes n'existent pas encore
   tab: "overview",
@@ -1332,6 +1371,18 @@ function mergeStudentWithLocalFresh(st) {
   /* بعض دوال SQL القديمة search_student لا تُرجع certificate_name.
      لذلك نأخذ بيانات البحث/التخصص من الدالة، ونكملها بأعمدة students الكاملة المحمّلة بـ select(*). */
   return { ...local, ...st, certificate_name: rawCertName(local), sash_name: sashName(local) || sashName(st) };
+}
+async function completeCachedSearchStudent(st) {
+  if (!st || !state.publicCacheActive || state.students.length) return mergeStudentWithLocalFresh(st);
+  const reg = String(st.registration_number || "").trim().toUpperCase();
+  try {
+    let query = db.from("students").select("*");
+    query = st.id !== undefined && st.id !== null ? query.eq("id", st.id) : query.eq("registration_number", reg);
+    const { data, error } = await query.maybeSingle();
+    if (error || !data) return st;
+    await signStudentPhotos([data]);
+    return { ...data, ...st, certificate_name: rawCertName(data), sash_name: sashName(data) || sashName(st) };
+  } catch (error) { console.warn("[Search] cached-launch profile hydration failed", error); return st; }
 }
 const isSuper = () => state.me?.role === "super_admin";          // رئيس دفعة (أو المشرف العام) — صلاحيات المشرف الرئيسي داخل الدفعة
 const isPlatform = () => !!(state.me && state.me.is_platform);   // المشرف العام Superviseurs — كل الدفعات
@@ -1747,7 +1798,10 @@ function renderHeroLogo() {
   const el = $("#heroLogo"); if (!el) return;
   const url = state.promo.logo || "", key = url + "|" + state.promo.number + "|" + state.lang;
   if (el.dataset.key === key) return;
-  el.dataset.key = key; el.innerHTML = promoLogoHTML(url, state.promo.number, "hero2-logo-img");
+  el.dataset.key = key;
+  el.classList.remove("promo-logo-enter");
+  el.innerHTML = promoLogoHTML(url, state.promo.number, "hero2-logo-img");
+  requestAnimationFrame(() => { if (!el.isConnected) return; void el.offsetWidth; el.classList.add("promo-logo-enter"); });
 }
 function promoLabel() {
   const nm = promoName();
@@ -1822,6 +1876,11 @@ Object.assign(I18N, {
   promo_name_fr:{ar:"اسم الدفعة — الفرنسية",fr:"Nom de la promotion — Français"},
   promo_name_ar:{ar:"اسم الدفعة — العربية",fr:"اسم الدفعة — العربية"},
   promo_preview:{ar:"معاينة مباشرة",fr:"Aperçu en direct"},
+  promo_device_preview:{ar:"معاينة الشعار على الأجهزة",fr:"Aperçu du logo sur différents appareils"},
+  promo_device_phone:{ar:"هاتف",fr:"Téléphone"},
+  promo_device_tablet:{ar:"لوحي",fr:"Tablette"},
+  promo_device_desktop:{ar:"سطح المكتب",fr:"Ordinateur"},
+  promo_device_note:{ar:"محاكاة تقريبية لتوزيع الشعار على أحجام شاشات مختلفة؛ التغييرات غير محفوظة حتى تضغط حفظ.",fr:"Simulation indicative du logo sur plusieurs formats d’écran ; les modifications ne sont pas enregistrées avant validation."},
   promo_save:{ar:"حفظ",fr:"Enregistrer"},
   promo_saved:{ar:"تم حفظ هوية الدفعة",fr:"Identité de la promotion enregistrée"},
   promo_missing:{ar:"جدول promotion_settings غير موجود: نفّذ PROMOTION.sql في Supabase أولاً.",fr:"Table promotion_settings absente : exécutez d'abord PROMOTION.sql dans Supabase."},
@@ -2087,24 +2146,151 @@ async function fetchAllRows(makeQuery) {
 
 /** صف إعدادات الدفعة (الوضع القديم: الصف id = 1). */
 const legacyId = q => (tenantOn() ? q : q.eq("id", 1));
+const PUBLIC_LAUNCH_DB = "iscae-public-launch-v1";
+const PUBLIC_LAUNCH_STORE = "snapshots";
+let publicLaunchDbPromise = null;
+const PUBLIC_STARTUP_SETTINGS = ["graduation_date", "night_party_date", "theme_preset", "theme_custom_color", "show_category_stats", "total_graduates_override", "specialty_counts_override", "show_phone_in_search"];
+function openPublicLaunchDB() {
+  if (!window.indexedDB) return Promise.resolve(null);
+  if (!publicLaunchDbPromise) publicLaunchDbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(PUBLIC_LAUNCH_DB, 1);
+    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(PUBLIC_LAUNCH_STORE)) request.result.createObjectStore(PUBLIC_LAUNCH_STORE, { keyPath: "key" }); };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("IndexedDB unavailable"));
+    request.onblocked = () => reject(new Error("IndexedDB upgrade blocked"));
+  }).catch(error => { console.warn("[Startup cache] IndexedDB unavailable", error); publicLaunchDbPromise = Promise.resolve(null); return null; });
+  return publicLaunchDbPromise;
+}
+function publicLaunchKey() { return `v1:${String(TENANT.host || location.hostname).toLowerCase()}:${TENANT.number == null ? "default" : TENANT.number}:${TENANT.id || (TENANT.legacy ? "legacy" : "unresolved")}`; }
+async function readPublicLaunchSnapshot() {
+  try {
+    const database = await openPublicLaunchDB(); if (!database) return null;
+    return await new Promise((resolve, reject) => {
+      const request = database.transaction(PUBLIC_LAUNCH_STORE, "readonly").objectStore(PUBLIC_LAUNCH_STORE).get(publicLaunchKey());
+      request.onsuccess = () => resolve(request.result || null); request.onerror = () => reject(request.error);
+    });
+  } catch (error) { console.warn("[Startup cache] read failed", error); return null; }
+}
+async function writePublicLaunchSnapshot(snapshot) {
+  try {
+    const database = await openPublicLaunchDB(); if (!database) return;
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(PUBLIC_LAUNCH_STORE, "readwrite");
+      transaction.objectStore(PUBLIC_LAUNCH_STORE).put(snapshot);
+      transaction.oncomplete = resolve; transaction.onerror = () => reject(transaction.error); transaction.onabort = () => reject(transaction.error);
+    });
+  } catch (error) { console.warn("[Startup cache] write failed", error); }
+}
+async function refreshCachedPromotionSnapshot() {
+  const snapshot = await readPublicLaunchSnapshot();
+  if (!snapshot || snapshot.tenantId !== String(TENANT.id || "")) return;
+  snapshot.promo = { id: state.promo.id || null, name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null,
+    logo_source: state.promo.logo_source || null,
+    // Signed Storage URLs are temporary bearer links; keep only stable external logos in IndexedDB.
+    logo: state.promo.logo_source && storageObjectPath(state.promo.logo_source) ? "" : (state.promo.logo || "") };
+  snapshot.promoUpdatedAt = Date.now();
+  await writePublicLaunchSnapshot(snapshot);
+}
+function applyStartupPalette() {
+  if (state.settings?.theme_preset === "custom") applyCustomPalette(state.settings.theme_custom_color || localStorage.getItem("iscae-custom-color") || "#102744", true);
+  else applyPalette(state.settings?.theme_preset || DEFAULT_PALETTE, true);
+}
+function applyPublicLaunchSnapshot(snapshot) {
+  if (!snapshot || snapshot.schema !== 1 || snapshot.key !== publicLaunchKey() || snapshot.tenantId !== String(TENANT.id || "") || !Array.isArray(snapshot.specialties) || !snapshot.summary) return false;
+  state.specialties = snapshot.specialties;
+  state.settings = { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE, ...(snapshot.settings || {}) };
+  state.publicSummary = snapshot.summary;
+  state.publicCacheActive = true;
+  if (snapshot.promo && snapshot.promo.id === TENANT.id) {
+    state.promo = { ...state.promo, name_fr: snapshot.promo.name_fr || null, name_ar: snapshot.promo.name_ar || null,
+      logo_source: snapshot.promo.logo_source || state.promo.logo_source || null,
+      logo: Date.now() - Number(snapshot.promoUpdatedAt || snapshot.savedAt || 0) < 50 * 60 * 1000 ? (snapshot.promo.logo || "") : "" };
+  }
+  state.publicLoaded = true;
+  applyStartupPalette(); applyBranding(); renderStats(); renderEvents();
+  return true;
+}
+function makePublicLaunchSnapshot() {
+  const categories = { A: 0, B: 0, C: 0, D: 0 }, specialties = {};
+  for (const student of state.students) {
+    const category = categoryOf(student.order_index); if (Object.prototype.hasOwnProperty.call(categories, category)) categories[category]++;
+    if (student.specialty_id != null) specialties[String(student.specialty_id)] = (specialties[String(student.specialty_id)] || 0) + 1;
+  }
+  const key = publicLaunchKey();
+  return { key, schema: 1, tenantId: String(TENANT.id || ""), savedAt: Date.now(), promoUpdatedAt: Date.now(),
+    specialties: state.specialties.map(({ id, name, color }) => ({ id, name, color })),
+    settings: Object.fromEntries(PUBLIC_STARTUP_SETTINGS.filter(name => state.settings && Object.prototype.hasOwnProperty.call(state.settings, name)).map(name => [name, state.settings[name]])),
+    promo: { id: state.promo.id || null, name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null, logo_source: state.promo.logo_source || null,
+      logo: state.promo.logo_source && storageObjectPath(state.promo.logo_source) ? "" : (state.promo.logo || "") },
+    summary: { total: state.students.length, categories, specialties }
+  };
+}
+function refreshVisibleStudentPhotos() {
+  $$("#searchResult .gcard[data-reg]").forEach(card => {
+    const student = state.students.find(row => String(row.registration_number).trim().toUpperCase() === String(card.dataset.reg).trim().toUpperCase());
+    const image = card.querySelector(".gav img"), url = student && photoUrl(student);
+    if (image && url && image.src !== url) image.src = url;
+  });
+}
+/**
+ * تعرض أولاً ملخصاً عاماً صغيراً من IndexedDB، مفصولاً بهوية المضيف والدفعة، ثم تعيد التحقق من المصدر.
+ * لا تُحفظ أسماء أو أرقام طلاب أو أرقام هواتف أو صور أو جلسات دخول في ذاكرة الإقلاع.
+ */
 async function loadPublicData() {
   await resolveTenant();
-  if (TENANT.notFound) { state.publicLoaded = true; return; }      // دفعة غير موجودة: لا نجلب أي بيانات
+  if (TENANT.notFound) { state.publicLoaded = true; return; }
+  let cachedShown = false, launchSnapshot = null;
+  try { launchSnapshot = await readPublicLaunchSnapshot(); cachedShown = applyPublicLaunchSnapshot(launchSnapshot); } catch (error) { console.warn("[Startup cache] restore failed", error); }
+  if (cachedShown) await new Promise(resolve => requestAnimationFrame(() => resolve()));
+  // For a recently opened public app, cached aggregate counts suffice for the home screen;
+  // refresh small public metadata, but avoid downloading every student row again.
+  if (cachedShown && !state.session && Date.now() - Number(launchSnapshot.savedAt || 0) < 10 * 60 * 1000) {
+    try {
+      const [sp, se] = await Promise.all([
+        db.from("specialties").select("*").order("created_at"),
+        legacyId(db.from("settings").select("*")).maybeSingle()
+      ]);
+      if (!sp.error) state.specialties = sp.data || [];
+      if (!se.error && se.data) state.settings = { ...state.settings, ...Object.fromEntries(PUBLIC_STARTUP_SETTINGS.filter(name => Object.prototype.hasOwnProperty.call(se.data, name)).map(name => [name, se.data[name]])) };
+      applyStartupPalette();
+    } catch (error) { console.warn("[Startup cache] lightweight refresh failed", error); }
+    await Promise.all([
+      loadPromotion().catch(error => console.warn("load promotion", error)),
+      loadCeremonies()
+    ]);
+    applyBranding(); renderStats(); renderEvents(); state.publicLoaded = true;
+    return;
+  }
   const [sp, st, se] = await Promise.all([
     db.from("specialties").select("*").order("created_at"),
     fetchAllRows(() => db.from("students").select("*", { count: "exact" }).order("order_index").order("id")),
     legacyId(db.from("settings").select("*")).maybeSingle()
   ]);
-  if (sp.error) console.error(sp.error);
-  state.specialties = sp.data || [];
-  state.students    = st.data || [];
-  await signStudentPhotos(state.students);
-  state.settings    = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE };
-  if (state.settings.theme_preset === "custom") applyCustomPalette(state.settings.theme_custom_color || localStorage.getItem("iscae-custom-color") || "#102744", true);
-  else applyPalette(state.settings.theme_preset || DEFAULT_PALETTE, true);
-  await loadPromotion();
-  await loadCeremonies();
+  if (sp.error) console.error(sp.error); else state.specialties = sp.data || [];
+  if (st.error) console.error(st.error);
+  else {
+    state.students = st.data || [];
+    state.publicSummary = null; state.publicCacheActive = false;
+    const studentsForPhotos = state.students;
+    const schedulePhotoSigning = () => signStudentPhotos(studentsForPhotos).then(refreshVisibleStudentPhotos).catch(error => console.warn("background photo signing", error));
+    if ("requestIdleCallback" in window) requestIdleCallback(schedulePhotoSigning, { timeout: 2500 }); else setTimeout(schedulePhotoSigning, 1800);
+  }
+  if (se.error) console.error(se.error);
+  else state.settings = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE };
+  applyStartupPalette();
+  await Promise.all([
+    loadPromotion().catch(error => console.warn("load promotion", error)),
+    loadCeremonies()
+  ]);
   state.publicLoaded = true;
+  if (!st.error) {
+    const launchSnapshot = makePublicLaunchSnapshot();
+    state.publicSummary = launchSnapshot.summary;
+    state.publicCacheActive = false;
+    await writePublicLaunchSnapshot(launchSnapshot);
+  } else if (!cachedShown) {
+    state.students = []; state.publicSummary = null; state.publicCacheActive = false;
+  }
 }
 
 /** الحفلات + ألوان البطاقات (لا يُعطّل الموقع إذا لم تُنفَّذ الترقية بعد). */
@@ -2235,7 +2421,8 @@ function studentCountsBySpecialty() {
   return counts;
 }
 function autoSpecialtyCount(specId, counts = null) {
-  return counts ? (counts.get(specId) || 0) : state.students.filter(s => s.specialty_id === specId).length;
+  if (!counts) return state.students.filter(s => s.specialty_id === specId).length;
+  return counts.has(specId) ? counts.get(specId) : (counts.get(String(specId)) || 0);
 }
 /** Displayed number for a specialty: manual value if defined, otherwise automatic. */
 function displaySpecialtyCount(specId, counts = null, overrides = specialtyOverrides()) {
@@ -2245,7 +2432,8 @@ function displaySpecialtyCount(specId, counts = null, overrides = specialtyOverr
 /** Displayed total of graduates: manual value if defined, otherwise automatic. */
 function displayTotalGraduates() {
   const ov = (state.settings || {}).total_graduates_override;
-  return hasOverride(ov) ? Number(ov) : state.students.length;
+  if (hasOverride(ov)) return Number(ov);
+  return state.publicCacheActive && state.publicSummary ? Number(state.publicSummary.total) || 0 : state.students.length;
 }
 /** Category counters are visible unless the super admin hides them. */
 function categoryStatsVisible() {
@@ -2256,8 +2444,14 @@ function renderStats() {
   const total = displayTotalGraduates();
   const specs = state.specialties.length;
   const cats  = { A: 0, B: 0, C: 0, D: 0 };
-  state.students.forEach(s => cats[categoryOf(s.order_index)]++);
-  const countBySpecialty = studentCountsBySpecialty();
+  let countBySpecialty;
+  if (state.publicCacheActive && state.publicSummary) {
+    Object.assign(cats, state.publicSummary.categories || {});
+    countBySpecialty = new Map(Object.entries(state.publicSummary.specialties || {}).map(([id, count]) => [id, Number(count) || 0]));
+  } else {
+    state.students.forEach(s => { const category = categoryOf(s.order_index); if (Object.prototype.hasOwnProperty.call(cats, category)) cats[category]++; });
+    countBySpecialty = studentCountsBySpecialty();
+  }
   const overrides = specialtyOverrides();
   const specialtyCounts = state.specialties.map(sp => displaySpecialtyCount(sp.id, countBySpecialty, overrides));
 
@@ -2414,6 +2608,8 @@ async function runSearch(fromUser) {
   const { data, error } = await db.rpc("search_student", { _reg: q });
   if (seq !== searchSeq) return;
   let st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
+  if (st && state.publicCacheActive) st = await completeCachedSearchStudent(st);
+  if (seq !== searchSeq) return;
   if (!st && !error) {                          // احتياط: مطابقة تامة محلياً إذا لم تُنشر الدالة بعد
     const local = state.students.find(s => String(s.registration_number).trim().toUpperCase() === q);
     if (local) st = local;
@@ -2471,6 +2667,7 @@ async function routeFromHash() {
   if (REG_NUMBER_PATTERN.test(reg)) {
     const { data } = await db.rpc("search_student", { _reg: reg });
     st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
+    if (st && state.publicCacheActive) st = await completeCachedSearchStudent(st);
     if (!st) st = state.students.find(s => String(s.registration_number).trim().toUpperCase() === reg) || null;
   }
   showProfile(enrichStudent(st), reg);
@@ -2603,6 +2800,8 @@ function syncHeader() {
 async function afterAuthChange(goDash) {
   syncHeader();
   if (state.me) {
+    // A public warm launch may hold only aggregate counts; load full rows before entering admin tools.
+    if (goDash) await loadPublicData();
     if (isSuper()) await loadAdmins();
     if (goDash) showDash();
   }
@@ -3358,7 +3557,30 @@ function promoAdminHTML() {
       </div>
       <button class="btn btn-primary" type="submit" id="promoSave" style="align-self:flex-start">${t("promo_save")}</button>
     </div><div><p class="muted" style="font-size:13px;font-weight:700;margin-bottom:8px">${t("promo_preview")}</p>
-      <div class="stack" id="promoPreview" aria-live="polite"></div></div></div></form>`;
+      <div class="stack" id="promoPreview" aria-live="polite"></div>
+      <section class="promo-device-preview" aria-label="${esc(t("promo_device_preview"))}">
+        <div class="promo-device-head"><b>${t("promo_device_preview")}</b>
+          <div class="promo-device-tabs" role="tablist" aria-label="${esc(t("promo_device_preview"))}">
+            <button type="button" class="btn btn-ghost btn-sm is-selected" data-preview-device="phone" role="tab" aria-selected="true">${t("promo_device_phone")}</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-preview-device="tablet" role="tab" aria-selected="false">${t("promo_device_tablet")}</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-preview-device="desktop" role="tab" aria-selected="false">${t("promo_device_desktop")}</button>
+          </div>
+        </div>
+        <div class="device-frame" id="promoDeviceFrame" data-device="phone">
+          <div class="device-camera" aria-hidden="true"></div>
+          <div class="device-screen">
+            <div class="device-topbar"><span>ISCAE</span><span class="device-menu" aria-hidden="true">•••</span></div>
+            <div class="device-hero-preview">
+              <img id="devicePreviewLogo" alt="${esc(t("promo_logo"))}" />
+              <strong id="devicePreviewNumber"></strong><b id="devicePreviewName"></b>
+              <small>ISCAE · Mauritanie</small>
+            </div>
+            <div class="device-preview-content"><i></i><i></i><i></i></div>
+          </div>
+          <div class="device-homebar" aria-hidden="true"></div>
+        </div>
+        <small class="promo-device-note">${t("promo_device_note")}</small>
+      </section></div></div></form>`;
 }
 function canvasToLogoFile(canvas) {
   return new Promise((resolve, reject) => {
@@ -3374,11 +3596,30 @@ function bindPromoAdmin() {
   const canvas = $("#logoCanvas"), ctx = canvas && canvas.getContext("2d", { willReadFrequently: true });
   if (!canvas || !ctx) return;
   const status = $("#logoEditorStatus"), color = $("#logoColor"), brush = $("#logoBrush");
+  let previewFrame = 0;
+  const syncDevicePreview = () => {
+    if (previewFrame) cancelAnimationFrame(previewFrame);
+    previewFrame = requestAnimationFrame(() => {
+      previewFrame = 0;
+      const image = $("#devicePreviewLogo"), number = $("#devicePreviewNumber"), name = $("#devicePreviewName");
+      if (!f.isConnected || !image) return;
+      const n = Math.max(1, Number(f.n.value) || state.promo.number);
+      if (number) number.textContent = promoNumberLabel(state.lang, n);
+      if (name) name.textContent = state.lang === "fr" ? f.fr.value.trim() : f.ar.value.trim();
+      if (ready) { try { image.src = canvas.toDataURL("image/png"); } catch (error) { console.warn("logo preview", error); } }
+      else image.removeAttribute("src");
+    });
+  };
+  $$('[data-preview-device]', f).forEach(button => button.onclick = () => {
+    const frame = $("#promoDeviceFrame"); if (!frame) return;
+    frame.dataset.device = button.dataset.previewDevice;
+    $$('[data-preview-device]', f).forEach(tab => { const active = tab === button; tab.classList.toggle("is-selected", active); tab.setAttribute("aria-selected", String(active)); });
+  });
   let pending;             // undefined = unchanged · null = return to generated logo · File = replacement
   let dirty = false, ready = false, tool = "draw", drawing = false, history = [];
   const setStatus = text => { if (status) status.textContent = text; };
   const defaultLogoSource = () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(defaultPromoLogo(Math.max(1, Number(f.n.value) || state.promo.number)).replace("<svg ", '<svg width="512" height="512" '));
-  const commitEdit = () => { dirty = true; setStatus(t("promo_logo_editor_hint")); };
+  const commitEdit = () => { dirty = true; setStatus(t("promo_logo_editor_hint")); syncDevicePreview(); };
   const takeSnapshot = () => { try { history.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (history.length > 8) history.shift(); } catch (e) {} };
   const drawSource = async source => {
     let objectUrl = "";
@@ -3395,7 +3636,7 @@ function bindPromoAdmin() {
       const max = canvas.width * .92, iw = image.naturalWidth || image.width || 1, ih = image.naturalHeight || image.height || 1;
       const scale = Math.min(max / iw, max / ih), w = iw * scale, h = ih * scale;
       ctx.drawImage(image, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-      ready = true; dirty = false; history = []; setStatus(t("promo_logo_editor_hint"));
+      ready = true; dirty = false; history = []; setStatus(t("promo_logo_editor_hint")); syncDevicePreview();
     } finally { if (objectUrl) URL.revokeObjectURL(objectUrl); }
   };
   const loadCurrent = async () => {
@@ -3415,7 +3656,7 @@ function bindPromoAdmin() {
   };
   f.addEventListener("input", e => {
     if (["pNum", "pFr", "pAr"].includes(e.target.id)) {
-      prev();
+      prev(); syncDevicePreview();
       if (e.target.id === "pNum" && (pending === null || (!state.promo.logo && !(pending instanceof File)))) loadCurrent();
     }
   });
@@ -3457,7 +3698,7 @@ function bindPromoAdmin() {
   };
   $("#logoUndo").onclick = () => {
     const last = history.pop(); if (!last) return;
-    ctx.putImageData(last, 0, 0); dirty = history.length > 0; setStatus(dirty ? t("promo_logo_editor_hint") : t("promo_logo_restore"));
+    ctx.putImageData(last, 0, 0); dirty = history.length > 0; setStatus(dirty ? t("promo_logo_editor_hint") : t("promo_logo_restore")); syncDevicePreview();
   };
   $$('[data-logo-tool]', f).forEach(button => button.onclick = () => {
     tool = button.dataset.logoTool;
@@ -3474,7 +3715,7 @@ function bindPromoAdmin() {
   canvas.onpointermove = e => { if (!drawing) return; e.preventDefault(); const p = point(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
   const stopDrawing = () => { if (!drawing) return; drawing = false; ctx.closePath(); ctx.globalCompositeOperation = "source-over"; commitEdit(); };
   canvas.onpointerup = stopDrawing; canvas.onpointercancel = stopDrawing; canvas.onlostpointercapture = stopDrawing;
-  prev(); loadCurrent();
+  prev(); loadCurrent(); syncDevicePreview();
   f.onsubmit = async e => {
     e.preventDefault();
     const n = Number(f.n.value);
@@ -3508,6 +3749,7 @@ function bindPromoAdmin() {
       pending = undefined; dirty = false; history = []; $("#pLogo").value = "";
       applyBranding(); renderStats(); renderEvents(); prev();
       setStatus(t("promo_logo_saved_live")); toast(t("promo_saved"));
+      refreshCachedPromotionSnapshot().catch(error => console.warn("[Startup cache] promotion refresh failed", error));
       notifyPromoBrandChange();
       if (obsoleteLogo) setTimeout(() => removeStoredPhoto(obsoleteLogo), 5 * 60 * 1000);
     } catch (err) {
@@ -5280,6 +5522,7 @@ async function refreshPromoBrandFromServer() {
     const before = promoBrandSignature(), beforeUrl = state.promo.logo;
     try {
       await loadPromotion();
+      refreshCachedPromotionSnapshot().catch(error => console.warn("[Startup cache] promotion refresh failed", error));
       if (before !== promoBrandSignature() || beforeUrl !== state.promo.logo) {
         applyBranding(); refreshInstallButton();
         if (refreshPromoLogoEditor) await refreshPromoLogoEditor();
