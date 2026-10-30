@@ -17,12 +17,12 @@
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>ISCAE — 18ème Promotion</title>
-<meta name="description" content="منصة ISCAE 18ème Promotion لإدارة حفل التخرج: بحث الخريجين برقم التسجيل، التخصصات، الفئات، والعد التنازلي للحفلات." />
-<meta property="og:title" content="ISCAE — 18ème Promotion" />
-<meta name="twitter:title" content="ISCAE — 18ème Promotion" />
+<title>Graduation Platform</title>
+<meta name="description" content="منصة التخرج الرسمية للبحث عن الخريجين ومتابعة فعاليات التخرج." />
+<meta property="og:title" content="Graduation Platform" />
+<meta name="twitter:title" content="Graduation Platform" />
 <meta property="og:image" content="icons/icon-512.png" />
-<meta property="og:site_name" content="ISCAE" />
+<meta property="og:site_name" content="Graduation Platform" />
 <meta property="og:description" content="ابحث عن معلوماتك كخريج وتابع استعدادات حفل توزيع شهادات التكريم." />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -885,10 +885,15 @@ html[dir=ltr] .topnav{margin-inline-end:0;margin-inline-start:8px}
 .logo-editor-controls input[type=text]{min-width:0;flex:1;padding:9px 10px;border:1px solid var(--stroke);border-radius:10px;background:var(--bg-2);color:var(--text)}
 .logo-tool[aria-pressed="true"]{border-color:var(--primary);background:var(--primary);color:#fff}
 .logo-editor-status{min-height:1.5em;font-size:12px;color:var(--muted);line-height:1.6}
+.logo-preset-card{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:10px;border:1px solid var(--stroke);border-radius:14px;background:var(--bg-2)}
+.logo-preset-thumb{width:58px;height:48px;flex:none;object-fit:contain;border-radius:8px;background:#00252a}
+.logo-preset-copy{display:grid;gap:3px;min-width:0;flex:1}.logo-preset-copy b{font-size:12px}.logo-preset-copy small{font-size:11px;color:var(--muted);line-height:1.45}
+.logo-preset-actions{display:flex;flex-wrap:wrap;gap:6px}
 @media(max-width:640px){.logo-editor{grid-template-columns:minmax(0,1fr)}.logo-canvas-shell{max-width:min(100%,300px);margin-inline:auto}.logo-editor-controls{width:100%}}
 .promo-device-preview{margin-top:18px;padding:14px;border:1px solid var(--stroke);border-radius:18px;background:var(--surface-solid)}
 .promo-device-head{display:grid;gap:10px;margin-bottom:14px}.promo-device-head>b{font-size:13px;font-weight:900}
 .promo-device-tabs{display:flex;flex-wrap:wrap;gap:6px}.promo-device-tabs [aria-selected="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+@media(max-width:640px){.logo-preset-actions{width:100%}.logo-preset-actions .btn{flex:1}}
 .device-frame{position:relative;margin:0 auto;padding:9px;border:2px solid #273144;background:#111827;box-shadow:0 18px 42px -24px rgba(0,0,0,.75);transition:width .25s ease,border-radius .25s ease}
 .device-frame[data-device="phone"]{width:min(100%,230px);border-radius:30px}.device-frame[data-device="tablet"]{width:min(100%,360px);border-radius:24px}.device-frame[data-device="desktop"]{width:100%;max-width:520px;border-radius:14px}
 .device-camera{position:absolute;z-index:2;top:11px;left:50%;width:36px;height:5px;transform:translateX(-50%);border-radius:8px;background:#374151}
@@ -1061,9 +1066,9 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
     <nav class="topnav" aria-label="Navigation"><a href="#top" id="navHome" aria-current="true">Accueil</a><a href="#search" id="navGrads">Diplômés</a></nav>
     <a href="#top" class="brand">
       <div class="brand-text center" style="align-items:flex-end">
-        <b>ISCAE</b><span id="brandPromoLabel">PROMOTION 18</span>
+        <b id="brandInstitutionName">Graduation</b><span id="brandPromoLabel">PROMOTION</span>
       </div>
-      <img class="brand-logo-img" src="brand/logo-iscae.png" alt="ISCAE" width="42" height="42" />
+      <img class="brand-logo-img" id="brandLogoImg" src="brand/logo-iscae.png" alt="Institution logo" width="42" height="42" />
     </a>
   </div>
 </header>
@@ -1075,7 +1080,7 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
       <div class="hero2-bg" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
       <div class="hero2-in">
         <div class="hero2-logo" id="heroLogo"></div>
-        <h1 id="heroTitle"><span class="hero2-num" id="heroNumber">18ème Promotion</span><span class="hero2-name" id="heroName" hidden></span></h1>
+        <h1 id="heroTitle"><span class="hero2-num" id="heroNumber">Promotion</span><span class="hero2-name" id="heroName" hidden></span></h1>
         <div><p class="hero2-inst" id="heroInst"></p><p class="hero2-country" id="heroCountry"></p><p class="hero2-soon" id="heroSoon" hidden></p></div>
         <a class="btn hero2-cta" id="heroCta" href="#search"></a>
         <div id="heroInstall" class="hidden" style="margin-top: 24px; animation: fadeUp 0.8s ease 0.2s both;">
@@ -1133,7 +1138,7 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
 <footer>
   <div class="container footer-inner">
     <button class="btn btn-ghost btn-sm" id="btnFooterLogin" data-i18n="footer_login">دخول المشرفين ←</button>
-    <div class="foot2"><b>ISCAE — <span id="footerPromoLabel">18ème Promotion</span></b><span id="footerInst"></span><span>Mauritanie · © <span id="footerYear">2026</span> <span id="footerRights"></span></span>
+    <div class="foot2"><b><span id="footerInstitutionShort">Graduation</span> — <span id="footerPromoLabel">Promotion</span></b><span id="footerInst"></span><span id="footerCountry"></span> · © <span id="footerYear">2026</span> <span id="footerRights"></span>
       <a class="mda" href="https://wa.me/22220479962" target="_blank" rel="noopener noreferrer" aria-label="MDA — WhatsApp">MDA</a></div>
   </div>
 </footer>
@@ -1172,35 +1177,44 @@ const SUPABASE_URL = "https://httwzwtyjucqtjpjsvuh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dHd6d3R5anVjcXRqcGpzdnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNTY1OTMsImV4cCI6MjEwMDkzMjU5M30.C7kAem3bfJPXvi_7FsKfippVGFX1f3Em_oLbdUFu3O8";
 
 
-/* ------------------------- 0-BIS. MULTI-PROMO: تحديد الدفعة من الرابط -------------------------
-   كل دفعة لها رابطها: iscae-promo-18.vercel.app ، iscae-promo-19.vercel.app ...
-   الموقع واحد، والدفعة تُحدَّد من اسم النطاق (أو ?promo=19 كرابط مؤقت)، وكل البيانات تُصفّى حسبها. */
+/* ------------------------- 0-BIS. MULTI-TENANT: اختيار الجامعة والدفعة -------------------------
+   slug ثابت بالشكل university-promo-N؛ ?promo=slug رابط مؤقت إلى حين ربط نطاق الجامعة. */
 const PLATFORM_EMAIL = "agwfmhmd@gmail.com";   // المشرف العام Superviseurs
+const PROMO_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*-promo-[1-9]\d{0,2}$/;
 const TENANT = (() => {
   const host = String(location.hostname || "").toLowerCase();
-  let number = null, by = "default";
+  let number = null, slug = null, by = "default";
   try {
     const q = new URLSearchParams(location.search).get("promo");
-    if (q && /^\d{1,3}$/.test(q)) { number = Number(q); by = "query"; }
+    if (q && /^\d{1,3}$/.test(q) && Number(q) >= 1) { number = Number(q); by = "query"; }
+    else if (q && PROMO_SLUG_RE.test(q.toLowerCase())) { slug = q.toLowerCase(); number = Number(slug.match(/-promo-(\d{1,3})$/)?.[1]) || null; by = "query"; }
   } catch (e) {}
-  if (number === null) {
-    const m = host.match(/^iscae-promo-(\d{1,3})(?:[.-]|$)/);
-    if (m) { number = Number(m[1]); by = "host"; }
+  if (!slug && number === null) {
+    const label = host.split(".")[0] || "";
+    const generic = label.match(/^([a-z0-9]+(?:-[a-z0-9]+)*)-promo-([1-9]\d{0,2})$/);
+    if (generic) { slug = `${generic[1]}-promo-${generic[2]}`; number = Number(generic[2]); by = "host"; }
+    else {
+      const legacy = host.match(/^iscae-promo-(\d{1,3})(?:[.-]|$)/);
+      if (legacy) { number = Number(legacy[1]); slug = `iscae-promo-${number}`; by = "host"; }
+    }
   }
-  return { host, number, by, id: null, legacy: false, ready: false, notFound: false };
+  return { host, number, slug, by, id: null, legacy: false, ready: false, notFound: false };
 })();
+const tenantSelector = () => TENANT.slug || (TENANT.number != null ? `iscae-promo-${TENANT.number}` : "");
+const tenantTokenUrl = () => { const selector = tenantSelector(); return `/api/public/tenant-token${selector ? `?promotion=${encodeURIComponent(selector)}` : ""}`; };
 const tenantOn = () => !!TENANT.id && !TENANT.legacy;
 
 let db;
 let tenantTokenCache = { key: "", token: "", until: 0 };
 async function getTenantAccessToken() {
-  if (!db || TENANT.number == null) throw new Error("تعذر تحديد رقم الدفعة.");
+  if (!db) throw new Error("تعذر تحديد الجامعة والدفعة.");
+  const selector = tenantSelector();
   const { data } = await db.auth.getSession();
   const bearer = data?.session?.access_token || "";
-  const key = `${TENANT.number}:${bearer}`;
+  const key = `${selector || "host"}:${bearer}`;
   if (tenantTokenCache.key === key && tenantTokenCache.until > Date.now() + 15000) return tenantTokenCache.token;
   const headers = bearer ? { Authorization: `Bearer ${bearer}` } : {};
-  const response = await fetch(`/api/public/tenant-token?promotion=${encodeURIComponent(TENANT.number)}`, { headers, credentials: "same-origin", cache: "no-store" });
+  const response = await fetch(tenantTokenUrl(), { headers, credentials: "same-origin", cache: "no-store" });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.token) {
     const error = new Error(payload.error || "تعذر التحقق من نطاق الدفعة.");
@@ -1220,7 +1234,7 @@ async function tenantFetch(input, init = {}) {
   return fetch(input, { ...init, headers });
 }
 db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: "iscae" + (TENANT.number != null ? TENANT.number : 18) + "-auth" },
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: "promo-" + tenantSelector() + "-auth" },
   global: { fetch: tenantFetch }
 });
 /* كل استعلام على جداول بيانات الدفعة يُصفّى تلقائياً بـ promotion_id، وكل إدراج يُختم بدفعة هذا الموقع.
@@ -1756,13 +1770,43 @@ function t(key, vars) {
 
 function brandName() {
   const v = (state.settings && state.settings.platform_name || "").trim();
-  return v || ("ISCAE " + promoNumberLabel("fr"));
+  return v || (`${promoInstitutionShort()} ${promoNumberLabel("fr")}`);
+}
+function institutionSlug(p = state.promo) {
+  const direct = String(p?.institution?.slug || "").toLowerCase();
+  if (direct) return direct;
+  const slug = String(p?.slug || TENANT.slug || "");
+  const match = slug.match(/^(.+)-promo-\d{1,3}$/);
+  return match ? match[1] : "iscae";
+}
+function promoInstitutionShort(p = state.promo) {
+  const value = String(p?.institution?.short_name || p?.institution_short || (institutionSlug(p) === "iscae" ? "ISCAE" : institutionSlug(p).split("-").map(x => x[0]).join(""))).trim();
+  return (value || "UNIV").slice(0, 14);
+}
+function promoInstitutionName(lang = state.lang, p = state.promo) {
+  const inst = p?.institution || {};
+  const value = lang === "fr" ? (inst.name_fr || p?.institution_name_fr) : (inst.name_ar || p?.institution_name_ar);
+  if (value) return String(value).trim();
+  if (institutionSlug(p) === "iscae") return lang === "fr" ? "Institut Supérieur de Comptabilité et d'Administration des Entreprises" : "المعهد العالي للمحاسبة وإدارة المؤسسات";
+  return promoInstitutionShort(p);
+}
+function isIscaePromotion(p = state.promo) { return institutionSlug(p) === "iscae"; }
+function hasIscaeReferenceLogo(p = state.promo) { return isIscaePromotion(p) && Number(p?.number) === 18; }
+function slugifyInstitution(value) {
+  const arabic = { "ا":"a","أ":"a","إ":"i","آ":"a","ب":"b","ت":"t","ث":"th","ج":"j","ح":"h","خ":"kh","د":"d","ذ":"dh","ر":"r","ز":"z","س":"s","ش":"sh","ص":"s","ض":"d","ط":"t","ظ":"z","ع":"a","غ":"gh","ف":"f","ق":"q","ك":"k","ل":"l","م":"m","ن":"n","ه":"h","و":"w","ي":"y","ى":"a","ة":"h" };
+  let text = String(value || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f\u064b-\u065f\u0670]/g, "");
+  text = Array.from(text, ch => arabic[ch] || ch).join("");
+  return text.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").replace(/-{2,}/g, "-").slice(0, 40).replace(/-+$/g, "");
+}
+function suggestedInstitutionShort(value) {
+  const parts = slugifyInstitution(value).split("-").filter(Boolean);
+  return (parts.map(x => x[0]).join("").slice(0, 8) || "UNIV").toUpperCase();
 }
 /* ------------------------- PROMOTION — مصدر واحد (رقم ≠ اسم) -------------------------
    الرقم (18) واسم الدفعة (FR/AR، NULL حتى يحدده المشرف الرئيسي) يأتيان فقط من
    public.promotion_settings. كل واجهة تستعمل الدوال أدناه — لا نص مكرَّر. */
 const AR_ORD = {1:"الأولى",2:"الثانية",3:"الثالثة",4:"الرابعة",5:"الخامسة",6:"السادسة",7:"السابعة",8:"الثامنة",9:"التاسعة",10:"العاشرة",11:"الحادية عشر",12:"الثانية عشر",13:"الثالثة عشر",14:"الرابعة عشر",15:"الخامسة عشر",16:"السادسة عشر",17:"السابعة عشر",18:"الثامنة عشر",19:"التاسعة عشر",20:"العشرون"};
-state.promo = { number: TENANT.number != null ? TENANT.number : 18, name_fr: null, name_ar: null, logo: null };
+state.promo = { number: TENANT.number != null ? TENANT.number : 18, slug: TENANT.slug || `iscae-promo-${TENANT.number || 18}`, name_fr: null, name_ar: null, institution: null, logo: null };
 function promoNumberLabel(lang = state.lang, n = state.promo.number) {
   return lang === "fr" ? `${n}${n === 1 ? "ère" : "ème"} Promotion` : `الدفعة ${AR_ORD[n] || n}`;
 }
@@ -1771,12 +1815,13 @@ function promoName(lang = state.lang) {
 }
 let logoUid = 0;
 /** شعار افتراضي (شارة الدفعة) يُستبدل تلقائياً بشعار يرفعه المشرف الرئيسي. */
-function defaultPromoLogo(n) {
+function defaultPromoLogo(n, shortName = promoInstitutionShort()) {
   const u = ++logoUid, fs = String(n).length > 2 ? 26 : 36;
+  const short = String(shortName || "UNIV").trim().slice(0, 10).toUpperCase();
   const nodes = [0, 45, 90, 135, 180, 225, 270, 315].map(a => { const r = a * Math.PI / 180, x1 = 60 + 52.5 * Math.cos(r), y1 = 60 + 52.5 * Math.sin(r), x2 = 60 + 47 * Math.cos(r), y2 = 60 + 47 * Math.sin(r);
     return `<line x1="${x2.toFixed(1)}" y1="${y2.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"/><circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="1.6"/>`; }).join("");
   const bars = [6, 9, 12, 15].map((h, i) => `<rect x="${29.5 + i * 5.6}" y="${90 - h}" width="4" height="${h}" rx="1"/>`).join("");
-  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(promoNumberLabel())}">
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(promoNumberLabel(state.lang, n))}">
     <defs><linearGradient id="pg${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#012328"/><stop offset=".55" stop-color="#001013"/><stop offset="1" stop-color="#000000"/></linearGradient>
     <linearGradient id="gg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13878a"/><stop offset="1" stop-color="#04656c"/></linearGradient>
     <radialGradient id="sh${u}" cx=".35" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
@@ -1789,14 +1834,19 @@ function defaultPromoLogo(n) {
     <g fill="url(#gg${u})">${bars}</g>
     <polyline points="29,80 35,76 41,78 51,70" fill="none" stroke="#04656c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,68.6 47.6,69.4 51.6,73.4" fill="#04656c"/>
     <g fill="none" stroke="url(#gg${u})" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M76 76l-6 6.5 6 6.5"/><path d="M84 74.5l-4.5 16"/><path d="M87.5 76l6 6.5-6 6.5" transform="translate(-0.5 0)"/></g>
-    <text x="60" y="105" text-anchor="middle" font-family="'Plus Jakarta Sans',sans-serif" font-weight="800" font-size="8" letter-spacing="3.2" fill="#fff" fill-opacity=".9">ISCAE</text></svg>`;
+    <text x="60" y="105" text-anchor="middle" font-family="'Plus Jakarta Sans',sans-serif" font-weight="800" font-size="8" letter-spacing="2.2" fill="#fff" fill-opacity=".9">${esc(short)}</text></svg>`;
 }
-function promoLogoHTML(url, n, cls) {
-  return url ? `<img class="${cls || ""}" src="${esc(url)}" alt="${esc(promoNumberLabel(state.lang, n))}" decoding="async" />` : defaultPromoLogo(n);
+function defaultPromoLogoDataUrl(n = state.promo.number, short = promoInstitutionShort()) {
+  const svg = defaultPromoLogo(n, short).replace("<svg ", '<svg width="512" height="512" ');
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+function promoLogoHTML(url, n, cls, shortName = promoInstitutionShort()) {
+  const alt = `${promoInstitutionName()} — ${promoNumberLabel(state.lang, n)}`;
+  return url ? `<img class="${cls || ""}" src="${esc(url)}" alt="${esc(alt)}" decoding="async" />` : defaultPromoLogo(n, shortName);
 }
 function renderHeroLogo() {
   const el = $("#heroLogo"); if (!el) return;
-  const url = state.promo.logo || "", key = url + "|" + state.promo.number + "|" + state.lang;
+  const url = state.promo.logo || "", key = [url, state.promo.number, state.lang, institutionSlug(), promoInstitutionShort()].join("|");
   if (el.dataset.key === key) return;
   el.dataset.key = key;
   el.classList.remove("promo-logo-enter");
@@ -1813,31 +1863,56 @@ async function loadPromotionLegacy() {
     const { data, error } = await rawFrom("promotion_settings").select("*").eq("id", 1).maybeSingle();
     state.promoReady = !error && !!data;
     if (state.promoReady) {
-      state.promo = { number: Number(data.promotion_number) || 18, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null,
-        logo_source: data.promotion_logo_url || null, logo: await signedStorageUrl(data.promotion_logo_url) };
+      state.promo = { number: Number(data.promotion_number) || 18, slug: `iscae-promo-${Number(data.promotion_number) || 18}`, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null,
+        institution: null, logo_source: data.promotion_logo_url || null, logo: await signedStorageUrl(data.promotion_logo_url) };
     }
   } catch (e) { state.promoReady = false; }
 }
 const isMissingRelation = e => !!e && (e.code === "42P01" || e.code === "PGRST205" || /relation|schema cache|does not exist|could not find the table/i.test(String(e.message || "")));
 function applyPromoRow(row) {
+  const prior = state.promo || {};
+  const institution = row.institution || (prior.id === row.id ? prior.institution : null) || null;
   TENANT.id = row.id;
-  state.promo = { id: row.id, slug: row.slug, number: Number(row.number) || 18, name_fr: row.name_fr || null, name_ar: row.name_ar || null,
+  TENANT.slug = String(row.slug || TENANT.slug || `iscae-promo-${Number(row.number) || 18}`).toLowerCase();
+  TENANT.number = Number(row.number) || 18;
+  state.promo = { id: row.id, slug: TENANT.slug, number: TENANT.number, name_fr: row.name_fr || null, name_ar: row.name_ar || null,
+    institution_id: row.institution_id || null, institution,
+    institution_short: institution?.short_name || row.institution_short || (prior.id === row.id ? prior.institution_short : null),
+    institution_name_ar: institution?.name_ar || row.institution_name_ar || (prior.id === row.id ? prior.institution_name_ar : null),
+    institution_name_fr: institution?.name_fr || row.institution_name_fr || (prior.id === row.id ? prior.institution_name_fr : null),
+    institution_logo_source: institution?.logo_url || (prior.id === row.id ? prior.institution_logo_source : null) || null,
+    institution_logo: institution?.logo_url && /^https?:\/\//i.test(institution.logo_url) ? institution.logo_url : (prior.id === row.id ? prior.institution_logo || null : null),
     logo_source: row.logo_url || null, logo: row.logo_url && /^https?:\/\//i.test(row.logo_url) ? row.logo_url : null,
     domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default };
   state.promoReady = true;
 }
-/** تحديد دفعة هذا الرابط: النطاق الدقيق ← رقم الدفعة في اسم النطاق ← الدفعة الافتراضية (localhost / نطاق مخصص). */
+async function withPromoInstitution(row) {
+  if (!row || !row.institution_id) return row;
+  if (row.institution) return row;
+  try {
+    const { data, error } = await rawFrom("institutions").select("id,slug,name_ar,name_fr,short_name,logo_url").eq("id", row.institution_id).maybeSingle();
+    if (!error && data) return { ...row, institution: data };
+  } catch (error) { console.warn("[Promotion] institution lookup skipped", error); }
+  return row;
+}
+async function hydratePromoRow(row) {
+  const hydrated = await withPromoInstitution(row);
+  applyPromoRow(hydrated);
+  state.promo.logo = await signedStorageUrl(hydrated.logo_url);
+  state.promo.institution_logo_source = hydrated.institution?.logo_url || null;
+  state.promo.institution_logo = await signedStorageUrl(hydrated.institution?.logo_url);
+}
+/** Resolve by explicit temporary slug on the project host, or by exact registered tenant domain. */
 async function resolveTenant() {
   if (TENANT.ready) return;
   const { data: authData } = await db.auth.getSession();
   const headers = authData?.session?.access_token ? { Authorization: `Bearer ${authData.session.access_token}` } : {};
-  const number = TENANT.number != null ? TENANT.number : 18;
-  const response = await fetch(`/api/public/tenant-token?promotion=${encodeURIComponent(number)}`, { headers, credentials: "same-origin", cache: "no-store" });
+  const response = await fetch(tenantTokenUrl(), { headers, credentials: "same-origin", cache: "no-store" });
   const result = await response.json().catch(() => ({}));
   if (response.status === 404) TENANT.notFound = true;
   else if (response.status === 403) { TENANT.accessDenied = true; TENANT.notFound = true; }
-  else if (!response.ok || !result.promotion) throw new Error(result.error || "تعذر التحقق من الدفعة.");
-  else applyPromoRow(result.promotion);
+  else if (!response.ok || !result.promotion) throw new Error(result.error || "تعذر التحقق من الجامعة والدفعة.");
+  else await hydratePromoRow(result.promotion);
   TENANT.ready = true;
 }
 async function loadPromotion() {
@@ -1845,12 +1920,12 @@ async function loadPromotion() {
   if (TENANT.legacy) return loadPromotionLegacy();
   if (!TENANT.id) return;
   const { data } = await rawFrom("promotions").select("*").eq("id", TENANT.id).maybeSingle();
-  if (data) { applyPromoRow(data); state.promo.logo = await signedStorageUrl(data.logo_url); }
+  if (data) await hydratePromoRow(data);
 }
 
 Object.assign(I18N, {
   hero_inst:{ar:"المعهد العالي للمحاسبة وإدارة المؤسسات",fr:"Institut Supérieur de Comptabilité et d'Administration des Entreprises"},
-  hero_country:{ar:"ISCAE — موريتانيا",fr:"ISCAE — Mauritanie"},
+  hero_country:{ar:"موريتانيا",fr:"Mauritanie"},
   hero_cta:{ar:"البحث عن خريج",fr:"Rechercher un diplômé"},
   hero_soon:{ar:"سيُعلَن عن اسم الدفعة قريباً.",fr:"Le nom de la promotion sera annoncé prochainement."},
   finder_title:{ar:"ابحث عن خريجي {promo}",fr:"Retrouvez les diplômés de la {promo}"},
@@ -1863,13 +1938,13 @@ Object.assign(I18N, {
   empty_title:{ar:"لم يتم العثور على الطالب",fr:"Aucun diplômé trouvé"},
   empty_text:{ar:"تحقق من الاسم أو الرقم الجامعي ثم حاول مرة أخرى.",fr:"Vérifiez le nom ou le matricule et essayez à nouveau."},
   congrats_title:{ar:"🎓 مبروك يا {name} 🎉",fr:"🎓 Félicitations {name} 🎉"},
-  congrats_text:{ar:"يشرّفنا ويسعدنا أن نجدك ضمن خريجي {promo} من المعهد العالي للمحاسبة وإدارة المؤسسات. هذا الإنجاز ثمرة جهدك وإصرارك وسهر الليالي، وهو بداية طريق مشرق مليء بالنجاحات. نفخر بك ونتطلع إلى أن نراك تصنع الفارق. ✨",fr:"Nous sommes fiers et honorés de vous compter parmi les diplômés de la {promo} de l'ISCAE. Cette réussite est le fruit de votre travail, de votre persévérance et de votre détermination : elle ouvre la voie à un avenir brillant. Nous avons hâte de vous voir faire la différence. ✨"},
+  congrats_text:{ar:"يشرّفنا ويسعدنا أن نجدك ضمن خريجي {promo} في {institution}. هذا الإنجاز ثمرة جهدك وإصرارك وسهر الليالي، وهو بداية طريق مشرق مليء بالنجاحات. نفخر بك ونتطلع إلى أن نراك تصنع الفارق. ✨",fr:"Nous sommes fiers et honorés de vous compter parmi les diplômés de la {promo} de {institution}. Cette réussite est le fruit de votre travail, de votre persévérance et de votre détermination : elle ouvre la voie à un avenir brillant. ✨"},
   view_profile:{ar:"عرض الملف",fr:"Voir le profil"},
   lbl_matricule:{ar:"الرقم الجامعي",fr:"Matricule"},
   share_profile:{ar:"مشاركة الملف",fr:"Partager le profil"},
   link_copied:{ar:"تم نسخ الرابط",fr:"Lien copié"},
   close:{ar:"إغلاق",fr:"Fermer"},
-  meta_desc:{ar:"منصة ISCAE الرسمية لتخرّج {promo}: البحث عن الخريجين والاطلاع على ملفاتهم الأكاديمية وحفل التخرج.",fr:"Plateforme officielle de remise des diplômes de l'ISCAE — {promo} : retrouvez les diplômés et suivez la cérémonie."},
+  meta_desc:{ar:"منصة {institution} الرسمية لدفعة {promo}: البحث عن الخريجين والاطلاع على ملفاتهم الأكاديمية وفعاليات التخرج.",fr:"Plateforme officielle de remise des diplômes de {institution} — {promo} : retrouvez les diplômés et suivez les cérémonies."},
   foot_rights:{ar:"جميع الحقوق محفوظة",fr:"Tous droits réservés"},
   promo_mgmt:{ar:"إدارة الدفعة",fr:"Gestion de la promotion"},
   promo_number:{ar:"رقم الدفعة",fr:"Numéro de la promotion"},
@@ -2012,8 +2087,8 @@ function themePreviewHTML(key) {
   const custom = normalizeHex(state.settings?.theme_custom_color || localStorage.getItem("iscae-custom-color") || "#102744");
   const p = base || { swatches: [custom, mixHex(custom, "#FFFFFF", .18), mixHex(custom, "#FFFFFF", .94), mixHex(custom, "#F6C453", .48)] };
   return `<div class="theme-live-preview" data-theme-preview="${key}">
-    <div class="tlp-head"><b>ISCAE</b><span>${t("theme_preview_title")}</span></div>
-    <div class="tlp-hero"><small>18ème Promotion</small><strong>${t("hero_cta") || "البحث عن خريج"}</strong></div>
+    <div class="tlp-head"><b>${esc(promoInstitutionShort())}</b><span>${t("theme_preview_title")}</span></div>
+    <div class="tlp-hero"><small>${esc(promoNumberLabel("fr"))}</small><strong>${t("hero_cta") || "البحث عن خريج"}</strong></div>
     <div class="tlp-body"><div class="tlp-card"><i style="background:${p.swatches[0]}"></i><span></span><em style="background:${p.swatches[1]}"></em></div><div class="tlp-lines"><b></b><b></b><b></b></div></div>
   </div>`;
 }
@@ -2052,24 +2127,36 @@ function applyStaticI18n() {
 function setMeta(sel, val) { const m = document.querySelector(sel); if (m) m.setAttribute("content", val); }
 function applyBranding() {
   const num = promoNumberLabel(), name = promoName(), promo = promoLabel();
-  const title = `ISCAE — ${num}${name ? ` — ${name}` : ""}`;
+  const institution = promoInstitutionName(), short = promoInstitutionShort();
+  const title = `${short} — ${num}${name ? ` — ${name}` : ""}`;
   document.title = title;
-  setMeta('meta[name="description"]', t("meta_desc", { promo }));
+  const metaDescription = t("meta_desc", { promo, institution });
+  setMeta('meta[name="description"]', metaDescription);
   setMeta('meta[property="og:title"]', title);
-  setMeta('meta[property="og:description"]', t("meta_desc", { promo }));
+  setMeta('meta[property="og:description"]', metaDescription);
   const set = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
+  set("#brandInstitutionName", short);
   set("#brandPromoLabel", state.lang === "fr" ? `Promo ${state.promo.number}` : `الدفعة ${state.promo.number}`);
+  const brandLogo = $("#brandLogoImg");
+  if (brandLogo) { brandLogo.src = state.promo.logo || state.promo.institution_logo || defaultPromoLogoDataUrl(); brandLogo.alt = institution; }
   set("#heroNumber", num);
   const hn = $("#heroName"); if (hn) { hn.textContent = name; hn.hidden = !name; }
   const soon = $("#heroSoon"); if (soon) { soon.textContent = t("hero_soon"); soon.hidden = !!(state.promo.name_fr || state.promo.name_ar); }
-  set("#heroInst", t("hero_inst")); set("#heroCountry", t("hero_country")); set("#heroCta", t("hero_cta"));
+  set("#heroInst", institution);
+  const country = state.lang === "fr" ? (state.promo.institution?.country_fr || "") : (state.promo.institution?.country_ar || "");
+  const fallbackCountry = isIscaePromotion() ? (state.lang === "fr" ? "Mauritanie" : "موريتانيا") : "";
+  const countryText = country || fallbackCountry;
+  set("#heroCountry", countryText);
+  const heroCountry = $("#heroCountry"); if (heroCountry) heroCountry.hidden = !countryText;
+  set("#heroCta", t("hero_cta"));
   set("#finderTitle", t("finder_title", { promo: num }));
   set("#navHome", t("nav_home")); set("#navGrads", t("nav_grads"));
   const inp = $("#searchInput"); if (inp) { inp.dir = state.lang === "fr" ? "ltr" : "rtl"; inp.placeholder = t("search_ph"); inp.setAttribute("aria-label", t("search_ph")); }
   const clr = $("#searchClear"); if (clr) clr.setAttribute("aria-label", t("search_clear"));
   set("#eventsSubtitle", t("events_subtitle", { promo }));
-  set("#footerPromoLabel", promo); set("#footerRights", `${t("foot_rights")} MDA & Promo ${state.promo.number}`);
-  set("#footerInst", t("hero_inst"));
+  set("#footerPromoLabel", promo); set("#footerInstitutionShort", short); set("#footerRights", `${t("foot_rights")} MDA & Promo ${state.promo.number}`);
+  set("#footerInst", institution); set("#footerCountry", countryText);
+  const profileLogo = $("#profileInstitutionLogo"); if (profileLogo) { profileLogo.src = state.promo.logo || state.promo.institution_logo || defaultPromoLogoDataUrl(); profileLogo.alt = institution; }
   renderHeroLogo();
   set("#footerYear", new Date().getFullYear());
   syncPwaIcons();
@@ -2161,7 +2248,7 @@ function openPublicLaunchDB() {
   }).catch(error => { console.warn("[Startup cache] IndexedDB unavailable", error); publicLaunchDbPromise = Promise.resolve(null); return null; });
   return publicLaunchDbPromise;
 }
-function publicLaunchKey() { return `v1:${String(TENANT.host || location.hostname).toLowerCase()}:${TENANT.number == null ? "default" : TENANT.number}:${TENANT.id || (TENANT.legacy ? "legacy" : "unresolved")}`; }
+function publicLaunchKey() { return `v2:${String(TENANT.host || location.hostname).toLowerCase()}:${tenantSelector()}:${TENANT.id || (TENANT.legacy ? "legacy" : "unresolved")}`; }
 async function readPublicLaunchSnapshot() {
   try {
     const database = await openPublicLaunchDB(); if (!database) return null;
@@ -2184,10 +2271,14 @@ async function writePublicLaunchSnapshot(snapshot) {
 async function refreshCachedPromotionSnapshot() {
   const snapshot = await readPublicLaunchSnapshot();
   if (!snapshot || snapshot.tenantId !== String(TENANT.id || "")) return;
-  snapshot.promo = { id: state.promo.id || null, name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null,
+  snapshot.promo = { id: state.promo.id || null, slug: state.promo.slug || TENANT.slug || null, number: state.promo.number || TENANT.number || 18,
+    institution_id: state.promo.institution_id || null, institution: state.promo.institution || null,
+    name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null,
     logo_source: state.promo.logo_source || null,
+    institution_logo_source: state.promo.institution_logo_source || null,
     // Signed Storage URLs are temporary bearer links; keep only stable external logos in IndexedDB.
-    logo: state.promo.logo_source && storageObjectPath(state.promo.logo_source) ? "" : (state.promo.logo || "") };
+    logo: state.promo.logo_source && storageObjectPath(state.promo.logo_source) ? "" : (state.promo.logo || ""),
+    institution_logo: state.promo.institution_logo_source && storageObjectPath(state.promo.institution_logo_source) ? "" : (state.promo.institution_logo || "") };
   snapshot.promoUpdatedAt = Date.now();
   await writePublicLaunchSnapshot(snapshot);
 }
@@ -2202,8 +2293,12 @@ function applyPublicLaunchSnapshot(snapshot) {
   state.publicSummary = snapshot.summary;
   state.publicCacheActive = true;
   if (snapshot.promo && snapshot.promo.id === TENANT.id) {
-    state.promo = { ...state.promo, name_fr: snapshot.promo.name_fr || null, name_ar: snapshot.promo.name_ar || null,
+    state.promo = { ...state.promo, slug: snapshot.promo.slug || state.promo.slug, number: snapshot.promo.number || state.promo.number,
+      institution_id: snapshot.promo.institution_id || state.promo.institution_id, institution: snapshot.promo.institution || state.promo.institution,
+      name_fr: snapshot.promo.name_fr || null, name_ar: snapshot.promo.name_ar || null,
       logo_source: snapshot.promo.logo_source || state.promo.logo_source || null,
+      institution_logo_source: snapshot.promo.institution_logo_source || state.promo.institution_logo_source || null,
+      institution_logo: Date.now() - Number(snapshot.promoUpdatedAt || snapshot.savedAt || 0) < 50 * 60 * 1000 ? (snapshot.promo.institution_logo || "") : "",
       logo: Date.now() - Number(snapshot.promoUpdatedAt || snapshot.savedAt || 0) < 50 * 60 * 1000 ? (snapshot.promo.logo || "") : "" };
   }
   state.publicLoaded = true;
@@ -2220,7 +2315,11 @@ function makePublicLaunchSnapshot() {
   return { key, schema: 1, tenantId: String(TENANT.id || ""), savedAt: Date.now(), promoUpdatedAt: Date.now(),
     specialties: state.specialties.map(({ id, name, color }) => ({ id, name, color })),
     settings: Object.fromEntries(PUBLIC_STARTUP_SETTINGS.filter(name => state.settings && Object.prototype.hasOwnProperty.call(state.settings, name)).map(name => [name, state.settings[name]])),
-    promo: { id: state.promo.id || null, name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null, logo_source: state.promo.logo_source || null,
+    promo: { id: state.promo.id || null, slug: state.promo.slug || TENANT.slug || null, number: state.promo.number || TENANT.number || 18,
+      institution_id: state.promo.institution_id || null, institution: state.promo.institution || null,
+      name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null, logo_source: state.promo.logo_source || null,
+      institution_logo_source: state.promo.institution_logo_source || null,
+      institution_logo: state.promo.institution_logo_source && storageObjectPath(state.promo.institution_logo_source) ? "" : (state.promo.institution_logo || ""),
       logo: state.promo.logo_source && storageObjectPath(state.promo.logo_source) ? "" : (state.promo.logo || "") },
     summary: { total: state.students.length, categories, specialties }
   };
@@ -2326,7 +2425,7 @@ function storageObjectPath(ref) {
   const marker = `/${PHOTO_BUCKET}/`;
   const at = value.indexOf(marker);
   if (at >= 0) { try { return decodeURIComponent(value.slice(at + marker.length).split(/[?#]/)[0]); } catch (e) { return value.slice(at + marker.length).split(/[?#]/)[0]; } }
-  return value.startsWith("promotions/") || value.startsWith("students/") || value.startsWith("promotion/") ? value : null;
+  return value.startsWith("promotions/") || value.startsWith("institutions/") || value.startsWith("students/") || value.startsWith("promotion/") ? value : null;
 }
 async function signedStorageUrl(ref) {
   if (!ref) return "";
@@ -2621,7 +2720,7 @@ async function runSearch(fromUser) {
   }
   const fullName = String(st.full_name || "").trim().replace(/\s+/g, " ");   // الاسم الكامل للخريج
   box.innerHTML = `<div class="congrats" role="status"><div class="congrats-logo">${promoLogoHTML(state.promo.logo, state.promo.number, "plate")}</div>
-      <div><b>${t("congrats_title", { name: esc(fullName) })}</b><p>${t("congrats_text", { promo: "<strong>" + esc(promoLabel()) + "</strong>" })}</p></div></div>
+      <div><b>${t("congrats_title", { name: esc(fullName) })}</b><p>${t("congrats_text", { promo: "<strong>" + esc(promoLabel()) + "</strong>", institution: `<strong>${esc(promoInstitutionName())}</strong>` })}</p></div></div>
     <div class="ggrid one">${cardHTML(enrichStudent(st))}</div>`;
   if (fromUser === true) setTimeout(() => { const el = box.querySelector(".gcard"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 120);
 }
@@ -2689,8 +2788,8 @@ function showProfile(st, reg) {
   ov.innerHTML = `<div class="prof-sheet">
     <div class="prof-head">
       <button type="button" class="prof-close" id="profClose" aria-label="${esc(t("close"))}">×</button>
-      <div class="prof-logos"><img class="pl-inst" src="brand/logo-iscae.png" alt="ISCAE" /><i class="pl-sep" aria-hidden="true"></i><div class="pl-promo">${promoLogoHTML(state.promo.logo, state.promo.number, "plate")}</div></div>
-      <div class="prof-inst"><span>ISCAE · ${esc(promoLabel())}</span></div>
+      <div class="prof-logos"><img class="pl-inst" id="profileInstitutionLogo" src="brand/logo-iscae.png" alt="Institution logo" /><i class="pl-sep" aria-hidden="true"></i><div class="pl-promo">${promoLogoHTML(state.promo.logo, state.promo.number, "plate")}</div></div>
+      <div class="prof-inst"><span>${esc(promoInstitutionName())} · ${esc(promoLabel())}</span></div>
     </div>
     ${st ? `${avatarHTML(st, "prof-av")}
     <div class="prof-body">
@@ -2704,7 +2803,7 @@ function showProfile(st, reg) {
   </div>`;
   document.body.appendChild(ov);
   document.body.style.overflow = "hidden";
-  if (st) document.title = `${st.full_name} — ISCAE — ${promoNumberLabel()}`;
+  if (st) document.title = `${st.full_name} — ${promoInstitutionShort()} — ${promoNumberLabel()}`;
   const closeBtn = $("#profClose", ov); closeBtn.focus();
   closeBtn.onclick = closeProfile;
   ov.addEventListener("mousedown", e => { if (e.target === ov) closeProfile(); });
@@ -2720,7 +2819,7 @@ function showProfile(st, reg) {
   const share = $("#profShare", ov);
   if (share) share.onclick = async () => {
     const url = location.origin + location.pathname + PROFILE_HASH + encodeURIComponent(st.registration_number);
-    const data = { title: `${st.full_name} — ISCAE`, text: `${st.full_name} — ${promoLabel()}`, url };
+    const data = { title: `${st.full_name} — ${promoInstitutionShort()}`, text: `${st.full_name} — ${promoLabel()}`, url };
     try {
       if (navigator.share) { await navigator.share(data); return; }
       await navigator.clipboard.writeText(url); toast(t("link_copied"));
@@ -2737,7 +2836,7 @@ function loginModal() {
   const m = openModal(`
     <div class="modal" style="max-width:440px">
       <div class="modal-head">
-        <div class="brand-logo" style="width:38px;height:38px;font-size:10px">ISCAE</div>
+        <div class="brand-logo" style="width:38px;height:38px;font-size:10px">${esc(promoInstitutionShort())}</div>
         <h3>${t("login_modal_title")}</h3>
       </div>
       <form class="modal-body" id="loginForm">
@@ -3394,7 +3493,7 @@ function renderSettings(panel) {
     </section>
     <form id="setForm" class="stack" style="max-width:720px">
       <div class="grid-2">
-        <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || ("ISCAE " + promoNumberLabel("fr")))}" /></div>
+        <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" value="${esc(s.platform_name || (promoInstitutionShort() + " " + promoNumberLabel("fr")))}" /></div>
       </div>
       <div class="grid-2">
         <div class="field"><label>${t("field_graduation_date")}</label><input name="graduation_date" type="datetime-local" value="${toLocalInput(s.graduation_date)}" /></div>
@@ -3519,8 +3618,8 @@ function renderSettings(panel) {
 
 /* ------------------------- GESTION DE LA PROMOTION (admin principal) ------------------------- */
 function promoPreviewHTML(lang, n, name) {
-  const inst = lang === "fr" ? "Institut Supérieur de Comptabilité<br>et d'Administration des Entreprises" : "المعهد العالي للمحاسبة وإدارة المؤسسات";
-  return `<div class="pv" dir="${lang === "fr" ? "ltr" : "rtl"}" lang="${lang}"><b>${esc(promoNumberLabel(lang, n))}</b>${name ? `<em>${esc(name)}</em>` : ""}<small class="pv-inst">${inst}<br>ISCAE</small></div>`;
+  const inst = promoInstitutionName(lang);
+  return `<div class="pv" dir="${lang === "fr" ? "ltr" : "rtl"}" lang="${lang}"><b>${esc(promoNumberLabel(lang, n))}</b>${name ? `<em>${esc(name)}</em>` : ""}<small class="pv-inst">${esc(inst)}</small></div>`;
 }
 /** رفع شعار الدفعة: التخزين أولاً، وإن رُفض (صلاحيات) نستعمل data-URL للملفات الصغيرة. */
 async function uploadPromoLogo(file) {
@@ -3547,6 +3646,11 @@ function promoAdminHTML() {
           <div class="logo-canvas-shell"><canvas class="logo-editor-canvas" id="logoCanvas" width="512" height="512" role="img" aria-label="${esc(t("promo_logo"))}"></canvas></div>
           <div class="logo-editor-controls">
             <input id="pLogo" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" aria-label="${esc(t("promo_logo"))}" />
+            ${hasIscaeReferenceLogo(p) ? `<div class="logo-preset-card">
+              <img class="logo-preset-thumb" src="brand/iscae-promo-18-reference.png?v=20261029-2" alt="${esc(t("promo_logo_reference"))}" width="58" height="48" loading="lazy" decoding="async" />
+              <div class="logo-preset-copy"><b>${t("promo_logo_reference")}</b><small>${t("promo_logo_reference_note")}</small></div>
+              <div class="logo-preset-actions"><button type="button" class="btn btn-ghost btn-sm" id="logoPresetPreview">${t("promo_logo_reference_preview")}</button><button type="button" class="btn btn-primary btn-sm" id="logoPresetApply">${t("promo_logo_reference_apply")}</button></div>
+            </div>` : ""}
             <div class="logo-control-row"><label for="logoColor">${t("promo_logo_color")}</label><input id="logoColor" type="color" value="#04656c" /><label><input id="logoIncludeWhite" type="checkbox" /> ${t("promo_logo_include_white")}</label><button type="button" class="btn btn-ghost btn-sm" id="logoRecolor">${t("promo_logo_apply_color")}</button></div>
             <div class="logo-control-row"><button type="button" class="btn btn-ghost btn-sm logo-tool" data-logo-tool="draw" aria-pressed="true">${t("promo_logo_tool_draw")}</button><button type="button" class="btn btn-ghost btn-sm logo-tool" data-logo-tool="erase" aria-pressed="false">${t("promo_logo_tool_erase")}</button><label for="logoBrush">${t("promo_logo_brush")}</label><input id="logoBrush" type="range" min="3" max="72" value="18" /></div>
             <div class="logo-control-row"><input id="logoText" type="text" maxlength="32" placeholder="${esc(t("promo_logo_text_placeholder"))}" aria-label="${esc(t("promo_logo_text_placeholder"))}" /><button type="button" class="btn btn-ghost btn-sm" id="logoAddText">${t("promo_logo_add_text")}</button></div>
@@ -3569,11 +3673,11 @@ function promoAdminHTML() {
         <div class="device-frame" id="promoDeviceFrame" data-device="phone">
           <div class="device-camera" aria-hidden="true"></div>
           <div class="device-screen">
-            <div class="device-topbar"><span>ISCAE</span><span class="device-menu" aria-hidden="true">•••</span></div>
+            <div class="device-topbar"><span id="devicePreviewShort">${esc(promoInstitutionShort())}</span><span class="device-menu" aria-hidden="true">•••</span></div>
             <div class="device-hero-preview">
               <img id="devicePreviewLogo" alt="${esc(t("promo_logo"))}" />
               <strong id="devicePreviewNumber"></strong><b id="devicePreviewName"></b>
-              <small>ISCAE · Mauritanie</small>
+              <small id="devicePreviewInstitution">${esc(promoInstitutionName())}</small>
             </div>
             <div class="device-preview-content"><i></i><i></i><i></i></div>
           </div>
@@ -3606,6 +3710,9 @@ function bindPromoAdmin() {
       const n = Math.max(1, Number(f.n.value) || state.promo.number);
       if (number) number.textContent = promoNumberLabel(state.lang, n);
       if (name) name.textContent = state.lang === "fr" ? f.fr.value.trim() : f.ar.value.trim();
+      const short = $("#devicePreviewShort"), institution = $("#devicePreviewInstitution");
+      if (short) short.textContent = promoInstitutionShort();
+      if (institution) institution.textContent = [promoInstitutionName(), state.promo.institution?.country_fr || state.promo.institution?.country_ar || (isIscaePromotion() ? (state.lang === "fr" ? "Mauritanie" : "موريتانيا") : "")].filter(Boolean).join(" · ");
       if (ready) { try { image.src = canvas.toDataURL("image/png"); } catch (error) { console.warn("logo preview", error); } }
       else image.removeAttribute("src");
     });
@@ -3616,9 +3723,10 @@ function bindPromoAdmin() {
     $$('[data-preview-device]', f).forEach(tab => { const active = tab === button; tab.classList.toggle("is-selected", active); tab.setAttribute("aria-selected", String(active)); });
   });
   let pending;             // undefined = unchanged · null = return to generated logo · File = replacement
+  let logoOnlySubmit = false, presetLoaded = false;
   let dirty = false, ready = false, tool = "draw", drawing = false, history = [];
   const setStatus = text => { if (status) status.textContent = text; };
-  const defaultLogoSource = () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(defaultPromoLogo(Math.max(1, Number(f.n.value) || state.promo.number)).replace("<svg ", '<svg width="512" height="512" '));
+  const defaultLogoSource = () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(defaultPromoLogo(Math.max(1, Number(f.n.value) || state.promo.number), promoInstitutionShort()).replace("<svg ", '<svg width="512" height="512" '));
   const commitEdit = () => { dirty = true; setStatus(t("promo_logo_editor_hint")); syncDevicePreview(); };
   const takeSnapshot = () => { try { history.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (history.length > 8) history.shift(); } catch (e) {} };
   const drawSource = async source => {
@@ -3647,6 +3755,44 @@ function bindPromoAdmin() {
       setStatus(t("promo_logo_edit_load_fail")); console.warn("[Logo editor] source could not be loaded", err);
     }
   };
+  const referenceLogoUrl = new URL("brand/iscae-promo-18-reference.png?v=20261029-2", document.baseURI).toString();
+  let presetBusy = false;
+  const stageReferenceLogo = async () => {
+    if (presetBusy) return false;
+    presetBusy = true;
+    const presetButtons = [$("#logoPresetPreview"), $("#logoPresetApply")].filter(Boolean);
+    presetButtons.forEach(button => { button.disabled = true; });
+    try {
+      const response = await fetch(referenceLogoUrl, { credentials: "same-origin", cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const file = new File([blob], "iscae-promo-18-reference.png", { type: "image/png" });
+      if (!validatePhotoFile(file)) return false;
+      await drawSource(file);
+      if (!ready) return false;
+      pending = file; presetLoaded = true; dirty = false; history = []; $("#pLogo").value = "";
+      setStatus(t("promo_logo_reference_previewed")); syncDevicePreview();
+      return true;
+    } catch (error) {
+      console.warn("[Logo editor] reference asset could not be loaded", error);
+      setStatus(t("promo_logo_reference_fail")); toast(t("promo_logo_reference_fail"), "err");
+      return false;
+    } finally { presetButtons.forEach(button => { button.disabled = false; }); presetBusy = false; }
+  };
+  const confirmDraftReplacement = async () => {
+    if (!dirty && !(pending instanceof File && !presetLoaded)) return true;
+    return await confirmDialog(t("promo_logo_reference"), t("promo_logo_reference_replace_draft"));
+  };
+  const presetPreview = $("#logoPresetPreview"), presetApply = $("#logoPresetApply");
+  if (presetPreview) presetPreview.onclick = async () => {
+    if (await confirmDraftReplacement()) await stageReferenceLogo();
+  };
+  if (presetApply) presetApply.onclick = async () => {
+    if (!(await confirmDraftReplacement()) || !(await stageReferenceLogo())) return;
+    logoOnlySubmit = true;
+    if (typeof f.requestSubmit === "function") f.requestSubmit($("#promoSave"));
+    else $("#promoSave").click();
+  };
   const prev = () => {
     const n = Math.max(1, Number(f.n.value) || state.promo.number);
     $("#promoPreview").innerHTML = promoPreviewHTML("fr", n, f.fr.value.trim()) + promoPreviewHTML("ar", n, f.ar.value.trim());
@@ -3663,11 +3809,12 @@ function bindPromoAdmin() {
   $("#pLogo").onchange = async e => {
     const file = e.target.files && e.target.files[0]; if (!file) return;
     if (!validatePhotoFile(file)) { e.target.value = ""; return; }
+    presetLoaded = false;
     pending = file;
     await loadCurrent();
   };
-  $("#pLogoReset").onclick = async () => { pending = null; $("#pLogo").value = ""; await loadCurrent(); };
-  $("#logoRestore").onclick = async () => { pending = undefined; dirty = false; $("#pLogo").value = ""; await loadCurrent(); };
+  $("#pLogoReset").onclick = async () => { pending = null; presetLoaded = false; $("#pLogo").value = ""; await loadCurrent(); };
+  $("#logoRestore").onclick = async () => { pending = undefined; presetLoaded = false; dirty = false; $("#pLogo").value = ""; await loadCurrent(); };
   $("#logoRecolor").onclick = () => {
     if (!ready) { toast(t("promo_logo_edit_load_fail"), "err"); return; }
     const hex = normalizeHex(color.value); if (!hex) return;
@@ -3718,14 +3865,16 @@ function bindPromoAdmin() {
   prev(); loadCurrent(); syncDevicePreview();
   f.onsubmit = async e => {
     e.preventDefault();
+    const logoOnly = logoOnlySubmit; logoOnlySubmit = false;
     const n = Number(f.n.value);
     if (!Number.isInteger(n) || n < 1) { toast(t("promo_number"), "err"); return; }
     if (dirty && !ready) { toast(t("promo_logo_edit_load_fail"), "err"); return; }
-    const btn = $("#promoSave"), oldButton = btn.innerHTML, controls = [...f.querySelectorAll("input, button")];
+    if (logoOnly && !(pending instanceof File || dirty)) { toast(t("promo_logo_reference_fail"), "err"); return; }
+    const btn = $(logoOnly ? "#logoPresetApply" : "#promoSave"), oldButton = btn.innerHTML, controls = [...f.querySelectorAll("input, button")];
     controls.forEach(control => { control.disabled = true; });
     canvas.style.pointerEvents = "none";
     btn.innerHTML = `<span class="spinner"></span> ${t("btn_saving")}`;
-    const payload = { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
+    const payload = logoOnly ? {} : { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
     if (tenantOn()) delete payload.promotion_number;
     const oldLogo = state.promo.logo_source || state.promo.logo || null;
     let newLogo = null, uploadStage = false;
@@ -3735,7 +3884,9 @@ function bindPromoAdmin() {
       else if (pending === null) payload.promotion_logo_url = null;
       let data, error;
       if (tenantOn()) {
-        const mp = { name_fr: payload.promotion_name_fr, name_ar: payload.promotion_name_ar };
+        const mp = {};
+        if (payload.promotion_name_fr !== undefined) mp.name_fr = payload.promotion_name_fr;
+        if (payload.promotion_name_ar !== undefined) mp.name_ar = payload.promotion_name_ar;
         if (payload.promotion_logo_url !== undefined) mp.logo_url = payload.promotion_logo_url;
         ({ data, error } = await rawFrom("promotions").update(mp).eq("id", TENANT.id).select());
       } else ({ data, error } = await rawFrom("promotion_settings").update(payload).eq("id", 1).select());
@@ -3746,7 +3897,7 @@ function bindPromoAdmin() {
         state.promo.logo = await signedStorageUrl(data[0].logo_url);
       } else await loadPromotion();
       const obsoleteLogo = payload.promotion_logo_url !== undefined && oldLogo && oldLogo !== payload.promotion_logo_url ? oldLogo : null;
-      pending = undefined; dirty = false; history = []; $("#pLogo").value = "";
+      pending = undefined; presetLoaded = false; dirty = false; history = []; $("#pLogo").value = "";
       applyBranding(); renderStats(); renderEvents(); prev();
       setStatus(t("promo_logo_saved_live")); toast(t("promo_saved"));
       refreshCachedPromotionSnapshot().catch(error => console.warn("[Startup cache] promotion refresh failed", error));
@@ -3790,7 +3941,14 @@ Object.assign(I18N, {
   phone_ctl_hint:{ar:"عند الإيقاف لا يظهر الرقم للزوار في بطاقة النتيجة ولا في الملف الشخصي، ويبقى ظاهراً للمشرفين في لوحة التحكم.",fr:"Désactivé : le numéro n'apparaît ni dans la carte de résultat ni dans le profil public ; il reste visible pour les administrateurs."},
   phone_ctl_on:{ar:"تم إظهار رقم الهاتف للزوار",fr:"Téléphone affiché aux visiteurs"},
   phone_ctl_off:{ar:"تم إخفاء رقم الهاتف عن الزوار",fr:"Téléphone masqué pour les visiteurs"},
-  phone_ctl_missing:{ar:"تعذّر الحفظ: نفّذ ملف STATS.sql في Supabase أولاً.",fr:"Échec : exécutez d'abord STATS.sql dans Supabase."}
+  phone_ctl_missing:{ar:"تعذّر الحفظ: نفّذ ملف STATS.sql في Supabase أولاً.",fr:"Échec : exécutez d'abord STATS.sql dans Supabase."},
+  promo_logo_reference:{ar:"الشعار المرفق — الدفعة 18",fr:"Logo fourni — Promotion 18"},
+  promo_logo_reference_note:{ar:"المعاينة لا تحفظ. التطبيق يحفظ هذا الشعار فقط ويعرضه لجميع الزوار.",fr:"L'aperçu ne sauvegarde pas. L'application enregistre uniquement ce logo pour tous les visiteurs."},
+  promo_logo_reference_preview:{ar:"معاينة الشعار",fr:"Aperçu du logo"},
+  promo_logo_reference_apply:{ar:"تطبيق الشعار للجميع",fr:"Appliquer ce logo à tous"},
+  promo_logo_reference_previewed:{ar:"تم تحميل الشعار في المعاينة فقط؛ اضغط «تطبيق الشعار للجميع» لحفظه.",fr:"Logo chargé pour aperçu uniquement ; cliquez sur « Appliquer ce logo à tous » pour l'enregistrer."},
+  promo_logo_reference_fail:{ar:"تعذر تحميل الشعار المرفق. تحقق من الاتصال ثم أعد المحاولة.",fr:"Impossible de charger le logo fourni. Vérifiez la connexion puis réessayez."},
+  promo_logo_reference_replace_draft:{ar:"سيستبدل هذا الخيار التعديلات غير المحفوظة في محرر الشعار. هل تريد المتابعة؟",fr:"Cette action remplacera les modifications non enregistrées du logo. Voulez-vous continuer ?"}
 });
 
 /* ---- التحكم بظهور رقم الهاتف (الافتراضي ظاهر) ---- */
@@ -4022,7 +4180,7 @@ function drawStatsBody(r, daily, totals, err) {
   const xl = $("#stXlsx"); if (xl) xl.onclick = () => {
     if (!logRows.length) return toast(t("toast_no_export_data"), "info");
     const ws = XLSX.utils.json_to_sheet(logRows.map(x => ({ [t("st_datetime")]: fmtDT(x.created_at), [t("th_specialty")]: specName(x.specialty_id), [t("th_full_name")]: x.full_name, [t("th_reg_number")]: x.registration_number, [t("st_registered_by")]: registrarName(x.created_by) })));
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inscriptions"); XLSX.writeFile(wb, `ISCAE${state.promo.number}-stats-${dayKey(new Date())}.xlsx`); toast(t("toast_excel_downloaded"));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inscriptions"); XLSX.writeFile(wb, `${promoInstitutionShort()}-${state.promo.number}-stats-${dayKey(new Date())}.xlsx`); toast(t("toast_excel_downloaded"));
   };
 }
 
@@ -4067,7 +4225,7 @@ function exportCSV(specId, label) {
   const csv = "\uFEFF" + [head.join(",")]
     .concat(rows.map(r => head.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(",")))
     .join("\n");
-  downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `ISCAE${state.promo.number}-${label}.csv`);
+  downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${promoInstitutionShort()}-${state.promo.number}-${label}.csv`);
   toast(t("toast_csv_downloaded"));
 }
 
@@ -4077,7 +4235,7 @@ function exportExcel(specId, label) {
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Etudiants");
-  XLSX.writeFile(wb, `ISCAE${state.promo.number}-${label}.xlsx`);
+  XLSX.writeFile(wb, `${promoInstitutionShort()}-${state.promo.number}-${label}.xlsx`);
   toast(t("toast_excel_downloaded"));
 }
 
@@ -4768,7 +4926,7 @@ function installModal(mode = installGuideMode()) {
   const m = openModal(`
     <div class="modal install-hint-modal" style="max-width:420px">
       <div class="modal-head">
-        <div class="brand-logo" style="width:38px;height:38px;font-size:10px">ISCAE</div>
+        <div class="brand-logo" style="width:38px;height:38px;font-size:10px">${esc(promoInstitutionShort())}</div>
         <h3>${t("install_modal_title")}</h3>
       </div>
       <div class="modal-body">
@@ -5178,7 +5336,8 @@ async function renderNotifsTab(panel) {
 /* ------------------------- 18b. APP ICON = PROMO LOGO -------------------------
    أيقونة التثبيت (PWA) وأيقونة التبويب (favicon) وأيقونة iOS تُولَّد من شعار الدفعة نفسه،
    فإذا غيّر المشرف الرئيسي الشعار تتغير الأيقونة تلقائياً (manifest ديناميكي). */
-const PWA_ICON_CACHE = "iscae-pwa-icons-v3-live-editor";
+const PWA_ICON_CACHE = "promo-pwa-icons-v5-multi-university";
+const pwaIconCacheKey = () => `${PWA_ICON_CACHE}:${tenantSelector() || "host"}`;
 let pwaIconKey = "", pwaIconToken = 0, pwaManifestUrl = "";
 function pwaLoadImg(src, cors) {
   return new Promise((res, rej) => {
@@ -5189,7 +5348,7 @@ function pwaLoadImg(src, cors) {
 async function pwaLogoImage() {
   const url = state.promo.logo;
   if (!url) {
-    const svg = defaultPromoLogo(state.promo.number).replace("<svg ", '<svg width="512" height="512" ');
+    const svg = defaultPromoLogo(state.promo.number, promoInstitutionShort()).replace("<svg ", '<svg width="512" height="512" ');
     return pwaLoadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
   }
   try { return await pwaLoadImg(url, true); } catch (e) { /* احتياط: جلب الملف كـ blob */ }
@@ -5215,11 +5374,14 @@ async function pwaApplyIcons(ic) {
   const base = new URL("manifest.json", document.baseURI);
   let m; try { const r = await fetch(base.href, { cache: "no-store" }); m = await r.json(); } catch (e) { return; }
   const abs = v => new URL(v, base).href;
-  m.name = "ISCAE — " + promoLabel(); m.short_name = "ISCAE " + state.promo.number;
-  m.description = t("meta_desc", { promo: promoLabel() });
-  if (m.id) m.id = abs(m.id);
-  if (m.start_url) m.start_url = abs(m.start_url);
-  if (m.scope) m.scope = abs(m.scope);
+  const selector = tenantSelector() || state.promo.slug || `iscae-promo-${state.promo.number}`;
+  const startPath = `index.html?promo=${encodeURIComponent(selector)}`;
+  m.name = `${promoInstitutionName()} — ${promoLabel()}`;
+  m.short_name = `${promoInstitutionShort()} ${state.promo.number}`.slice(0, 20);
+  m.description = t("meta_desc", { promo: promoLabel(), institution: promoInstitutionName() });
+  m.id = abs(startPath);
+  m.start_url = abs(startPath);
+  m.scope = abs("./");
   m.icons = [
     { src: ic.f32,  sizes: "32x32",   type: "image/png" },
     { src: ic.i192, sizes: "192x192", type: "image/png", purpose: "any" },
@@ -5229,7 +5391,7 @@ async function pwaApplyIcons(ic) {
   ];
   if (Array.isArray(m.screenshots)) m.screenshots.forEach(x => { x.src = ic.i192; });
   if (Array.isArray(m.shortcuts)) m.shortcuts.forEach(sc => {
-    if (sc.url) sc.url = abs(sc.url);
+    if (sc.url) sc.url = abs(`index.html?promo=${encodeURIComponent(tenantSelector() || state.promo.slug || "iscae-promo-18")}#${String(sc.url).split("#")[1] || "search"}`);
     sc.icons = [{ src: ic.i192, sizes: "192x192", type: "image/png" }];
   });
   const old = pwaManifestUrl;
@@ -5240,7 +5402,7 @@ async function pwaApplyIcons(ic) {
 /** يُستدعى من applyBranding: يعيد توليد الأيقونات فقط عند تغيّر الشعار/رقم الدفعة. */
 async function syncPwaIcons() {
   if (!state.promoReady) return;
-  const key = (state.promo.logo_source || state.promo.logo || "default") + "|" + state.promo.number + "|" + promoLabel();
+  const key = [tenantSelector(), state.promo.logo_source || state.promo.logo || "default", state.promo.institution_logo_source || "", state.promo.number, promoLabel(), promoInstitutionShort()].join("|");
   if (key === pwaIconKey) { pwaIconsReady = true; refreshInstallButton(); return; }
   pwaIconsReady = false; refreshInstallButton();
   pwaIconKey = key; const token = ++pwaIconToken;
@@ -5250,7 +5412,7 @@ async function syncPwaIcons() {
     const ic = { f16: pwaDraw(img, 16, null, 1), f32: pwaDraw(img, 32, null, 1), a180: pwaDraw(img, 180, BG, .8),
                  i192: pwaDraw(img, 192, BG, .74), i512: pwaDraw(img, 512, BG, .74) };
     await pwaApplyIcons(ic);
-    try { localStorage.setItem(PWA_ICON_CACHE, JSON.stringify({ key, ic })); } catch (e) {}
+    try { localStorage.setItem(pwaIconCacheKey(), JSON.stringify({ key, ic })); } catch (e) {}
     if (token === pwaIconToken) { pwaIconsReady = true; refreshInstallButton(); }
   } catch (e) {
     if (token === pwaIconToken) { pwaIconKey = ""; pwaIconsReady = true; refreshInstallButton(); }
@@ -5259,7 +5421,7 @@ async function syncPwaIcons() {
 }
 /** تطبيق آخر أيقونات محفوظة فوراً عند الفتح (قبل وصول بيانات الدفعة) لتسبق حدث التثبيت. */
 function restorePwaIcons() {
-  try { const c = JSON.parse(localStorage.getItem(PWA_ICON_CACHE) || "null"); if (c && c.ic && c.ic.i512) pwaApplyIcons(c.ic); } catch (e) {}
+  try { const c = JSON.parse(localStorage.getItem(pwaIconCacheKey()) || "null"); if (c && c.ic && c.ic.i512) pwaApplyIcons(c.ic); } catch (e) {}
 }
 
 /* ------------------------- 18-TER. إدارة الدفعات (المشرف العام Superviseurs) -------------------------
@@ -5274,8 +5436,8 @@ Object.assign(I18N, {
   promo_not_found_text:{ar:"لا توجد دفعة بالرقم {n}. تأكد من الرابط.",fr:"Aucune promotion portant le numéro {n}. Vérifiez le lien."},
   promo_access_denied:{ar:"هذا الحساب غير مخوّل للدخول إلى هذه الدفعة. افتح رابط دفعتك.",fr:"Ce compte n'est pas autorisé pour cette promotion. Ouvrez le lien de votre promotion."},
   promos_title:{ar:"إدارة الدفعات",fr:"Gestion des promotions"},
-  promos_intro:{ar:"أنشئ دفعة جديدة برقمها: يُنشأ رابطها iscae-promo-N.vercel.app وشعارها تلقائياً، وتكون بياناتها مستقلة تماماً عن بقية الدفعات. رئيس الدفعة له صلاحيات المشرف الرئيسي داخل دفعته فقط.",fr:"Créez une promotion par son numéro : son lien iscae-promo-N.vercel.app et son emblème sont générés automatiquement ; ses données sont totalement séparées. Le chef de promotion a les droits de l'administrateur principal dans sa promotion uniquement."},
-  promos_new:{ar:"+ إنشاء دفعة جديدة",fr:"+ Nouvelle promotion"},
+  promos_intro:{ar:"أنشئ دفعة ضمن جامعة موجودة أو أضف جامعة جديدة بالاسم والشعار ورقم الدفعة. يُنشأ معرّف مثل feg-promo-3 تلقائياً؛ يعمل الرابط المؤقت فوراً، ويحتاج النطاق الخاص إلى ربطه على Vercel.",fr:"Créez une promotion dans un établissement existant ou ajoutez une université avec son nom, son logo et son numéro. Un identifiant tel que feg-promo-3 est généré automatiquement ; le lien provisoire fonctionne immédiatement et le domaine dédié doit être relié à Vercel."},
+  promos_new:{ar:"+ إنشاء جامعة / دفعة",fr:"+ Université / promotion"},
   promos_empty:{ar:"لا توجد دفعات.",fr:"Aucune promotion."},
   promos_default_badge:{ar:"الدفعة الأولى (الأصلية)",fr:"Promotion d'origine"},
   promos_students:{ar:"طالب",fr:"étudiants"}, promos_specialties:{ar:"تخصص",fr:"spécialités"},
@@ -5293,15 +5455,26 @@ Object.assign(I18N, {
   promos_dom_manual:{ar:"أضِف النطاق يدوياً في Vercel",fr:"Ajouter le domaine manuellement dans Vercel"},
   promos_dom_error:{ar:"تعذّر ربط الرابط",fr:"Échec du lien"},
   promos_temp_link:{ar:"رابط مؤقت يعمل فوراً",fr:"Lien provisoire immédiat"},
-  promos_modal_title:{ar:"إنشاء دفعة جديدة",fr:"Créer une promotion"},
+  promos_modal_title:{ar:"إنشاء جامعة أو دفعة",fr:"Créer une université ou une promotion"},
   promos_field_number:{ar:"رقم الدفعة",fr:"Numéro de la promotion"},
-  promos_logo_auto:{ar:"الشعار يُنشأ تلقائياً حسب الرقم (يمكن لرئيس الدفعة تغييره لاحقاً).",fr:"L'emblème est généré automatiquement selon le numéro (modifiable ensuite)."},
+  promos_institution_select:{ar:"الجامعة / المؤسسة",fr:"Université / établissement"},
+  promos_institution_new:{ar:"+ إضافة جامعة جديدة…",fr:"+ Ajouter une université…"},
+  promos_institution_name_ar:{ar:"اسم الجامعة بالعربية",fr:"Nom arabe (facultatif)"},
+  promos_institution_name_fr:{ar:"اسم الجامعة بالفرنسية",fr:"Nom français"},
+  promos_institution_short:{ar:"الاسم المختصر للشعار",fr:"Nom court pour le logo"},
+  promos_institution_slug:{ar:"معرّف الجامعة للرابط",fr:"Identifiant de l'université pour le lien"},
+  promos_institution_logo:{ar:"شعار الجامعة (PNG/JPG/WebP، حتى 5 MB)",fr:"Logo de l'université (PNG/JPG/WebP, jusqu'à 5 Mo)"},
+  promos_institution_migration:{ar:"لإضافة جامعة جديدة، نفّذ أولاً MULTI-PROMO.sql ثم 20261029000000_multi_university.sql في Supabase. حتى ذلك الحين يمكن إنشاء دفعات ISCAE القديمة فقط.",fr:"Pour ajouter une université, exécutez d'abord MULTI-PROMO.sql puis 20261029000000_multi_university.sql dans Supabase. En attendant, seules les promotions ISCAE peuvent être créées."},
+  promos_logo_auto:{ar:"الشعار الافتراضي يُنشأ تلقائياً من الاسم المختصر ورقم الدفعة. يمكن تحميل شعار الجامعة هنا وتغييره لاحقاً من محرر الشعار.",fr:"L'emblème par défaut combine le nom court et le numéro. Vous pouvez charger ici le logo de l'université et le modifier ensuite dans l'éditeur."},
   promos_head_section:{ar:"رئيس الدفعة (اختياري الآن)",fr:"Chef de promotion (facultatif)"},
   promos_head_modal:{ar:"إضافة رئيس دفعة",fr:"Ajouter un chef de promotion"},
   promos_create:{ar:"إنشاء الدفعة",fr:"Créer la promotion"},
   promos_creating:{ar:"جارٍ الإنشاء…",fr:"Création…"},
   promos_err_exists:{ar:"هذه الدفعة موجودة مسبقاً.",fr:"Cette promotion existe déjà."},
   promos_err_number:{ar:"أدخل رقم دفعة صحيحاً (1 – 999).",fr:"Saisissez un numéro valide (1 – 999)."},
+  promos_err_institution_name:{ar:"أدخل اسم الجامعة بالعربية أو الفرنسية.",fr:"Saisissez le nom de l'université en arabe ou en français."},
+  promos_err_institution_slug:{ar:"معرّف الجامعة غير صالح. استخدم حروفاً لاتينية صغيرة وأرقاماً وشرطات فقط.",fr:"Identifiant invalide. Utilisez des lettres latines minuscules, chiffres et tirets."},
+  promos_logo_upload_failed:{ar:"أُنشئت الدفعة، لكن تعذّر حفظ شعار الجامعة: {msg}",fr:"Promotion créée, mais l'enregistrement du logo a échoué : {msg}"},
   promos_err_head_incomplete:{ar:"أكمل بيانات رئيس الدفعة (الاسم والبريد وكلمة المرور) أو اتركها كلها فارغة.",fr:"Complétez les infos du chef (nom, e-mail, mot de passe) ou laissez-les vides."},
   promos_err_missing:{ar:"نفّذ ملف MULTI-PROMO.sql في Supabase أولاً.",fr:"Exécutez d'abord MULTI-PROMO.sql dans Supabase."},
   promos_created:{ar:"تم إنشاء الدفعة {n}",fr:"Promotion {n} créée"},
@@ -5323,10 +5496,13 @@ Object.assign(I18N, {
   promos_close:{ar:"إغلاق",fr:"Fermer"}
 });
 
-const promoHostOf = p => String(p.domain || (p.slug + ".vercel.app")).toLowerCase();
-/** رابط الدفعة: النطاق الرسمي إن رُبط، وإلا رابط مؤقت يعمل فوراً على هذا المشروع. */
+const promoSlugOf = p => String(p.slug || `iscae-promo-${p.number}`).toLowerCase();
+const promoHostOf = p => String(p.domain || promoSlugOf(p)).toLowerCase();
+/** The temporary slug link works on the current project host; active domains keep the same public page route. */
 function promoLinkOf(p) {
-  return (p.is_default || p.domain_status === "active") ? `https://${promoHostOf(p)}/` : `${location.origin}/site/index.html?promo=${p.number}`;
+  const slug = promoSlugOf(p);
+  if (p.domain && (p.is_default || p.domain_status === "active")) return `https://${promoHostOf(p)}/site/index.html?promo=${encodeURIComponent(slug)}`;
+  return `${location.origin}/site/index.html?promo=${encodeURIComponent(slug)}`;
 }
 async function authedFetch(path, method, body) {
   const { data: { session } } = await db.auth.getSession();
@@ -5360,19 +5536,29 @@ async function createPromoHead(p) {
   return { ok: true, user_id: u.id };
 }
 async function loadPromosData() {
-  const [pr, ov, hd] = await Promise.all([
+  const [pr, ov, hd, ir] = await Promise.all([
     rawFrom("promotions").select("*").order("number"),
     db.rpc("platform_promotions_overview"),
-    rawFrom("admins").select("*").eq("role", "super_admin").eq("is_platform", false).order("created_at")
+    rawFrom("admins").select("*").eq("role", "super_admin").eq("is_platform", false).order("created_at"),
+    rawFrom("institutions").select("id,slug,name_ar,name_fr,short_name,logo_url").order("slug")
   ]);
   if (pr.error) throw pr.error;
   const stats = {}; (ov.data || []).forEach(x => { stats[x.promotion_id] = x; });
-  return { list: pr.data || [], stats, heads: hd.data || [] };
+  const institutionsReady = !ir.error;
+  const institutions = ir.data || [];
+  const byId = new Map(institutions.map(x => [x.id, x]));
+  const list = (pr.data || []).map(p => ({ ...p, institution: byId.get(p.institution_id) || null }));
+  return { list, stats, heads: hd.data || [], institutions, institutions_ready: institutionsReady, institutions_error: ir.error || null };
 }
 function promoDomBadge(p) {
   if (p.is_default || p.domain_status === "active") return `<span class="tag tag-B">${t("promos_dom_active")}</span>`;
   const k = { manual: ["tag-C", "promos_dom_manual"], error: ["tag-C", "promos_dom_error"] }[p.domain_status] || ["tag-D", "promos_dom_pending"];
   return `<span class="tag ${k[0]}">${t(k[1])}</span>`;
+}
+function promoRowLogoHTML(p) {
+  const lang = state.lang, instName = promoInstitutionName(lang, p);
+  if (p.logo_url && /^https?:\/\//i.test(p.logo_url)) return `<img src="${esc(p.logo_url)}" alt="${esc(instName)}" decoding="async" />`;
+  return defaultPromoLogo(p.number, promoInstitutionShort(p));
 }
 async function renderPromosTab(panel) {
   if (!isPlatform()) { panel.innerHTML = `<div class="empty">${t("err_forbidden_platform")}</div>`; return; }
@@ -5384,16 +5570,18 @@ async function renderPromosTab(panel) {
   panel.innerHTML = `
     <div class="panel-head"><h2>${t("promos_title")}</h2><button class="btn btn-primary btn-sm" id="newPromo">${t("promos_new")}</button></div>
     <p class="muted" style="font-size:13px;margin-bottom:16px">${t("promos_intro")}</p>
+    ${d.institutions_ready ? "" : `<div class="empty" role="status" style="margin-bottom:14px">${t("promos_institution_migration")}</div>`}
     <div class="promo-cards">${d.list.map(p => {
       const st = d.stats[p.id] || {}, heads = d.heads.filter(h => h.promotion_id === p.id), nm = state.lang === "fr" ? p.name_fr : p.name_ar;
       const link = promoLinkOf(p), temp = !(p.is_default || p.domain_status === "active");
+      const instName = promoInstitutionName(state.lang, p), batchName = nm ? ` — ${esc(nm)}` : "";
       return `<div class="promo-card">
-        <div class="pc-logo">${promoLogoHTML(/^https?:\/\//i.test(p.logo_url || "") ? p.logo_url : null, p.number)}</div>
+        <div class="pc-logo">${promoRowLogoHTML(p)}</div>
         <div class="pc-main">
-          <b>${esc(promoNumberLabel(state.lang, p.number))}${nm ? " — " + esc(nm) : ""}</b>
+          <b>${esc(instName)} · ${esc(promoNumberLabel(state.lang, p.number))}${batchName}</b>
           ${p.is_default ? `<span class="tag tag-A">${t("promos_default_badge")}</span>` : ""} ${promoDomBadge(p)}
           <a class="pc-link" dir="ltr" href="${esc(link)}" target="_blank" rel="noopener">${esc(link.replace(/^https?:\/\//, ""))}</a>
-          ${temp ? `<small class="muted">${t("promos_temp_link")} · ${esc(promoHostOf(p))}</small>` : ""}
+          ${temp ? `<small class="muted">${t("promos_temp_link")} · ${esc(promoSlugOf(p))}</small>` : ""}
           <small class="muted">${st.students ?? 0} ${t("promos_students")} · ${st.specialties ?? 0} ${t("promos_specialties")} · ${st.admins ?? 0} ${t("promos_admins")} · ${st.subscribers ?? 0} ${t("promos_subs")}</small>
           <div class="pc-heads"><small><b>${t("promos_heads")}:</b></small> ${heads.length ? heads.map(h => `<span class="pc-head">${esc(h.full_name || "—")} <bdi dir="ltr">(${esc(h.email || "")})</bdi> <button class="btn btn-ghost btn-sm" data-rmhead="${h.id}">${t("promos_remove_head")}</button></span>`).join("") : `<small class="muted">${t("promos_no_head")}</small>`}</div>
         </div>
@@ -5405,28 +5593,39 @@ async function renderPromosTab(panel) {
         </div></div>`;
     }).join("") || `<div class="empty">${t("promos_empty")}</div>`}</div>`;
 
-  $("#newPromo").onclick = () => promoCreateModal(d.list);
-  $$("[data-copy]", panel).forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast(t("link_copied")); } catch (e) { window.prompt(b.dataset.copy, b.dataset.copy); } });
-  $$("[data-addhead]", panel).forEach(b => b.onclick = () => promoHeadModal(d.list.find(x => x.id === b.dataset.addhead)));
-  $$("[data-rmhead]", panel).forEach(b => b.onclick = async () => {
+  $("#newPromo").onclick = () => promoCreateModal(d);
+  $$('[data-copy]', panel).forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast(t("link_copied")); } catch (e) { window.prompt(b.dataset.copy, b.dataset.copy); } });
+  $$('[data-addhead]', panel).forEach(b => b.onclick = () => promoHeadModal(d.list.find(x => x.id === b.dataset.addhead)));
+  $$('[data-rmhead]', panel).forEach(b => b.onclick = async () => {
     const h = d.heads.find(x => x.id === b.dataset.rmhead);
     if (!h || !await confirmDialog(t("promos_head_remove_title"), t("promos_head_remove_text", { name: h.full_name || h.email }))) return;
     const { error } = await rawFrom("admins").delete().eq("id", h.id);
     if (error) { toast(t("err_delete_failed", { msg: error.message }), "err"); return; }
     toast(t("promos_head_removed")); renderPromosTab(panel);
   });
-  $$("[data-linkdom]", panel).forEach(b => b.onclick = async () => {
+  $$('[data-linkdom]', panel).forEach(b => b.onclick = async () => {
     b.disabled = true; const r = await provisionPromoDomain(b.dataset.linkdom);
     toast(r.ok ? t("promos_link_ok") : (r.error || t("promos_dom_error")), r.ok ? "ok" : "err"); renderPromosTab(panel);
   });
-  $$("[data-delpromo]", panel).forEach(b => b.onclick = async () => {
+  $$('[data-delpromo]', panel).forEach(b => b.onclick = async () => {
     const p = d.list.find(x => x.id === b.dataset.delpromo);
-    if (!p || !await confirmDialog(t("promos_delete_title"), t("promos_delete_text", { n: p.number }))) return;
+    if (!p || !await confirmDialog(t("promos_delete_title"), t("promos_delete_text", { n: `${promoInstitutionShort(p)} · ${p.number}` }))) return;
     const { error } = await db.rpc("platform_delete_promotion", { _id: p.id });
     if (error) { const m = String(error.message || ""); toast(/HAS_STUDENTS/.test(m) ? t("promos_err_has_students") : /DEFAULT_PROMO/.test(m) ? t("promos_err_default") : t("err_delete_failed", { msg: m }), "err"); return; }
-    authedFetch("/api/public/promo/provision", "DELETE", { domain: promoHostOf(p) }).catch(() => {});
+    if (p.domain) authedFetch("/api/public/promo/provision", "DELETE", { domain: p.domain }).catch(() => {});
     toast(t("promos_deleted")); renderPromosTab(panel);
   });
+}
+async function uploadInstitutionLogo(file, institutionId) {
+  if (!(file instanceof File) || !institutionId) throw new Error("تعذر تحديد ملف المؤسسة.");
+  if (!validatePhotoFile(file)) throw new Error(t("err_photo_type"));
+  const ext = ((file.name || "").split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const path = `institutions/${institutionId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error: uploadError } = await db.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (uploadError) throw uploadError;
+  const { error } = await db.rpc("platform_update_institution_logo", { _institution_id: institutionId, _logo_url: path });
+  if (error) { db.storage.from(PHOTO_BUCKET).remove([path]).catch(() => {}); throw error; }
+  return path;
 }
 function headFieldsHTML() {
   return `<div class="grid-2">
@@ -5437,32 +5636,133 @@ function headFieldsHTML() {
       <div class="field"><label>${t("promos_th_pw")}</label><input name="h_pw" type="password" dir="ltr" minlength="6" autocomplete="new-password" /></div></div>`;
 }
 const readHead = f => ({ full_name: String(f.h_name || "").trim(), email: String(f.h_email || "").trim().toLowerCase(), password: String(f.h_pw || ""), phone: String(f.h_phone || "").trim() });
-function promoCreateModal(existing) {
-  const next = Math.max(17, ...existing.map(x => x.number)) + 1;
+function promoCreateModal(data) {
+  const d = Array.isArray(data) ? { list: data, institutions: [], institutions_ready: false } : data;
+  const list = d.list || [], institutions = d.institutions || [], institutionReady = !!d.institutions_ready;
+  const fallbackNext = Math.max(17, ...list.map(x => Number(x.number) || 0)) + 1;
+  const institutionOptions = institutions.map(i => `<option value="${esc(i.id)}">${esc(i.name_ar || i.name_fr || i.short_name)} · ${esc(i.slug)}</option>`).join("");
   const m = openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_modal_title")}</h3></div>
     <form class="modal-body" id="pcForm">
-      <div class="grid-2"><div class="field"><label>${t("promos_field_number")}</label><input name="n" type="number" min="1" max="999" required dir="ltr" value="${next}" /></div>
+      ${institutionReady ? `<div class="field"><label>${t("promos_institution_select")}</label><select name="institution_id" id="pcInstitution"><option value="__new__" selected>${t("promos_institution_new")}</option>${institutionOptions}</select></div>
+        <div id="pcNewInstitution" class="st-card" style="margin:10px 0">
+          <div class="grid-2"><div class="field"><label>${t("promos_institution_name_fr")}</label><input name="institution_name_fr" id="pcNameFr" dir="ltr" maxlength="120" /></div>
+          <div class="field"><label>${t("promos_institution_name_ar")}</label><input name="institution_name_ar" id="pcNameAr" dir="rtl" maxlength="120" /></div></div>
+          <div class="grid-2"><div class="field"><label>${t("promos_institution_short")}</label><input name="institution_short" id="pcShort" maxlength="32" /></div>
+          <div class="field"><label>${t("promos_institution_slug")}</label><input name="institution_slug" id="pcSlug" dir="ltr" maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*" /></div></div>
+          <div class="field"><label>${t("promos_institution_logo")}</label><input name="institution_logo" id="pcLogoFile" type="file" accept="image/png,image/jpeg,image/webp" /></div>
+        </div>` : `<div class="empty" style="margin-bottom:12px">${t("promos_institution_migration")}</div><input type="hidden" name="institution_id" value="legacy-iscae" />`}
+      <div class="grid-2"><div class="field"><label>${t("promos_field_number")}</label><input name="n" id="pcNumber" type="number" min="1" max="999" required dir="ltr" value="${institutionReady ? 1 : fallbackNext}" /></div>
         <div class="field"><label>${t("promo_name_fr")}</label><input name="fr" dir="ltr" maxlength="80" /></div></div>
       <div class="field"><label>${t("promo_name_ar")}</label><input name="ar" dir="rtl" maxlength="80" /></div>
       <div class="row" style="gap:14px;align-items:center"><div class="logo-prev" id="pcLogo" style="width:84px;height:84px"></div><small class="muted">${t("promos_logo_auto")}<br><b dir="ltr" id="pcUrl"></b></small></div>
+      <section class="promo-device-preview" aria-label="${esc(t("promo_device_preview"))}">
+        <div class="promo-device-head"><b>${t("promo_device_preview")}</b><div class="promo-device-tabs" role="tablist" aria-label="${esc(t("promo_device_preview"))}">
+          <button type="button" class="btn btn-ghost btn-sm is-selected" data-pc-device="phone" role="tab" aria-selected="true">${t("promo_device_phone")}</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-pc-device="tablet" role="tab" aria-selected="false">${t("promo_device_tablet")}</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-pc-device="desktop" role="tab" aria-selected="false">${t("promo_device_desktop")}</button>
+        </div></div>
+        <div class="device-frame" id="pcDeviceFrame" data-device="phone"><div class="device-camera" aria-hidden="true"></div><div class="device-screen">
+          <div class="device-topbar"><span id="pcDeviceShort"></span><span class="device-menu" aria-hidden="true">•••</span></div>
+          <div class="device-hero-preview"><img id="pcDeviceLogo" alt="${esc(t("promo_logo"))}" /><strong id="pcDeviceNumber"></strong><b id="pcDeviceName"></b><small id="pcDeviceInstitution"></small></div>
+          <div class="device-preview-content"><i></i><i></i><i></i></div></div><div class="device-homebar" aria-hidden="true"></div></div>
+      </section>
       <h4 style="font-weight:800;margin-top:6px">${t("promos_head_section")}</h4>${headFieldsHTML()}
       <button class="btn btn-primary btn-block" type="submit" id="pcSave">${t("promos_create")}</button>
     </form><div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div></div>`);
   m.querySelector("[data-close]").onclick = closeModals;
-  const f = m.querySelector("#pcForm");
-  const prev = () => { const n = Number(f.n.value) || 0; m.querySelector("#pcLogo").innerHTML = n > 0 ? defaultPromoLogo(n) : ""; m.querySelector("#pcUrl").textContent = n > 0 ? `iscae-promo-${n}.vercel.app` : ""; };
-  f.n.addEventListener("input", prev); prev();
+  const f = m.querySelector("#pcForm"), number = m.querySelector("#pcNumber"), institutionSelect = m.querySelector("#pcInstitution");
+  let slugTouched = false, shortTouched = false, logoObjectUrl = "";
+  const selectedInstitution = () => institutionReady && institutionSelect.value !== "__new__" ? institutions.find(x => x.id === institutionSelect.value) : null;
+  const getInstitutionSlug = () => selectedInstitution()?.slug || String(m.querySelector("#pcSlug")?.value || "").trim().toLowerCase() || "iscae";
+  const setNextNumber = () => {
+    if (!number) return;
+    const inst = selectedInstitution();
+    number.value = inst ? Math.max(0, ...list.filter(x => x.institution_id === inst.id).map(x => Number(x.number) || 0)) + 1 : (institutionReady ? 1 : fallbackNext);
+  };
+  const prev = () => {
+    const n = Number(number.value) || 0, short = selectedInstitution()?.short_name || m.querySelector("#pcShort")?.value || suggestedInstitutionShort(m.querySelector("#pcNameFr")?.value || m.querySelector("#pcNameAr")?.value || "UNIV");
+    const slug = getInstitutionSlug(), inst = selectedInstitution();
+    const typedInstitution = state.lang === "fr" ? (m.querySelector("#pcNameFr")?.value || m.querySelector("#pcNameAr")?.value) : (m.querySelector("#pcNameAr")?.value || m.querySelector("#pcNameFr")?.value);
+    const institutionName = inst ? (state.lang === "fr" ? (inst.name_fr || inst.name_ar || inst.short_name) : (inst.name_ar || inst.name_fr || inst.short_name)) : (typedInstitution || short);
+    const batchName = state.lang === "fr" ? (f.querySelector('[name="fr"]')?.value || "") : (f.querySelector('[name="ar"]')?.value || "");
+    m.querySelector("#pcLogo").innerHTML = logoObjectUrl ? `<img src="${esc(logoObjectUrl)}" alt="${esc(short)}" style="width:100%;height:100%;object-fit:contain" />` : n > 0 ? defaultPromoLogo(n, short) : "";
+    m.querySelector("#pcUrl").textContent = n > 0 ? `${slug}-promo-${n}.[TENANT_ROOT_DOMAIN]` : "";
+    const deviceLogo = m.querySelector("#pcDeviceLogo"); if (deviceLogo) deviceLogo.src = logoObjectUrl || (n > 0 ? defaultPromoLogoDataUrl(n, short) : "");
+    const deviceShort = m.querySelector("#pcDeviceShort"); if (deviceShort) deviceShort.textContent = short;
+    const deviceNumber = m.querySelector("#pcDeviceNumber"); if (deviceNumber) deviceNumber.textContent = n > 0 ? promoNumberLabel(state.lang, n) : "";
+    const deviceName = m.querySelector("#pcDeviceName"); if (deviceName) deviceName.textContent = batchName;
+    const deviceInstitution = m.querySelector("#pcDeviceInstitution"); if (deviceInstitution) deviceInstitution.textContent = institutionName;
+  };
+  if (institutionSelect) institutionSelect.onchange = () => {
+    const fresh = institutionSelect.value === "__new__", box = m.querySelector("#pcNewInstitution");
+    box.style.display = fresh ? "" : "none";
+    setNextNumber(); prev();
+  };
+  const nameInput = m.querySelector("#pcNameFr") || m.querySelector("#pcNameAr");
+  [m.querySelector("#pcNameFr"),m.querySelector("#pcNameAr")].filter(Boolean).forEach(input => input.addEventListener("input", () => {
+    const source = m.querySelector("#pcNameFr").value || m.querySelector("#pcNameAr").value;
+    if (!slugTouched) m.querySelector("#pcSlug").value = slugifyInstitution(source);
+    if (!shortTouched) m.querySelector("#pcShort").value = suggestedInstitutionShort(source);
+    prev();
+  }));
+  const slugInput = m.querySelector("#pcSlug"); if (slugInput) slugInput.addEventListener("input", () => { slugTouched = true; prev(); });
+  const shortInput = m.querySelector("#pcShort"); if (shortInput) shortInput.addEventListener("input", () => { shortTouched = true; prev(); });
+  const fileInput = m.querySelector("#pcLogoFile"); if (fileInput) fileInput.onchange = () => {
+    const file = fileInput.files?.[0]; if (!file) return;
+    if (!validatePhotoFile(file)) { fileInput.value = ""; return; }
+    if (logoObjectUrl) URL.revokeObjectURL(logoObjectUrl);
+    logoObjectUrl = URL.createObjectURL(file); prev();
+  };
+  number.addEventListener("input", prev);
+  [f.querySelector('[name="fr"]'), f.querySelector('[name="ar"]')].filter(Boolean).forEach(input => input.addEventListener("input", prev));
+  m.querySelectorAll("[data-pc-device]").forEach(button => button.onclick = () => {
+    const frame = m.querySelector("#pcDeviceFrame"); if (!frame) return;
+    frame.dataset.device = button.dataset.pcDevice;
+    m.querySelectorAll("[data-pc-device]").forEach(tab => { const active = tab === button; tab.classList.toggle("is-selected", active); tab.setAttribute("aria-selected", String(active)); });
+  });
+  if (nameInput && slugInput) { slugInput.value = slugifyInstitution(nameInput.value); }
+  prev();
   f.onsubmit = async e => {
     e.preventDefault();
     const v = Object.fromEntries(new FormData(f)), n = Number(v.n), head = readHead(v);
     if (!Number.isInteger(n) || n < 1 || n > 999) { toast(t("promos_err_number"), "err"); return; }
     const anyHead = head.full_name || head.email || head.password;
     if (anyHead && !(head.full_name && head.email && head.password.length >= 6)) { toast(t("promos_err_head_incomplete"), "err"); return; }
-    const btn = $("#pcSave"); btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${t("promos_creating")}`;
+    const isNewInstitution = institutionReady && v.institution_id === "__new__";
+    const chosen = !institutionReady ? null : selectedInstitution();
+    const nameAr = String(v.institution_name_ar || "").trim(), nameFr = String(v.institution_name_fr || "").trim();
+    const instSlug = isNewInstitution ? String(v.institution_slug || slugifyInstitution(nameFr || nameAr)).trim().toLowerCase() : (chosen?.slug || "iscae");
+    if (isNewInstitution && !(nameAr || nameFr)) { toast(t("promos_err_institution_name"), "err"); return; }
+    if (isNewInstitution && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(instSlug)) { toast(t("promos_err_institution_slug"), "err"); return; }
+    const instShort = String(v.institution_short || suggestedInstitutionShort(nameFr || nameAr || instSlug)).trim().slice(0,32);
+    const btn = m.querySelector("#pcSave"); btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${t("promos_creating")}`;
     try {
-      const { data, error } = await db.rpc("platform_create_promotion", { _number: n, _name_fr: String(v.fr || "").trim() || null, _name_ar: String(v.ar || "").trim() || null });
-      if (error) { const em = String(error.message || ""); throw new Error(/PROMO_EXISTS/.test(em) ? t("promos_err_exists") : isMissingRelation(error) ? t("promos_err_missing") : em); }
+      let data, error;
+      if (institutionReady) {
+        ({ data, error } = await db.rpc("platform_create_institution_promotion", {
+          _institution_id: chosen?.id || null,
+          _institution_slug: isNewInstitution ? instSlug : null,
+          _institution_name_ar: isNewInstitution ? (nameAr || null) : null,
+          _institution_name_fr: isNewInstitution ? (nameFr || null) : null,
+          _institution_short: isNewInstitution ? instShort : null,
+          _number: n, _name_fr: String(v.fr || "").trim() || null, _name_ar: String(v.ar || "").trim() || null
+        }));
+      } else {
+        ({ data, error } = await db.rpc("platform_create_promotion", { _number: n, _name_fr: String(v.fr || "").trim() || null, _name_ar: String(v.ar || "").trim() || null }));
+      }
+      if (error) {
+        const em = String(error.message || "");
+        throw new Error(/PROMO_EXISTS/.test(em) ? t("promos_err_exists") : /INSTITUTION_NAME_REQUIRED/.test(em) ? t("promos_err_institution_name") : /INVALID_INSTITUTION_SLUG/.test(em) ? t("promos_err_institution_slug") : isMissingRelation(error) ? t("promos_err_missing") : em);
+      }
       const promo = Array.isArray(data) ? data[0] : data;
+      const newPromoSlug = promo?.slug || `${instSlug}-promo-${n}`;
+      let logoUploadError = "";
+      const logoFile = fileInput?.files?.[0];
+      const targetInstitutionId = promo?.institution_id || chosen?.id;
+      if (institutionReady && logoFile && targetInstitutionId) {
+        try { await uploadInstitutionLogo(logoFile, targetInstitutionId); }
+        catch (logoErr) { logoUploadError = t("promos_logo_upload_failed", { msg: logoErr.message || logoErr }); }
+      }
       const prov = await provisionPromoDomain(promo.id);
       let headMsg = t("promos_result_head_none");
       if (anyHead) {
@@ -5470,18 +5770,20 @@ function promoCreateModal(existing) {
         catch (err) { headMsg = "⚠ " + (err.message || err); }
       }
       const fresh = (await rawFrom("promotions").select("*").eq("id", promo.id).maybeSingle()).data || promo;
-      const link = promoLinkOf(fresh);
+      const link = promoLinkOf({ ...fresh, slug: fresh.slug || newPromoSlug });
+      const instForTitle = chosen || { slug: instSlug, short_name: instShort, name_ar: nameAr, name_fr: nameFr };
       closeModals(); toast(t("promos_created", { n }));
-      openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_result_title")} — ${esc(promoNumberLabel(state.lang, n))}</h3></div>
-        <div class="modal-body"><div class="row" style="gap:14px;align-items:center"><div class="logo-prev" style="width:84px;height:84px">${defaultPromoLogo(n)}</div>
+      openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_result_title")} — ${esc(promoInstitutionShort(instForTitle))} · ${esc(promoNumberLabel(state.lang, n))}</h3></div>
+        <div class="modal-body"><div class="row" style="gap:14px;align-items:center"><div class="logo-prev" style="width:84px;height:84px">${defaultPromoLogo(n, promoInstitutionShort(instForTitle))}</div>
         <div class="stack" style="gap:6px"><b>${t("promos_result_link")}</b><a dir="ltr" href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:800">${esc(link)}</a>
         ${prov.ok ? "" : `<small class="muted">${esc(prov.error || "")}</small>`}</div></div>
+        ${logoUploadError ? `<p class="error-text">${esc(logoUploadError)}</p>` : ""}
         <p><b>${t("promos_result_head")}:</b> ${esc(headMsg)}</p></div>
         <div class="modal-foot"><button class="btn btn-primary" data-close>${t("promos_close")}</button></div></div>`).querySelector("[data-close]").onclick = closeModals;
       if (state.tab === "promos") renderPromosTab($("#panel"));
     } catch (err) {
       toast(err.message || String(err), "err"); btn.disabled = false; btn.textContent = t("promos_create");
-    }
+    } finally { if (logoObjectUrl) URL.revokeObjectURL(logoObjectUrl); }
   };
 }
 function promoHeadModal(p) {
@@ -5505,12 +5807,14 @@ function promoHeadModal(p) {
 /* Live promotion identity synchronization. Broadcasts contain no trusted logo data; each viewer reloads the public DB row. */
 let promoBrandChannel = null, promoBrandChannelStatus = "", promoBrandRefreshPromise = null, promoBrandFallbackTimer = null;
 function promoBrandTopic() {
-  const id = TENANT.legacy ? "legacy" : String(TENANT.id || "default");
-  return "iscae-promo-brand-" + id.replace(/[^a-zA-Z0-9_-]/g, "");
+  const id = TENANT.legacy ? "legacy" : String(TENANT.id || tenantSelector() || "default");
+  return "promo-brand-" + id.replace(/[^a-zA-Z0-9_-]/g, "");
 }
 function promoBrandSignature() {
   const p = state.promo || {};
-  return JSON.stringify([p.id || null, p.number, p.name_fr || null, p.name_ar || null, p.logo_source || null]);
+  return JSON.stringify([p.id || null, p.slug || null, p.number, p.name_fr || null, p.name_ar || null, p.logo_source || null,
+    p.institution_id || null, p.institution?.name_ar || p.institution_name_ar || null, p.institution?.name_fr || p.institution_name_fr || null,
+    p.institution?.short_name || p.institution_short || null, p.institution?.logo_url || p.institution_logo_source || null]);
 }
 function startPromoBrandFallback() {
   if (promoBrandFallbackTimer) return;
@@ -5534,9 +5838,10 @@ async function refreshPromoBrandFromServer() {
 function subscribePromoBrandRealtime() {
   if (promoBrandChannel || !db || !TENANT.ready || TENANT.notFound) return;
   const topic = promoBrandTopic();
-  promoBrandChannel = db.channel(topic, { config: { broadcast: { ack: false, self: false } } })
-    .on("broadcast", { event: "brand-updated" }, () => refreshPromoBrandFromServer())
-    .subscribe(status => {
+  const channel = db.channel(topic, { config: { broadcast: { ack: false, self: false } } });
+  channel.on("broadcast", { event: "brand-updated" }, () => refreshPromoBrandFromServer());
+  if (state.promo.institution_id) channel.on("postgres_changes", { event: "UPDATE", schema: "public", table: "institutions", filter: `id=eq.${state.promo.institution_id}` }, () => refreshPromoBrandFromServer());
+  promoBrandChannel = channel.subscribe(status => {
       promoBrandChannelStatus = status;
       if (status === "SUBSCRIBED") {
         if (promoBrandFallbackTimer) { clearInterval(promoBrandFallbackTimer); promoBrandFallbackTimer = null; }

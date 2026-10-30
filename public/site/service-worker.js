@@ -1,5 +1,5 @@
 // Developer: Mohamed Dah Agove
-const ISCAE_SW_BUILD = "iscae-shell-cache-v4";
+const ISCAE_SW_BUILD = "iscae-shell-cache-v5-multi-university";
 const ISCAE_CACHE_PREFIX = "iscae-app-shell-";
 const ISCAE_CACHE_NAME = `${ISCAE_CACHE_PREFIX}${ISCAE_SW_BUILD}`;
 const ISCAE_SHELL_URL = new URL("./index.html", self.registration.scope).href;
@@ -96,16 +96,16 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data ? event.data.json() : {};
   } catch (e) {
-    payload = { title: "ISCAE", body: event.data ? event.data.text() : "" };
+    payload = { title: "Graduation platform", body: event.data ? event.data.text() : "" };
   }
-  const title = payload.title || "ISCAE";
+  const title = payload.title || payload.institution || "Graduation platform";
   const options = {
     body: payload.body || "",
-    icon: payload.icon || "./icon-192.png",
-    badge: payload.badge || "./favicon-32.png",
+    icon: payload.icon || "./icons/icon-192.png",
+    badge: payload.badge || "./icons/favicon-32.png",
     dir: "auto",
     lang: payload.lang || "ar",
-    tag: payload.tag || "iscae-notif-" + (payload.id || Date.now()),
+    tag: payload.tag || "promo-notif-" + (payload.id || Date.now()),
     renotify: true,
     requireInteraction: false,
     data: { url: payload.url || "./index.html", id: payload.id || null },

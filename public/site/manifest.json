@@ -1,7 +1,7 @@
 {
-  "name": "ISCAE — Promotion",
-  "short_name": "ISCAE",
-  "description": "Plateforme officielle de remise des diplômes de l'ISCAE — annuaire des diplômés.",
+  "name": "Graduation Promotion",
+  "short_name": "Graduation",
+  "description": "Official graduation promotion platform for university graduates.",
   "author": "Mohamed Dah Agove",
   "id": "./index.html",
   "start_url": "./index.html",
@@ -45,9 +45,9 @@
   ],
   "shortcuts": [
     {
-      "name": "بحث الخريجين",
-      "short_name": "بحث",
-      "description": "ابحث عن معلومات الخريج برقم التسجيل",
+      "name": "Graduate search",
+      "short_name": "Search",
+      "description": "Search for a graduate by registration number.",
       "url": "./index.html#search",
       "icons": [
         {
