@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "destination": "https://iscae-promo-18.vercel.app/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "X-Platform-Developer",
+          "value": "Mohamed Dah Agove"
+        }
+      ]
+    }
+  ]
+}

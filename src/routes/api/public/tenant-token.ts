@@ -44,6 +44,7 @@ function projectHost(host: string): boolean {
   const explicit = (serverEnv("TENANT_PLATFORM_HOST") ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
   const known = new Set([
     `${project}.vercel.app`,
+    "promotion.vercel.app",
     "iscae-promo-18.vercel.app",
     "iscae-promo-18-eight.vercel.app",
     ...(deployedUrl ? [deployedUrl] : []),
