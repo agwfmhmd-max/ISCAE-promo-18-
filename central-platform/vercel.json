@@ -2,6 +2,22 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/promo/:path*",
+      "destination": "https://iscae-promo-18.vercel.app/site/index.html?promo=:path*"
+    },
+    {
+      "source": "/site/:path*",
+      "destination": "https://iscae-promo-18.vercel.app/site/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://iscae-promo-18.vercel.app/api/:path*"
+    },
+    {
       "source": "/:path*",
       "destination": "https://iscae-promo-18.vercel.app/:path*"
     }

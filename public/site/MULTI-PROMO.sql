@@ -366,6 +366,31 @@ begin
   end loop;
 end $$;
 
+-- Hide disabled gala rows from public clients without deleting stored events or cards.
+create or replace function public.mp_can_read_ceremony(_promotion_id uuid, _ceremony_id uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.mp_can_read(_promotion_id) and exists (
+    select 1
+    from public.ceremonies c
+    join public.promotions p on p.id = c.promotion_id
+    where c.id = _ceremony_id and c.promotion_id = _promotion_id
+      and (public.can_manage_promotion(_promotion_id)
+           or c.type is distinct from 'night'
+           or coalesce((to_jsonb(p)->>'night_event_enabled')::boolean, true))
+  );
+$$;
+revoke all on function public.mp_can_read_ceremony(uuid, uuid) from public;
+grant execute on function public.mp_can_read_ceremony(uuid, uuid) to anon, authenticated, service_role;
+drop policy if exists mp_night_event_visibility_select on public.ceremonies;
+create policy mp_night_event_visibility_select on public.ceremonies as restrictive for select to anon, authenticated
+  using (public.mp_can_read_ceremony(promotion_id, id));
+drop policy if exists mp_night_event_visibility_select on public.ceremony_card_types;
+create policy mp_night_event_visibility_select on public.ceremony_card_types as restrictive for select to anon, authenticated
+  using (public.mp_can_read_ceremony(promotion_id, ceremony_id));
+drop policy if exists mp_night_event_visibility_select on public.student_ceremony_cards;
+create policy mp_night_event_visibility_select on public.student_ceremony_cards as restrictive for select to anon, authenticated
+  using (public.mp_can_read_ceremony(promotion_id, ceremony_id));
+
 -- زوار الموقع يستطيعون الاشتراك/إلغاء الاشتراك من أجهزتهم داخل الدفعة الحالية فقط.
 alter table public.push_subscriptions enable row level security;
 drop policy if exists mp_scope_select on public.push_subscriptions;
@@ -782,7 +807,7 @@ language sql stable security definer set search_path = public as $$
   join public.students st on st.id = scc.student_id and st.promotion_id = scc.promotion_id
   join public.ceremonies c on c.id = scc.ceremony_id and c.promotion_id = scc.promotion_id
   left join public.ceremony_card_types ct on ct.id = scc.card_type_id and ct.promotion_id = scc.promotion_id
-  where st.id = _student_id and public.mp_can_read(st.promotion_id)
+  where st.id = _student_id and public.mp_can_read_ceremony(st.promotion_id, c.id)
   order by (c.type = 'night'), ct.created_at nulls first;
 $$;
 revoke all on function public.get_student_cards(uuid) from public;

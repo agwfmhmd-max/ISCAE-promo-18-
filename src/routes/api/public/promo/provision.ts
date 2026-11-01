@@ -10,10 +10,9 @@ import {
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/iscae-config";
 
 /**
- * Provision a tenant subdomain on the single Vercel project.
- * New university slugs use <institution>-promo-<n>.<TENANT_ROOT_DOMAIN>.
- * Arbitrary vercel.app subdomains cannot be claimed by an application; legacy ISCAE aliases
- * remain supported for backwards compatibility.
+ * Attach an explicitly configured tenant hostname to the existing Vercel application.
+ * New non-ISCAE batches use the official central host unless TENANT_ROOT_DOMAIN is configured;
+ * arbitrary vercel.app subdomains cannot be claimed by this application.
  */
 const VERCEL_API = "https://api.vercel.com";
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*-promo-[1-9]\d{0,2}$/;
@@ -52,8 +51,7 @@ function expectedDomain(slug: string, existingDomain: string | null, isDefault: 
 
 function domainAllowed(domain: string, slug: string, root: string | null, isDefault: boolean): boolean {
   if (!SLUG_RE.test(slug)) return false;
-  if (isDefault) return LEGACY_DEFAULT_DOMAIN_RE.test(domain);
-  if (domain === `${slug}.vercel.app` && /^iscae-promo-\d{1,3}$/.test(slug)) return LEGACY_ISCAE_DOMAIN_RE.test(domain);
+  if (isDefault && LEGACY_DEFAULT_DOMAIN_RE.test(domain)) return true;
   return !!root && domain === `${slug}.${root}`;
 }
 
@@ -65,14 +63,22 @@ async function addDomain(domain: string, cfg: VercelCfg): Promise<{ ok: boolean;
     body: JSON.stringify({ name: domain }),
   }).catch(() => null);
   if (!res) return { ok: false, message: "تعذّر الاتصال بـ Vercel." };
-  if (res.ok) return { ok: true };
+  if (res.ok) {
+    const added = (await res.json().catch(() => null)) as { verified?: boolean } | null;
+    if (!added || added.verified !== true) return { ok: false, message: `لم يؤكد Vercel بعد صلاحية النطاق ${domain}؛ استُخدم الرابط المركزي مؤقتاً.` };
+    return { ok: true };
+  }
 
   const data = (await res.json().catch(() => null)) as VercelErr | null;
   const check = await fetch(
     vurl(`/v9/projects/${encodeURIComponent(cfg.project)}/domains/${encodeURIComponent(domain)}`, cfg),
     { headers },
   ).catch(() => null);
-  if (check && check.ok) return { ok: true };
+  if (check && check.ok) {
+    const existing = (await check.json().catch(() => null)) as { verified?: boolean } | null;
+    if (!existing || existing.verified !== true) return { ok: false, message: `النطاق ${domain} مضاف لكنه لا يزال ينتظر التحقق في Vercel.` };
+    return { ok: true };
+  }
 
   const code = data?.error?.code ?? String(res.status);
   const msg = data?.error?.message ?? "";
@@ -122,9 +128,9 @@ export const Route = createFileRoute("/api/public/promo/provision")({
           await patchPromotion(id, token, { domain_status: "manual" });
           return json({
             ok: false,
-            code: "root_domain_required",
+            code: "domain_unavailable",
             status: "manual",
-            error: "أُنشئت الدفعة والرابط المؤقت يعمل. لتفعيل رابط من نوع feg-promo-3.example.org، أضف TENANT_ROOT_DOMAIN واضبط نطاق *.example.org على مشروع Vercel.",
+            error: "تعذر تخصيص نطاق الدفعة على Vercel؛ يبقى الرابط المركزي متاحاً ويمكن إعادة المحاولة لاحقاً.",
           });
         }
         if (!domainAllowed(domain, slug, root, !!promo.is_default)) {
@@ -144,7 +150,7 @@ export const Route = createFileRoute("/api/public/promo/provision")({
             code: "not_configured",
             domain,
             status: "manual",
-            error: `أضف النطاق الجذري *.${root || "example.org"} إلى Vercel واضبط VERCEL_TOKEN لإتمام الربط الآلي: ${domain}`,
+            error: `أضف ${domain} يدوياً إلى مشروع Vercel أو اضبط VERCEL_TOKEN للربط الآلي؛ الرابط المركزي يبقى متاحاً.`,
           });
         }
 

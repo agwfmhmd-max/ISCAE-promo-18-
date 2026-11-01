@@ -1185,9 +1185,15 @@ const TENANT = (() => {
   const host = String(location.hostname || "").toLowerCase();
   let number = null, slug = null, by = "default";
   try {
-    const q = new URLSearchParams(location.search).get("promo");
-    if (q && /^\d{1,3}$/.test(q) && Number(q) >= 1) { number = Number(q); by = "query"; }
-    else if (q && PROMO_SLUG_RE.test(q.toLowerCase())) { slug = q.toLowerCase(); number = Number(slug.match(/-promo-(\d{1,3})$/)?.[1]) || null; by = "query"; }
+    const queryPromo = new URLSearchParams(location.search).get("promo");
+    const pathMatch = location.pathname.match(/^\/promo\/([a-z0-9]+(?:-[a-z0-9]+)*)-([1-9]\d{0,2})\/?$/i);
+    const q = queryPromo || (pathMatch ? `${pathMatch[1]}-${pathMatch[2]}` : "");
+    if (q && /^\d{1,3}$/.test(q) && Number(q) >= 1) { number = Number(q); by = queryPromo ? "query" : "path"; }
+    else if (q && PROMO_SLUG_RE.test(q.toLowerCase())) { slug = q.toLowerCase(); number = Number(slug.match(/-promo-(\d{1,3})$/)?.[1]) || null; by = queryPromo ? "query" : "path"; }
+    else if (q) {
+      const shortRoute = q.toLowerCase().match(/^([a-z0-9]+(?:-[a-z0-9]+)*)-([1-9]\d{0,2})$/);
+      if (shortRoute) { slug = `${shortRoute[1]}-promo-${shortRoute[2]}`; number = Number(shortRoute[2]); by = queryPromo ? "query" : "path"; }
+    }
   } catch (e) {}
   if (!slug && number === null) {
     const label = host.split(".")[0] || "";
@@ -1438,10 +1444,10 @@ const I18N = {
   hero_congrats:{ar:"مبروك",fr:"Félicitations"},
   hero_subtitle:{ar:"ابحث عن معلوماتك كخريج وتابع استعدادات حفل توزيع شهادات التكريم.",fr:"Recherchez vos informations de lauréat et suivez les préparatifs de la cérémonie de remise des certificats d'honneur."},
   search_btn:{ar:"بحث",fr:"Rechercher"},
-  search_hint_prefix:{ar:"الصيغة المطلوبة: الحرف",fr:"Format requis : la lettre"},
-  search_hint_suffix:{ar:"متبوعاً بخمسة أرقام — مثال:",fr:"suivie de 5 chiffres — exemple :"},
+  search_hint_prefix:{ar:"صيغة رقم التسجيل:",fr:"Format du numéro :"},
+  search_hint_suffix:{ar:"حيث # يمثل رقماً — مثال:",fr:"où # représente un chiffre — exemple :"},
   search_enter_first:{ar:"أدخل رقم التسجيل أولاً",fr:"Veuillez d'abord saisir le numéro d'inscription"},
-  search_invalid_format:{ar:"صيغة رقم التسجيل غير صحيحة. استخدم الحرف I متبوعاً بخمسة أرقام، مثل I21567",fr:"Format du numéro incorrect. Utilisez la lettre I suivie de 5 chiffres, ex. I21567"},
+  search_invalid_format:{ar:"صيغة رقم التسجيل غير صحيحة. اتبع النمط {mask}، مثال: {example}",fr:"Format incorrect. Respectez le modèle {mask}, exemple : {example}"},
   search_no_results_title:{ar:"لا توجد نتائج",fr:"Aucun résultat"},
   search_no_results_text:{ar:"لم يتم العثور على خريج بهذا رقم التسجيل: {q}",fr:"Aucun lauréat trouvé avec le numéro d'inscription : {q}"},
   result_verified:{ar:"نتيجة موثّقة",fr:"Résultat vérifié"},
@@ -1458,7 +1464,7 @@ const I18N = {
   stat_cat_ab:{ar:"فئة A + B",fr:"Catégorie A + B"},
   stat_cat_cd:{ar:"فئة C + D",fr:"Catégorie C + D"},
   events_title:{ar:"فعاليات الدفعة",fr:"Événements de la promotion"},
-  events_subtitle:{ar:"احتفالان كبيران لتكريم خريجي {promo}",fr:"Deux grandes célébrations en l'honneur des DIPLÔMÉ de {promo}"},
+  events_subtitle:{ar:"احتفالات تكريم خريجي {promo}",fr:"Célébrations en l'honneur des diplômés de {promo}"},
   event_graduation:{ar:"حفل التخرج",fr:"Cérémonie de remise des diplômes"},
   event_graduation_kicker:{ar:"حفل رسمي",fr:"Cérémonie officielle"},
   event_night:{ar:"الحفل الليلي",fr:"Soirée de gala"},
@@ -1629,6 +1635,7 @@ const I18N = {
   field_promotion_name:{ar:"اسم الدفعة",fr:"Nom de la promotion"},
   field_graduation_date:{ar:"تاريخ حفل التخرج",fr:"Date de la cérémonie de remise des diplômes"},
   field_night_date:{ar:"تاريخ الحفل الليلي",fr:"Date de la soirée de gala"},
+  field_night_disabled_note:{ar:"الحفل الليلي مخفي لهذه الدفعة؛ تاريخ الحفل محفوظ ويمكن استعادته عند إعادة تفعيله.",fr:"La soirée est masquée pour cette promotion ; sa date est conservée et réapparaîtra si vous la réactivez."},
   categories_limits_title:{ar:"حدود الفئات",fr:"Limites des catégories"},
   categories_limits_note:{ar:"A = أول (n) طالب، B = التالي، C = التالي، و D = البقية. التوزيع يتم تلقائياً حسب الترتيب.",fr:"A = les (n) premiers étudiants, B = les suivants, C = les suivants, et D = le reste. La répartition se fait automatiquement selon le rang."},
   field_cat_a:{ar:"الفئة A",fr:"Catégorie A"},
@@ -1716,6 +1723,7 @@ const I18N = {
   cards_status:{ar:"الحالة",fr:"Statut"},
   cards_colors_title:{ar:"ألوان البطاقات",fr:"Couleurs des cartes"},
   cards_no_colors_note:{ar:"الحفل الليلي لا يحتوي على ألوان — يُستخدم إجمالي البطاقات مباشرة.",fr:"La soirée n'a pas de couleurs — le total des cartes est utilisé directement."},
+  night_event_disabled_admin_note:{ar:"الحفل الليلي معطّل لهذه الدفعة. بطاقاته وسجلاته القديمة محفوظة لكنها غير معروضة للخريجين.",fr:"La soirée est désactivée pour cette promotion. Ses cartes et anciens enregistrements sont conservés mais masqués aux diplômés."},
   btn_add_color:{ar:"إضافة لون",fr:"Ajouter une couleur"},
   btn_add_ceremony:{ar:"إضافة حفل",fr:"Ajouter une cérémonie"},
   btn_delete_ceremony:{ar:"حذف الحفل",fr:"Supprimer la cérémonie"},
@@ -1864,11 +1872,12 @@ async function loadPromotionLegacy() {
     state.promoReady = !error && !!data;
     if (state.promoReady) {
       state.promo = { number: Number(data.promotion_number) || 18, slug: `iscae-promo-${Number(data.promotion_number) || 18}`, name_fr: data.promotion_name_fr || null, name_ar: data.promotion_name_ar || null,
-        institution: null, logo_source: data.promotion_logo_url || null, logo: await signedStorageUrl(data.promotion_logo_url) };
+        institution: null, night_event_enabled: true, logo_source: data.promotion_logo_url || null, logo: await signedStorageUrl(data.promotion_logo_url) };
     }
   } catch (e) { state.promoReady = false; }
 }
 const isMissingRelation = e => !!e && (e.code === "42P01" || e.code === "PGRST205" || /relation|schema cache|does not exist|could not find the table/i.test(String(e.message || "")));
+function nightEventEnabled(promo = state.promo) { return promo?.night_event_enabled !== false; }
 function applyPromoRow(row) {
   const prior = state.promo || {};
   const institution = row.institution || (prior.id === row.id ? prior.institution : null) || null;
@@ -1883,7 +1892,9 @@ function applyPromoRow(row) {
     institution_logo_source: institution?.logo_url || (prior.id === row.id ? prior.institution_logo_source : null) || null,
     institution_logo: institution?.logo_url && /^https?:\/\//i.test(institution.logo_url) ? institution.logo_url : (prior.id === row.id ? prior.institution_logo || null : null),
     logo_source: row.logo_url || null, logo: row.logo_url && /^https?:\/\//i.test(row.logo_url) ? row.logo_url : null,
-    domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default };
+    domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default,
+    registration_mask: row.registration_mask || "I#####", night_event_enabled: row.night_event_enabled !== false,
+    public_listing: row.public_listing === true, single_specialty_enabled: row.single_specialty_enabled === true };
   state.promoReady = true;
 }
 async function withPromoInstitution(row) {
@@ -1929,7 +1940,7 @@ Object.assign(I18N, {
   hero_cta:{ar:"البحث عن خريج",fr:"Rechercher un diplômé"},
   hero_soon:{ar:"سيُعلَن عن اسم الدفعة قريباً.",fr:"Le nom de la promotion sera annoncé prochainement."},
   finder_title:{ar:"ابحث عن خريجي {promo}",fr:"Retrouvez les diplômés de la {promo}"},
-  search_ph:{ar:"رقم التسجيل — مثال I21567",fr:"Numéro d'inscription — ex. I21567"},
+  search_ph:{ar:"رقم التسجيل — مثال {example}",fr:"Numéro d'inscription — ex. {example}"},
   search_hint2:{ar:"اكتب حرفين على الأقل من الاسم أو الرقم الجامعي.",fr:"Saisissez au moins 2 caractères du nom ou du matricule."},
   search_clear:{ar:"مسح البحث",fr:"Effacer la recherche"},
   nav_home:{ar:"الرئيسية",fr:"Accueil"},nav_grads:{ar:"الخريجون",fr:"Diplômés"},
@@ -2120,8 +2131,7 @@ function applyLangAttrs() {
 function applyStaticI18n() {
   $$("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   $$("[data-i18n-title]").forEach(el => { el.setAttribute("title", t(el.dataset.i18nTitle)); });
-  const hint = $("#searchHint");
-  if (hint) hint.innerHTML = `${t("search_hint_prefix")} <code>I</code> ${t("search_hint_suffix")} <code>I21567</code>`;
+  applyRegistrationFormatUI();
 }
 
 function setMeta(sel, val) { const m = document.querySelector(sel); if (m) m.setAttribute("content", val); }
@@ -2151,7 +2161,8 @@ function applyBranding() {
   set("#heroCta", t("hero_cta"));
   set("#finderTitle", t("finder_title", { promo: num }));
   set("#navHome", t("nav_home")); set("#navGrads", t("nav_grads"));
-  const inp = $("#searchInput"); if (inp) { inp.dir = state.lang === "fr" ? "ltr" : "rtl"; inp.placeholder = t("search_ph"); inp.setAttribute("aria-label", t("search_ph")); }
+  const inp = $("#searchInput"); if (inp) inp.dir = state.lang === "fr" ? "ltr" : "rtl";
+  applyRegistrationFormatUI();
   const clr = $("#searchClear"); if (clr) clr.setAttribute("aria-label", t("search_clear"));
   set("#eventsSubtitle", t("events_subtitle", { promo }));
   set("#footerPromoLabel", promo); set("#footerInstitutionShort", short); set("#footerRights", `${t("foot_rights")} MDA & Promo ${state.promo.number}`);
@@ -2274,6 +2285,8 @@ async function refreshCachedPromotionSnapshot() {
   snapshot.promo = { id: state.promo.id || null, slug: state.promo.slug || TENANT.slug || null, number: state.promo.number || TENANT.number || 18,
     institution_id: state.promo.institution_id || null, institution: state.promo.institution || null,
     name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null,
+    night_event_enabled: state.promo.night_event_enabled !== false,
+    public_listing: state.promo.public_listing === true, single_specialty_enabled: state.promo.single_specialty_enabled === true,
     logo_source: state.promo.logo_source || null,
     institution_logo_source: state.promo.institution_logo_source || null,
     // Signed Storage URLs are temporary bearer links; keep only stable external logos in IndexedDB.
@@ -2295,6 +2308,8 @@ function applyPublicLaunchSnapshot(snapshot) {
   if (snapshot.promo && snapshot.promo.id === TENANT.id) {
     state.promo = { ...state.promo, slug: snapshot.promo.slug || state.promo.slug, number: snapshot.promo.number || state.promo.number,
       institution_id: snapshot.promo.institution_id || state.promo.institution_id, institution: snapshot.promo.institution || state.promo.institution,
+      night_event_enabled: snapshot.promo.night_event_enabled === undefined ? state.promo.night_event_enabled !== false : snapshot.promo.night_event_enabled !== false,
+      public_listing: snapshot.promo.public_listing === true, single_specialty_enabled: snapshot.promo.single_specialty_enabled === true,
       name_fr: snapshot.promo.name_fr || null, name_ar: snapshot.promo.name_ar || null,
       logo_source: snapshot.promo.logo_source || state.promo.logo_source || null,
       institution_logo_source: snapshot.promo.institution_logo_source || state.promo.institution_logo_source || null,
@@ -2317,6 +2332,8 @@ function makePublicLaunchSnapshot() {
     settings: Object.fromEntries(PUBLIC_STARTUP_SETTINGS.filter(name => state.settings && Object.prototype.hasOwnProperty.call(state.settings, name)).map(name => [name, state.settings[name]])),
     promo: { id: state.promo.id || null, slug: state.promo.slug || TENANT.slug || null, number: state.promo.number || TENANT.number || 18,
       institution_id: state.promo.institution_id || null, institution: state.promo.institution || null,
+      night_event_enabled: state.promo.night_event_enabled !== false,
+      public_listing: state.promo.public_listing === true, single_specialty_enabled: state.promo.single_specialty_enabled === true,
       name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null, logo_source: state.promo.logo_source || null,
       institution_logo_source: state.promo.institution_logo_source || null,
       institution_logo: state.promo.institution_logo_source && storageObjectPath(state.promo.institution_logo_source) ? "" : (state.promo.institution_logo || ""),
@@ -2600,9 +2617,9 @@ function statCard(cls, num, lbl, icon) {
 function renderEvents() {
   const s = state.settings || {};
   const events = [
-    { key: "grad",  title: t("event_graduation"), kicker: t("event_graduation_kicker"), date: s.graduation_date,  cls: "c-violet",  icon: iconCap },
-    { key: "night", title: t("event_night"),      kicker: t("event_night_kicker"),      date: s.night_party_date, cls: "c-indigo",  icon: iconMoon }
+    { key: "grad", title: t("event_graduation"), kicker: t("event_graduation_kicker"), date: s.graduation_date, cls: "c-violet", icon: iconCap }
   ];
+  if (nightEventEnabled()) events.push({ key: "night", title: t("event_night"), kicker: t("event_night_kicker"), date: s.night_party_date, cls: "c-indigo", icon: iconMoon });
   $("#eventsGrid").innerHTML = events.map(ev => {
     const p = ev.date ? fmtDateParts(ev.date) : null;
     return `<div class="event-card">
@@ -2654,10 +2671,40 @@ const cdBox = (v, l) => `<div class="cd-box"><b>${String(v).padStart(2, "0")}</b
 setInterval(tickCountdowns, 1000);
 
 /* ------------------------- 8. PUBLIC SEARCH ------------------------- */
-/** Registration numbers must be the letter I followed by exactly 5 digits, e.g. I21567. */
-/* ------------------------- 8. SEARCH — رقم التسجيل الدقيق فقط -------------------------
-   لا بحث بالاسم ولا نتائج جزئية: النتيجة تظهر فقط عند إدخال رقم تسجيل كامل وصحيح (I + 5 أرقام). */
-const REG_NUMBER_PATTERN = /^I\d{5}$/;
+/* Registration masks are per-promotion, e.g. ISCAE=I##### and FEG=FEG-#####. */
+const DEFAULT_REGISTRATION_MASK = "I#####";
+function normalizeRegistrationMask(value) { return String(value || "").trim().toUpperCase(); }
+function isValidRegistrationMask(value) {
+  const mask = normalizeRegistrationMask(value);
+  return mask.length >= 2 && mask.length <= 32 && /^[A-Z0-9#-]+$/.test(mask) && mask.includes("#");
+}
+function suggestedRegistrationMask(institutionSlug) {
+  const slug = String(institutionSlug || "iscae").toLowerCase();
+  if (slug === "iscae") return DEFAULT_REGISTRATION_MASK;
+  const prefix = slug.replace(/[^a-z0-9]/g, "").toUpperCase().slice(0, 8) || "UNIV";
+  return `${prefix}-#####`;
+}
+function registrationMaskOf(promo = state.promo) {
+  const mask = normalizeRegistrationMask(promo?.registration_mask || DEFAULT_REGISTRATION_MASK);
+  return isValidRegistrationMask(mask) ? mask : DEFAULT_REGISTRATION_MASK;
+}
+function registrationExample(mask = registrationMaskOf()) { return mask.replace(/#/g, "1"); }
+function registrationNumberRegex(mask = registrationMaskOf()) {
+  const escaped = [...mask].map(character => character === "#" ? String.fromCharCode(92) + "d" : character).join("");
+  return new RegExp(`^${escaped}$`);
+}
+function registrationNumberValid(value) { return registrationNumberRegex().test(String(value || "").trim().toUpperCase()); }
+function safeExactRegistrationLookup(value) { return /^[A-Z0-9-]{1,64}$/.test(String(value || "").trim().toUpperCase()); }
+function applyRegistrationFormatUI() {
+  const mask = registrationMaskOf(), example = registrationExample(mask), hint = $("#searchHint"), input = $("#searchInput");
+  if (hint) hint.innerHTML = `${esc(t("search_hint_prefix"))} <code dir="ltr">${esc(mask)}</code> ${esc(t("search_hint_suffix"))} <code dir="ltr">${esc(example)}</code>`;
+  if (input) {
+    const placeholder = t("search_ph", { example });
+    input.placeholder = placeholder;
+    input.setAttribute("aria-label", placeholder);
+    if (input.value && !registrationNumberValid(input.value)) $("#searchResult").innerHTML = "";
+  }
+}
 let searchTimer = null, searchSeq = 0;
 
 function enrichStudent(st) {
@@ -2695,10 +2742,14 @@ async function runSearch(fromUser) {
   clearTimeout(searchTimer);
   const seq = ++searchSeq;
   if (!q) { box.innerHTML = ""; if (hint) hint.classList.remove("err"); if (fromUser === true) toast(t("search_enter_first"), "info"); return; }
-  if (!REG_NUMBER_PATTERN.test(q)) {           // رقم ناقص أو غير صحيح ⇒ لا نتائج إطلاقاً
+  if (fromUser === true && !safeExactRegistrationLookup(q)) {
+    if (hint) hint.classList.add("err");
+    toast(t("search_invalid_format", { mask: registrationMaskOf(), example: registrationExample() }), "err");
+    return;
+  }
+  if (!registrationNumberValid(q) && fromUser !== true) { // لا بحث تلقائي إلا بعد اكتمال النمط؛ الإرسال اليدوي يبقى exact-match للتوافق
     box.innerHTML = "";
-    if (hint) hint.classList.toggle("err", fromUser === true);
-    if (fromUser === true) toast(t("search_invalid_format"), "err");
+    if (hint) hint.classList.remove("err");
     return;
   }
   if (hint) hint.classList.remove("err");
@@ -2729,7 +2780,7 @@ $("#searchInput").addEventListener("input", e => {
   const v = e.target.value.toUpperCase().replace(/\s+/g, ""); if (v !== e.target.value) e.target.value = v;
   const c = $("#searchClear"); if (c) c.hidden = !v;
   clearTimeout(searchTimer);
-  if (REG_NUMBER_PATTERN.test(v)) searchTimer = setTimeout(() => runSearch(false), 200);   // رقم كامل ⇒ بحث تلقائي
+  if (registrationNumberValid(v)) searchTimer = setTimeout(() => runSearch(false), 200);   // رقم كامل ⇒ بحث تلقائي
   else { ++searchSeq; $("#searchResult").innerHTML = ""; const h = $("#searchHint"); if (h) h.classList.remove("err"); }
 });
 $("#searchInput").addEventListener("keydown", e => { if (e.key === "Enter") runSearch(true); if (e.key === "Escape") { e.target.value = ""; runSearch(false); } });
@@ -2763,7 +2814,7 @@ async function routeFromHash() {
   if (!h.startsWith(PROFILE_HASH)) { if ($("#profileOverlay")) hideProfile(); return; }
   const reg = decodeURIComponent(h.slice(PROFILE_HASH.length)).trim().toUpperCase();
   let st = null;
-  if (REG_NUMBER_PATTERN.test(reg)) {
+  if (safeExactRegistrationLookup(reg)) {
     const { data } = await db.rpc("search_student", { _reg: reg });
     st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
     if (st && state.publicCacheActive) st = await completeCachedSearchStudent(st);
@@ -3100,7 +3151,7 @@ function studentModal(student, specs) {
       <form class="modal-body" id="stForm">
         <div class="field"><label>${t("field_full_name_required")}</label><input name="full_name" required value="${esc(student?.full_name || "")}" /></div>
         <div class="grid-2">
-          <div class="field"><label>${t("field_reg_number_required")}</label><input name="registration_number" required dir="ltr" value="${esc(student?.registration_number || "")}" /></div>
+          <div class="field"><label>${t("field_reg_number_required")}</label><input name="registration_number" required dir="ltr" placeholder="${esc(registrationExample())}" value="${esc(student?.registration_number || "")}" /></div>
           <div class="field"><label>${t("field_phone_plain")}</label><input name="phone" dir="ltr" value="${esc(student?.phone || "")}" /></div>
         </div>
         <div class="grid-2">
@@ -3124,11 +3175,11 @@ function studentModal(student, specs) {
             </div>
           </div>
         </div>
-        <div class="field"><label>${t("field_specialty_required")}</label>
+        ${state.promo.single_specialty_enabled && specs.length === 1 ? `<div class="field"><label>${t("field_specialty_required")}</label><input type="hidden" name="specialty_id" value="${esc(specs[0].id)}" /><div class="st-card" style="padding:12px 14px">${esc(specs[0].name)}</div></div>` : `<div class="field"><label>${t("field_specialty_required")}</label>
           <select name="specialty_id" required>
             ${specs.map(s => `<option value="${s.id}" ${student?.specialty_id === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
           </select>
-        </div>
+        </div>`}
         ${isEdit ? `<p class="muted" style="font-size:12px">${t("current_order_info", { order: student.order_index, cat: categoryOf(student.order_index) })}${isSuper() ? "" : t("cannot_edit_note")}</p>`
                  : `<p class="muted" style="font-size:12px">${t("auto_order_note")}</p>`}
         <button class="btn btn-primary btn-block" type="submit">${isEdit ? t("btn_save_changes") : t("btn_add_student_submit")}</button>
@@ -3169,6 +3220,12 @@ function studentModal(student, specs) {
   m.querySelector("#stForm").onsubmit = async e => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
+    const normalizedRegistration = String(f.registration_number || "").trim().toUpperCase();
+    const existingRegistration = String(student?.registration_number || "").trim().toUpperCase();
+    if (!registrationNumberValid(normalizedRegistration) && !(isEdit && normalizedRegistration === existingRegistration)) {
+      toast(t("search_invalid_format", { mask: registrationMaskOf(), example: registrationExample() }), "err");
+      return;
+    }
 
     /* رفع الصورة (إن وُجدت) قبل الحفظ */
     let finalPhoto = photoCleared ? null : (oldPhotoRef || null);
@@ -3185,7 +3242,7 @@ function studentModal(student, specs) {
 
     const payload = {
       full_name: f.full_name.trim(),
-      registration_number: f.registration_number.trim(),
+      registration_number: normalizedRegistration,
       phone: f.phone?.trim() || null,
       sash_name: f.sash_name?.trim() || null,
       certificate_name: f.certificate_name?.trim() || null,
@@ -3497,7 +3554,7 @@ function renderSettings(panel) {
       </div>
       <div class="grid-2">
         <div class="field"><label>${t("field_graduation_date")}</label><input name="graduation_date" type="datetime-local" value="${toLocalInput(s.graduation_date)}" /></div>
-        <div class="field"><label>${t("field_night_date")}</label><input name="night_party_date" type="datetime-local" value="${toLocalInput(s.night_party_date)}" /></div>
+        ${nightEventEnabled() ? `<div class="field"><label>${t("field_night_date")}</label><input name="night_party_date" type="datetime-local" value="${toLocalInput(s.night_party_date)}" /></div>` : `<input type="hidden" name="night_party_date" value="${esc(s.night_party_date || "")}" /><small class="muted">${t("field_night_disabled_note")}</small>`}
       </div>
       <h3 style="font-weight:900;margin-top:8px">${t("categories_limits_title")}</h3>
       <p class="muted" style="font-size:13px;margin-top:-8px">${t("categories_limits_note")}</p>
@@ -4397,7 +4454,7 @@ async function fetchStudentCards(studentId) {
 function studentCardsHTML(rows) {
   if (!state.cardsReady) return "";
   const cers = state.ceremonies.length
-    ? state.ceremonies.slice().sort((a, b) => (a.type === "night") - (b.type === "night"))
+    ? state.ceremonies.filter(cer => nightEventEnabled() || cer.type !== "night").slice().sort((a, b) => (a.type === "night") - (b.type === "night"))
     : [];
   if (!cers.length) return "";
 
@@ -4468,6 +4525,7 @@ function renderCardsTab(panel) {
       <button class="btn btn-primary btn-sm" id="addCer">${t("btn_add_ceremony")}</button>
     </div>
     <p class="muted" style="font-size:13px;margin-bottom:16px">${t("cards_intro")}</p>
+    ${nightEventEnabled() ? "" : `<div class="empty" role="status" style="margin-bottom:14px">${t("night_event_disabled_admin_note")}</div>`}
     ${cers.map(cer => cerAdminCard(cer, N)).join("") || `<div class="empty">${t("no_data")}</div>`}
   `;
 
@@ -4563,7 +4621,7 @@ function ceremonyCreateModal() {
           <div class="field"><label>${t("ceremony_type")}</label>
             <select name="type" id="wzType">
               <option value="graduation">${t("ceremony_graduation")}</option>
-              <option value="night">${t("ceremony_night")}</option>
+              ${nightEventEnabled() ? `<option value="night">${t("ceremony_night")}</option>` : ""}
             </select>
           </div>
           <div class="field"><label>${t("cards_total")}</label>
@@ -5436,7 +5494,7 @@ Object.assign(I18N, {
   promo_not_found_text:{ar:"لا توجد دفعة بالرقم {n}. تأكد من الرابط.",fr:"Aucune promotion portant le numéro {n}. Vérifiez le lien."},
   promo_access_denied:{ar:"هذا الحساب غير مخوّل للدخول إلى هذه الدفعة. افتح رابط دفعتك.",fr:"Ce compte n'est pas autorisé pour cette promotion. Ouvrez le lien de votre promotion."},
   promos_title:{ar:"إدارة الدفعات",fr:"Gestion des promotions"},
-  promos_intro:{ar:"أنشئ دفعة ضمن جامعة موجودة أو أضف جامعة جديدة بالاسم والشعار ورقم الدفعة. يُنشأ معرّف مثل feg-promo-3 تلقائياً؛ يعمل الرابط المؤقت فوراً، ويحتاج النطاق الخاص إلى ربطه على Vercel.",fr:"Créez une promotion dans un établissement existant ou ajoutez une université avec son nom, son logo et son numéro. Un identifiant tel que feg-promo-3 est généré automatiquement ; le lien provisoire fonctionne immédiatement et le domaine dédié doit être relié à Vercel."},
+  promos_intro:{ar:"أنشئ دفعة ضمن جامعة موجودة أو أضف جامعة جديدة. يتولد رابط مستقل باسم الجامعة ورقم الدفعة إذا كان متاحاً؛ ويبقى الرابط المركزي بديلاً فورياً. يمكن تخصيص صيغة رقم التسجيل وإظهار الحفل الليلي لكل دفعة.",fr:"Créez une promotion dans un établissement existant ou ajoutez une université. Un domaine propre au nom de l'établissement et au numéro est relié s'il est disponible, avec le lien central comme solution immédiate. Le format d'inscription et la soirée sont configurables par promotion."},
   promos_new:{ar:"+ إنشاء جامعة / دفعة",fr:"+ Université / promotion"},
   promos_empty:{ar:"لا توجد دفعات.",fr:"Aucune promotion."},
   promos_default_badge:{ar:"الدفعة الأولى (الأصلية)",fr:"Promotion d'origine"},
@@ -5454,9 +5512,32 @@ Object.assign(I18N, {
   promos_dom_pending:{ar:"الرابط قيد الربط",fr:"Lien en attente"},
   promos_dom_manual:{ar:"أضِف النطاق يدوياً في Vercel",fr:"Ajouter le domaine manuellement dans Vercel"},
   promos_dom_error:{ar:"تعذّر ربط الرابط",fr:"Échec du lien"},
-  promos_temp_link:{ar:"رابط مؤقت يعمل فوراً",fr:"Lien provisoire immédiat"},
+  promos_temp_link:{ar:"الرابط المركزي يعمل فوراً",fr:"Le lien central fonctionne immédiatement"},
   promos_modal_title:{ar:"إنشاء جامعة أو دفعة",fr:"Créer une université ou une promotion"},
   promos_field_number:{ar:"رقم الدفعة",fr:"Numéro de la promotion"},
+  promos_reg_mask:{ar:"صيغة رقم التسجيل",fr:"Format du numéro d'inscription"},
+  promos_reg_mask_hint:{ar:"استخدم # مكان كل رقم (مثال FEG-#####). تُطبّق الصيغة على هذه الدفعة فقط.",fr:"Utilisez # pour chaque chiffre (ex. FEG-#####). Le format s'applique uniquement à cette promotion."},
+  promos_reg_mask_example:{ar:"مثال:",fr:"Exemple :"},
+  promos_reg_mask_button:{ar:"صيغة التسجيل",fr:"Format d'inscription"},
+  promos_reg_mask_invalid:{ar:"صيغة غير صالحة. استخدم الحروف والأرقام والشرطة # مكان الرقم، مع # واحد على الأقل.",fr:"Format invalide. Utilisez lettres, chiffres, tirets et au moins un # pour les chiffres."},
+  promos_reg_mask_saved:{ar:"تم تحديث صيغة التسجيل لهذه الدفعة",fr:"Format d'inscription mis à jour pour cette promotion"},
+  promos_night_label:{ar:"الحفل الليلي",fr:"Soirée de gala"},
+  promos_night_button:{ar:"إعداد الحفل الليلي",fr:"Soirée de gala"},
+  promos_night_enabled:{ar:"إظهار الحفل الليلي لهذه الدفعة",fr:"Afficher la soirée de gala pour cette promotion"},
+  promos_night_on:{ar:"ظاهر",fr:"Visible"},
+  promos_night_off:{ar:"مخفي",fr:"Masqué"},
+  promos_night_note:{ar:"تعطيله يخفي الحفل الليلي وتذاكره عن الخريجين، مع الحفاظ على التاريخ والبطاقات القديمة في قاعدة البيانات.",fr:"La désactivation masque la soirée et ses cartes aux diplômés, tout en conservant la date et les anciennes cartes en base."},
+  promos_night_saved:{ar:"تم تحديث إعداد الحفل الليلي لهذه الدفعة",fr:"Le réglage de la soirée a été mis à jour pour cette promotion"},
+  promos_public_label:{ar:"الظهور في الصفحة الوطنية",fr:"Visible dans l'annuaire national"},
+  promos_public_on:{ar:"منشورة للعامة",fr:"Publiée"},
+  promos_public_off:{ar:"غير منشورة",fr:"Non publiée"},
+  promos_public_toggle:{ar:"تغيير الظهور العام",fr:"Modifier la visibilité publique"},
+  promos_public_saved:{ar:"تم تحديث ظهور الدفعة في الصفحة الوطنية",fr:"Visibilité publique de la promotion mise à jour"},
+  promos_single_label:{ar:"تخصص واحد فقط",fr:"Une seule spécialité"},
+  promos_single_toggle:{ar:"إعداد التخصص الواحد",fr:"Configurer une seule spécialité"},
+  promos_single_saved:{ar:"تم تحديث إعداد التخصص الواحد",fr:"Réglage de spécialité unique mis à jour"},
+  promos_single_many:{ar:"لا يمكن تفعيل تخصص واحد لأن هذه الدفعة تضم أكثر من تخصص. احذف أو انقل التخصصات الزائدة أولاً؛ لن يحذف النظام أي بيانات تلقائياً.",fr:"Impossible d'activer une spécialité unique : cette promotion en comporte plusieurs. Supprimez ou déplacez d'abord les spécialités en trop. Aucune donnée ne sera supprimée automatiquement."},
+  promos_platform_link:{ar:"رابط المنصة يعمل",fr:"Lien central actif"},
   promos_institution_select:{ar:"الجامعة / المؤسسة",fr:"Université / établissement"},
   promos_institution_new:{ar:"+ إضافة جامعة جديدة…",fr:"+ Ajouter une université…"},
   promos_institution_name_ar:{ar:"اسم الجامعة بالعربية",fr:"Nom arabe (facultatif)"},
@@ -5464,7 +5545,7 @@ Object.assign(I18N, {
   promos_institution_short:{ar:"الاسم المختصر للشعار",fr:"Nom court pour le logo"},
   promos_institution_slug:{ar:"معرّف الجامعة للرابط",fr:"Identifiant de l'université pour le lien"},
   promos_institution_logo:{ar:"شعار الجامعة (PNG/JPG/WebP، حتى 5 MB)",fr:"Logo de l'université (PNG/JPG/WebP, jusqu'à 5 Mo)"},
-  promos_institution_migration:{ar:"لإضافة جامعة جديدة، نفّذ أولاً MULTI-PROMO.sql ثم 20261029000000_multi_university.sql في Supabase. حتى ذلك الحين يمكن إنشاء دفعات ISCAE القديمة فقط.",fr:"Pour ajouter une université, exécutez d'abord MULTI-PROMO.sql puis 20261029000000_multi_university.sql dans Supabase. En attendant, seules les promotions ISCAE peuvent être créées."},
+  promos_institution_migration:{ar:"تعذر تحميل إعدادات الجامعات. تحقق من تطبيق ترحيلات MULTI-PROMO.sql و20261029000000_multi_university.sql و20261030000000_promotion_registration_mask.sql و20261031000000_promotion_night_event.sql و20261101000000_promo_mr_public_platform.sql في Supabase.",fr:"Impossible de charger les établissements. Vérifiez les migrations MULTI-PROMO.sql, 20261029000000_multi_university.sql, 20261030000000_promotion_registration_mask.sql, 20261031000000_promotion_night_event.sql et 20261101000000_promo_mr_public_platform.sql dans Supabase."},
   promos_logo_auto:{ar:"الشعار الافتراضي يُنشأ تلقائياً من الاسم المختصر ورقم الدفعة. يمكن تحميل شعار الجامعة هنا وتغييره لاحقاً من محرر الشعار.",fr:"L'emblème par défaut combine le nom court et le numéro. Vous pouvez charger ici le logo de l'université et le modifier ensuite dans l'éditeur."},
   promos_head_section:{ar:"رئيس الدفعة (اختياري الآن)",fr:"Chef de promotion (facultatif)"},
   promos_head_modal:{ar:"إضافة رئيس دفعة",fr:"Ajouter un chef de promotion"},
@@ -5476,7 +5557,7 @@ Object.assign(I18N, {
   promos_err_institution_slug:{ar:"معرّف الجامعة غير صالح. استخدم حروفاً لاتينية صغيرة وأرقاماً وشرطات فقط.",fr:"Identifiant invalide. Utilisez des lettres latines minuscules, chiffres et tirets."},
   promos_logo_upload_failed:{ar:"أُنشئت الدفعة، لكن تعذّر حفظ شعار الجامعة: {msg}",fr:"Promotion créée, mais l'enregistrement du logo a échoué : {msg}"},
   promos_err_head_incomplete:{ar:"أكمل بيانات رئيس الدفعة (الاسم والبريد وكلمة المرور) أو اتركها كلها فارغة.",fr:"Complétez les infos du chef (nom, e-mail, mot de passe) ou laissez-les vides."},
-  promos_err_missing:{ar:"نفّذ ملف MULTI-PROMO.sql في Supabase أولاً.",fr:"Exécutez d'abord MULTI-PROMO.sql dans Supabase."},
+  promos_err_missing:{ar:"تعذر الوصول إلى جداول الجامعة والدفعة في Supabase؛ تحقق من تطبيق ترحيلات المنصة.",fr:"Les tables établissement/promotion sont inaccessibles dans Supabase ; vérifiez les migrations de la plateforme."},
   promos_created:{ar:"تم إنشاء الدفعة {n}",fr:"Promotion {n} créée"},
   promos_head_created:{ar:"تم إنشاء حساب رئيس الدفعة",fr:"Compte du chef de promotion créé"},
   promos_head_removed:{ar:"تمت إزالة رئيس الدفعة",fr:"Chef de promotion retiré"},
@@ -5496,13 +5577,22 @@ Object.assign(I18N, {
   promos_close:{ar:"إغلاق",fr:"Fermer"}
 });
 
+const PROMOTION_PLATFORM_ORIGIN = "https://promo-mr.vercel.app";
 const promoSlugOf = p => String(p.slug || `iscae-promo-${p.number}`).toLowerCase();
 const promoHostOf = p => String(p.domain || promoSlugOf(p)).toLowerCase();
-/** The temporary slug link works on the current project host; active domains keep the same public page route. */
+function promotionPlatformOrigin() {
+  return location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname.endsWith(".localhost")
+    ? location.origin : PROMOTION_PLATFORM_ORIGIN;
+}
+/** Legacy ISCAE domains remain first-class; new or unlinked tenants use the central promotion host. */
 function promoLinkOf(p) {
   const slug = promoSlugOf(p);
-  if (p.domain && (p.is_default || p.domain_status === "active")) return `https://${promoHostOf(p)}/site/index.html?promo=${encodeURIComponent(slug)}`;
-  return `${location.origin}/site/index.html?promo=${encodeURIComponent(slug)}`;
+  if (/^iscae-promo-[1-9]\d{0,2}$/.test(slug)) {
+    if (p.domain && (p.is_default || p.domain_status === "active")) return `https://${promoHostOf(p)}/site/index.html`;
+    return `https://${slug}.vercel.app/site/index.html`;
+  }
+  const shortRoute = slug.replace(/-promo-([1-9]\d{0,2})$/, "-$1");
+  return `${promotionPlatformOrigin()}/promo/${encodeURIComponent(shortRoute)}`;
 }
 async function authedFetch(path, method, body) {
   const { data: { session } } = await db.auth.getSession();
@@ -5552,8 +5642,8 @@ async function loadPromosData() {
 }
 function promoDomBadge(p) {
   if (p.is_default || p.domain_status === "active") return `<span class="tag tag-B">${t("promos_dom_active")}</span>`;
-  const k = { manual: ["tag-C", "promos_dom_manual"], error: ["tag-C", "promos_dom_error"] }[p.domain_status] || ["tag-D", "promos_dom_pending"];
-  return `<span class="tag ${k[0]}">${t(k[1])}</span>`;
+  if (p.domain_status === "error") return `<span class="tag tag-C">${t("promos_dom_error")}</span>`;
+  return `<span class="tag tag-D">${t("promos_platform_link")}</span>`;
 }
 function promoRowLogoHTML(p) {
   const lang = state.lang, instName = promoInstitutionName(lang, p);
@@ -5582,6 +5672,9 @@ async function renderPromosTab(panel) {
           ${p.is_default ? `<span class="tag tag-A">${t("promos_default_badge")}</span>` : ""} ${promoDomBadge(p)}
           <a class="pc-link" dir="ltr" href="${esc(link)}" target="_blank" rel="noopener">${esc(link.replace(/^https?:\/\//, ""))}</a>
           ${temp ? `<small class="muted">${t("promos_temp_link")} · ${esc(promoSlugOf(p))}</small>` : ""}
+          <small class="muted">${t("promos_reg_mask")}: <code dir="ltr">${esc(registrationMaskOf(p))}</code></small>
+          <small class="muted">${t("promos_night_label")}: <b>${p.night_event_enabled === false ? t("promos_night_off") : t("promos_night_on")}</b></small>
+          <small class="muted">${t("promos_public_label")}: <b>${p.public_listing ? t("promos_public_on") : t("promos_public_off")}</b> · ${t("promos_single_label")}: <b>${p.single_specialty_enabled ? t("promos_public_on") : t("promos_public_off")}</b></small>
           <small class="muted">${st.students ?? 0} ${t("promos_students")} · ${st.specialties ?? 0} ${t("promos_specialties")} · ${st.admins ?? 0} ${t("promos_admins")} · ${st.subscribers ?? 0} ${t("promos_subs")}</small>
           <div class="pc-heads"><small><b>${t("promos_heads")}:</b></small> ${heads.length ? heads.map(h => `<span class="pc-head">${esc(h.full_name || "—")} <bdi dir="ltr">(${esc(h.email || "")})</bdi> <button class="btn btn-ghost btn-sm" data-rmhead="${h.id}">${t("promos_remove_head")}</button></span>`).join("") : `<small class="muted">${t("promos_no_head")}</small>`}</div>
         </div>
@@ -5589,6 +5682,10 @@ async function renderPromosTab(panel) {
           <a class="btn btn-primary btn-sm" href="${esc(link)}" target="_blank" rel="noopener">${t("promos_open")}</a>
           <button class="btn btn-ghost btn-sm" data-copy="${esc(link)}">${t("promos_copy")}</button>
           <button class="btn btn-emerald btn-sm" data-addhead="${p.id}">${t("promos_add_head")}</button>
+          <button class="btn btn-ghost btn-sm" data-regmask="${p.id}">${t("promos_reg_mask_button")}</button>
+          <button class="btn btn-ghost btn-sm" data-nightevent="${p.id}">${t("promos_night_button")}</button>
+          <button class="btn btn-ghost btn-sm" data-publiclisting="${p.id}">${t("promos_public_toggle")}</button>
+          <button class="btn btn-ghost btn-sm" data-single-specialty="${p.id}">${t("promos_single_toggle")}</button>
           ${p.is_default ? "" : `<button class="btn btn-ghost btn-sm" data-linkdom="${p.id}">${t("promos_link_domain")}</button><button class="btn btn-danger btn-sm" data-delpromo="${p.id}">${t("promos_delete")}</button>`}
         </div></div>`;
     }).join("") || `<div class="empty">${t("promos_empty")}</div>`}</div>`;
@@ -5596,6 +5693,30 @@ async function renderPromosTab(panel) {
   $("#newPromo").onclick = () => promoCreateModal(d);
   $$('[data-copy]', panel).forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast(t("link_copied")); } catch (e) { window.prompt(b.dataset.copy, b.dataset.copy); } });
   $$('[data-addhead]', panel).forEach(b => b.onclick = () => promoHeadModal(d.list.find(x => x.id === b.dataset.addhead)));
+  $$('[data-regmask]', panel).forEach(b => b.onclick = () => promoRegistrationMaskModal(d.list.find(x => x.id === b.dataset.regmask)));
+  $$('[data-nightevent]', panel).forEach(b => b.onclick = () => promoNightEventModal(d.list.find(x => x.id === b.dataset.nightevent)));
+  $$('[data-publiclisting]', panel).forEach(b => b.onclick = async () => {
+    const p = d.list.find(x => x.id === b.dataset.publiclisting); if (!p) return;
+    b.disabled = true;
+    const { error } = await db.rpc("platform_update_promotion_public_listing", { _promotion_id: p.id, _public_listing: !p.public_listing });
+    if (error) { toast(t("err_generic", { msg: error.message || error }), "err"); b.disabled = false; return; }
+    p.public_listing = !p.public_listing;
+    if (state.promo?.id === p.id) state.promo.public_listing = p.public_listing;
+    notifyPromoBrandChange(); refreshCachedPromotionSnapshot().catch(() => {});
+    toast(t("promos_public_saved")); renderPromosTab(panel);
+  });
+  $$('[data-single-specialty]', panel).forEach(b => b.onclick = async () => {
+    const p = d.list.find(x => x.id === b.dataset.singleSpecialty); if (!p) return;
+    const stats = d.stats[p.id] || {};
+    if (!p.single_specialty_enabled && Number(stats.specialties || 0) > 1) { toast(t("promos_single_many"), "err"); return; }
+    b.disabled = true;
+    const { error } = await db.rpc("platform_update_single_specialty", { _promotion_id: p.id, _enabled: !p.single_specialty_enabled });
+    if (error) { const msg = /PROMOTION_HAS_MULTIPLE_SPECIALTIES/.test(error.message || "") ? t("promos_single_many") : t("err_generic", { msg: error.message || error }); toast(msg, "err"); b.disabled = false; return; }
+    p.single_specialty_enabled = !p.single_specialty_enabled;
+    if (state.promo?.id === p.id) state.promo.single_specialty_enabled = p.single_specialty_enabled;
+    notifyPromoBrandChange(); refreshCachedPromotionSnapshot().catch(() => {});
+    toast(t("promos_single_saved")); renderPromosTab(panel);
+  });
   $$('[data-rmhead]', panel).forEach(b => b.onclick = async () => {
     const h = d.heads.find(x => x.id === b.dataset.rmhead);
     if (!h || !await confirmDialog(t("promos_head_remove_title"), t("promos_head_remove_text", { name: h.full_name || h.email }))) return;
@@ -5654,6 +5775,8 @@ function promoCreateModal(data) {
       <div class="grid-2"><div class="field"><label>${t("promos_field_number")}</label><input name="n" id="pcNumber" type="number" min="1" max="999" required dir="ltr" value="${institutionReady ? 1 : fallbackNext}" /></div>
         <div class="field"><label>${t("promo_name_fr")}</label><input name="fr" dir="ltr" maxlength="80" /></div></div>
       <div class="field"><label>${t("promo_name_ar")}</label><input name="ar" dir="rtl" maxlength="80" /></div>
+      ${institutionReady ? `<div class="field"><label>${t("promos_reg_mask")}</label><input name="registration_mask" id="pcRegMask" dir="ltr" maxlength="32" autocomplete="off" required /><small class="muted">${t("promos_reg_mask_hint")} ${t("promos_reg_mask_example")} <bdi id="pcRegExample" dir="ltr"></bdi></small></div>
+        <label class="row" style="gap:10px;align-items:center;cursor:pointer;font-weight:700"><input name="night_event_enabled" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--violet-600)" /><span>${t("promos_night_enabled")}</span></label><small class="muted">${t("promos_night_note")}</small>` : ""}
       <div class="row" style="gap:14px;align-items:center"><div class="logo-prev" id="pcLogo" style="width:84px;height:84px"></div><small class="muted">${t("promos_logo_auto")}<br><b dir="ltr" id="pcUrl"></b></small></div>
       <section class="promo-device-preview" aria-label="${esc(t("promo_device_preview"))}">
         <div class="promo-device-head"><b>${t("promo_device_preview")}</b><div class="promo-device-tabs" role="tablist" aria-label="${esc(t("promo_device_preview"))}">
@@ -5671,7 +5794,7 @@ function promoCreateModal(data) {
     </form><div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div></div>`);
   m.querySelector("[data-close]").onclick = closeModals;
   const f = m.querySelector("#pcForm"), number = m.querySelector("#pcNumber"), institutionSelect = m.querySelector("#pcInstitution");
-  let slugTouched = false, shortTouched = false, logoObjectUrl = "";
+  let slugTouched = false, shortTouched = false, registrationMaskTouched = false, logoObjectUrl = "";
   const selectedInstitution = () => institutionReady && institutionSelect.value !== "__new__" ? institutions.find(x => x.id === institutionSelect.value) : null;
   const getInstitutionSlug = () => selectedInstitution()?.slug || String(m.querySelector("#pcSlug")?.value || "").trim().toLowerCase() || "iscae";
   const setNextNumber = () => {
@@ -5682,11 +5805,16 @@ function promoCreateModal(data) {
   const prev = () => {
     const n = Number(number.value) || 0, short = selectedInstitution()?.short_name || m.querySelector("#pcShort")?.value || suggestedInstitutionShort(m.querySelector("#pcNameFr")?.value || m.querySelector("#pcNameAr")?.value || "UNIV");
     const slug = getInstitutionSlug(), inst = selectedInstitution();
+    const regMaskInput = m.querySelector("#pcRegMask");
+    if (regMaskInput && !registrationMaskTouched) regMaskInput.value = suggestedRegistrationMask(slug);
+    const regMask = normalizeRegistrationMask(regMaskInput?.value || suggestedRegistrationMask(slug));
+    const regExample = m.querySelector("#pcRegExample"); if (regExample) regExample.textContent = registrationExample(regMask);
     const typedInstitution = state.lang === "fr" ? (m.querySelector("#pcNameFr")?.value || m.querySelector("#pcNameAr")?.value) : (m.querySelector("#pcNameAr")?.value || m.querySelector("#pcNameFr")?.value);
     const institutionName = inst ? (state.lang === "fr" ? (inst.name_fr || inst.name_ar || inst.short_name) : (inst.name_ar || inst.name_fr || inst.short_name)) : (typedInstitution || short);
     const batchName = state.lang === "fr" ? (f.querySelector('[name="fr"]')?.value || "") : (f.querySelector('[name="ar"]')?.value || "");
     m.querySelector("#pcLogo").innerHTML = logoObjectUrl ? `<img src="${esc(logoObjectUrl)}" alt="${esc(short)}" style="width:100%;height:100%;object-fit:contain" />` : n > 0 ? defaultPromoLogo(n, short) : "";
-    m.querySelector("#pcUrl").textContent = n > 0 ? `${slug}-promo-${n}.[TENANT_ROOT_DOMAIN]` : "";
+    const previewPromoSlug = `${slug}-promo-${n}`;
+    m.querySelector("#pcUrl").textContent = n > 0 ? `${promotionPlatformOrigin()}/site/index.html?promo=${previewPromoSlug}` : "";
     const deviceLogo = m.querySelector("#pcDeviceLogo"); if (deviceLogo) deviceLogo.src = logoObjectUrl || (n > 0 ? defaultPromoLogoDataUrl(n, short) : "");
     const deviceShort = m.querySelector("#pcDeviceShort"); if (deviceShort) deviceShort.textContent = short;
     const deviceNumber = m.querySelector("#pcDeviceNumber"); if (deviceNumber) deviceNumber.textContent = n > 0 ? promoNumberLabel(state.lang, n) : "";
@@ -5707,6 +5835,7 @@ function promoCreateModal(data) {
   }));
   const slugInput = m.querySelector("#pcSlug"); if (slugInput) slugInput.addEventListener("input", () => { slugTouched = true; prev(); });
   const shortInput = m.querySelector("#pcShort"); if (shortInput) shortInput.addEventListener("input", () => { shortTouched = true; prev(); });
+  const regMaskInput = m.querySelector("#pcRegMask"); if (regMaskInput) regMaskInput.addEventListener("input", () => { registrationMaskTouched = true; prev(); });
   const fileInput = m.querySelector("#pcLogoFile"); if (fileInput) fileInput.onchange = () => {
     const file = fileInput.files?.[0]; if (!file) return;
     if (!validatePhotoFile(file)) { fileInput.value = ""; return; }
@@ -5730,6 +5859,10 @@ function promoCreateModal(data) {
     if (anyHead && !(head.full_name && head.email && head.password.length >= 6)) { toast(t("promos_err_head_incomplete"), "err"); return; }
     const isNewInstitution = institutionReady && v.institution_id === "__new__";
     const chosen = !institutionReady ? null : selectedInstitution();
+    const instSlugForMask = isNewInstitution ? String(v.institution_slug || slugifyInstitution(v.institution_name_fr || v.institution_name_ar)).trim().toLowerCase() : (chosen?.slug || "iscae");
+    const registrationMask = normalizeRegistrationMask(v.registration_mask || suggestedRegistrationMask(instSlugForMask));
+    const nightEnabledForNewPromo = institutionReady ? String(v.night_event_enabled || "") === "on" : true;
+    if (institutionReady && !isValidRegistrationMask(registrationMask)) { toast(t("promos_reg_mask_invalid"), "err"); return; }
     const nameAr = String(v.institution_name_ar || "").trim(), nameFr = String(v.institution_name_fr || "").trim();
     const instSlug = isNewInstitution ? String(v.institution_slug || slugifyInstitution(nameFr || nameAr)).trim().toLowerCase() : (chosen?.slug || "iscae");
     if (isNewInstitution && !(nameAr || nameFr)) { toast(t("promos_err_institution_name"), "err"); return; }
@@ -5739,20 +5872,22 @@ function promoCreateModal(data) {
     try {
       let data, error;
       if (institutionReady) {
-        ({ data, error } = await db.rpc("platform_create_institution_promotion", {
+        ({ data, error } = await db.rpc("platform_create_institution_promotion_with_options", {
           _institution_id: chosen?.id || null,
           _institution_slug: isNewInstitution ? instSlug : null,
           _institution_name_ar: isNewInstitution ? (nameAr || null) : null,
           _institution_name_fr: isNewInstitution ? (nameFr || null) : null,
           _institution_short: isNewInstitution ? instShort : null,
-          _number: n, _name_fr: String(v.fr || "").trim() || null, _name_ar: String(v.ar || "").trim() || null
+          _number: n, _name_fr: String(v.fr || "").trim() || null, _name_ar: String(v.ar || "").trim() || null,
+          _registration_mask: registrationMask,
+          _night_event_enabled: nightEnabledForNewPromo
         }));
       } else {
         ({ data, error } = await db.rpc("platform_create_promotion", { _number: n, _name_fr: String(v.fr || "").trim() || null, _name_ar: String(v.ar || "").trim() || null }));
       }
       if (error) {
         const em = String(error.message || "");
-        throw new Error(/PROMO_EXISTS/.test(em) ? t("promos_err_exists") : /INSTITUTION_NAME_REQUIRED/.test(em) ? t("promos_err_institution_name") : /INVALID_INSTITUTION_SLUG/.test(em) ? t("promos_err_institution_slug") : isMissingRelation(error) ? t("promos_err_missing") : em);
+        throw new Error(/PROMO_EXISTS/.test(em) ? t("promos_err_exists") : /INSTITUTION_NAME_REQUIRED/.test(em) ? t("promos_err_institution_name") : /INVALID_INSTITUTION_SLUG/.test(em) ? t("promos_err_institution_slug") : /INVALID_REGISTRATION_MASK/.test(em) ? t("promos_reg_mask_invalid") : isMissingRelation(error) ? t("promos_err_missing") : em);
       }
       const promo = Array.isArray(data) ? data[0] : data;
       const newPromoSlug = promo?.slug || `${instSlug}-promo-${n}`;
@@ -5763,12 +5898,12 @@ function promoCreateModal(data) {
         try { await uploadInstitutionLogo(logoFile, targetInstitutionId); }
         catch (logoErr) { logoUploadError = t("promos_logo_upload_failed", { msg: logoErr.message || logoErr }); }
       }
-      const prov = await provisionPromoDomain(promo.id);
       let headMsg = t("promos_result_head_none");
       if (anyHead) {
         try { await createPromoHead({ ...head, promotion_id: promo.id }); headMsg = `${head.full_name} — ${head.email}`; }
         catch (err) { headMsg = "⚠ " + (err.message || err); }
       }
+      await provisionPromoDomain(promo.id);
       const fresh = (await rawFrom("promotions").select("*").eq("id", promo.id).maybeSingle()).data || promo;
       const link = promoLinkOf({ ...fresh, slug: fresh.slug || newPromoSlug });
       const instForTitle = chosen || { slug: instSlug, short_name: instShort, name_ar: nameAr, name_fr: nameFr };
@@ -5776,7 +5911,7 @@ function promoCreateModal(data) {
       openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_result_title")} — ${esc(promoInstitutionShort(instForTitle))} · ${esc(promoNumberLabel(state.lang, n))}</h3></div>
         <div class="modal-body"><div class="row" style="gap:14px;align-items:center"><div class="logo-prev" style="width:84px;height:84px">${defaultPromoLogo(n, promoInstitutionShort(instForTitle))}</div>
         <div class="stack" style="gap:6px"><b>${t("promos_result_link")}</b><a dir="ltr" href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:800">${esc(link)}</a>
-        ${prov.ok ? "" : `<small class="muted">${esc(prov.error || "")}</small>`}</div></div>
+        <small class="muted">${fresh.domain && (fresh.is_default || fresh.domain_status === "active") ? t("promos_link_ok") : t("promos_temp_link")} · ${esc(newPromoSlug)}</small></div></div>
         ${logoUploadError ? `<p class="error-text">${esc(logoUploadError)}</p>` : ""}
         <p><b>${t("promos_result_head")}:</b> ${esc(headMsg)}</p></div>
         <div class="modal-foot"><button class="btn btn-primary" data-close>${t("promos_close")}</button></div></div>`).querySelector("[data-close]").onclick = closeModals;
@@ -5784,6 +5919,50 @@ function promoCreateModal(data) {
     } catch (err) {
       toast(err.message || String(err), "err"); btn.disabled = false; btn.textContent = t("promos_create");
     } finally { if (logoObjectUrl) URL.revokeObjectURL(logoObjectUrl); }
+  };
+}
+function promoRegistrationMaskModal(p) {
+  if (!p || !isPlatform()) return;
+  const current = registrationMaskOf(p);
+  const m = openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_reg_mask_button")} — ${esc(promoInstitutionShort(p))} · ${esc(promoNumberLabel(state.lang, p.number))}</h3></div>
+    <form class="modal-body" id="prmForm"><div class="field"><label>${t("promos_reg_mask")}</label><input name="registration_mask" id="prmMask" dir="ltr" maxlength="32" required value="${esc(current)}" /></div>
+      <small class="muted">${t("promos_reg_mask_hint")} ${t("promos_reg_mask_example")} <bdi id="prmExample" dir="ltr">${esc(registrationExample(current))}</bdi></small>
+      <button class="btn btn-primary btn-block" type="submit" id="prmSave">${t("btn_save_changes")}</button></form>
+    <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div></div>`);
+  m.querySelector("[data-close]").onclick = closeModals;
+  const form = m.querySelector("#prmForm"), input = m.querySelector("#prmMask"), example = m.querySelector("#prmExample");
+  input.addEventListener("input", () => { const value = normalizeRegistrationMask(input.value); example.textContent = isValidRegistrationMask(value) ? registrationExample(value) : "—"; });
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const mask = normalizeRegistrationMask(input.value);
+    if (!isValidRegistrationMask(mask)) { toast(t("promos_reg_mask_invalid"), "err"); return; }
+    const button = m.querySelector("#prmSave"); button.disabled = true; button.innerHTML = `<span class="spinner"></span> ${t("btn_saving")}`;
+    const { error } = await db.rpc("platform_update_registration_mask", { _promotion_id: p.id, _registration_mask: mask });
+    if (error) { toast(/INVALID_REGISTRATION_MASK/.test(error.message || "") ? t("promos_reg_mask_invalid") : t("err_generic", { msg: error.message || error }), "err"); button.disabled = false; button.textContent = t("btn_save_changes"); return; }
+    closeModals(); toast(t("promos_reg_mask_saved")); renderPromosTab($("#panel"));
+  };
+}
+function promoNightEventModal(p) {
+  if (!p || !isPlatform()) return;
+  const m = openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_night_button")} — ${esc(promoInstitutionShort(p))} · ${esc(promoNumberLabel(state.lang, p.number))}</h3></div>
+    <form class="modal-body" id="pneForm"><label class="row" style="gap:10px;align-items:center;cursor:pointer;font-weight:700"><input name="enabled" id="pneEnabled" type="checkbox" ${p.night_event_enabled === false ? "" : "checked"} style="width:18px;height:18px;accent-color:var(--violet-600)" /><span>${t("promos_night_enabled")}</span></label>
+      <small class="muted">${t("promos_night_note")}</small><button class="btn btn-primary btn-block" type="submit" id="pneSave">${t("btn_save_changes")}</button></form>
+    <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div></div>`);
+  m.querySelector("[data-close]").onclick = closeModals;
+  m.querySelector("#pneForm").onsubmit = async e => {
+    e.preventDefault();
+    const button = m.querySelector("#pneSave"); button.disabled = true; button.innerHTML = `<span class="spinner"></span> ${t("btn_saving")}`;
+    const enabled = !!m.querySelector("#pneEnabled").checked;
+    const { error } = await db.rpc("platform_update_night_event_enabled", { _promotion_id: p.id, _enabled: enabled });
+    if (error) { toast(t("err_generic", { msg: error.message || error }), "err"); button.disabled = false; button.textContent = t("btn_save_changes"); return; }
+    if (state.promo?.id === p.id) {
+      state.promo.night_event_enabled = enabled;
+      refreshCachedPromotionSnapshot().catch(error => console.warn("[Startup cache] gala setting refresh failed", error));
+      renderEvents();
+      if ($("#searchInput")?.value) runSearch();
+      else if (location.hash.startsWith(PROFILE_HASH)) routeFromHash();
+    }
+    closeModals(); toast(t("promos_night_saved")); renderPromosTab($("#panel"));
   };
 }
 function promoHeadModal(p) {
@@ -5812,7 +5991,7 @@ function promoBrandTopic() {
 }
 function promoBrandSignature() {
   const p = state.promo || {};
-  return JSON.stringify([p.id || null, p.slug || null, p.number, p.name_fr || null, p.name_ar || null, p.logo_source || null,
+  return JSON.stringify([p.id || null, p.slug || null, p.number, p.registration_mask || DEFAULT_REGISTRATION_MASK, p.night_event_enabled !== false, p.public_listing === true, p.single_specialty_enabled === true, p.name_fr || null, p.name_ar || null, p.logo_source || null,
     p.institution_id || null, p.institution?.name_ar || p.institution_name_ar || null, p.institution?.name_fr || p.institution_name_fr || null,
     p.institution?.short_name || p.institution_short || null, p.institution?.logo_url || p.institution_logo_source || null]);
 }
@@ -5828,7 +6007,9 @@ async function refreshPromoBrandFromServer() {
       await loadPromotion();
       refreshCachedPromotionSnapshot().catch(error => console.warn("[Startup cache] promotion refresh failed", error));
       if (before !== promoBrandSignature() || beforeUrl !== state.promo.logo) {
-        applyBranding(); refreshInstallButton();
+        applyBranding(); refreshInstallButton(); renderEvents();
+        if ($("#searchInput")?.value) runSearch();
+        else if (location.hash.startsWith(PROFILE_HASH)) routeFromHash();
         if (refreshPromoLogoEditor) await refreshPromoLogoEditor();
       }
     } catch (e) { console.warn("[Promotion branding] refresh failed", e); }
@@ -5841,6 +6022,7 @@ function subscribePromoBrandRealtime() {
   const channel = db.channel(topic, { config: { broadcast: { ack: false, self: false } } });
   channel.on("broadcast", { event: "brand-updated" }, () => refreshPromoBrandFromServer());
   if (state.promo.institution_id) channel.on("postgres_changes", { event: "UPDATE", schema: "public", table: "institutions", filter: `id=eq.${state.promo.institution_id}` }, () => refreshPromoBrandFromServer());
+  if (TENANT.id) channel.on("postgres_changes", { event: "UPDATE", schema: "public", table: "promotions", filter: `id=eq.${TENANT.id}` }, () => refreshPromoBrandFromServer());
   promoBrandChannel = channel.subscribe(status => {
       promoBrandChannelStatus = status;
       if (status === "SUBSCRIBED") {

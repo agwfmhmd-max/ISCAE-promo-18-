@@ -1,5 +1,5 @@
 // Developer: Mohamed Dah Agove
-const ISCAE_SW_BUILD = "iscae-shell-cache-v5-multi-university";
+const ISCAE_SW_BUILD = "iscae-shell-cache-v7-national-promo";
 const ISCAE_CACHE_PREFIX = "iscae-app-shell-";
 const ISCAE_CACHE_NAME = `${ISCAE_CACHE_PREFIX}${ISCAE_SW_BUILD}`;
 const ISCAE_SHELL_URL = new URL("./index.html", self.registration.scope).href;
