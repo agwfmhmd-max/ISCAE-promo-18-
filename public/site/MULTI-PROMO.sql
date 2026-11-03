@@ -1,3 +1,4 @@
+-- Developer: Mohamed Dah Agove
 begin;
 
 -- =============================================================================
@@ -34,12 +35,21 @@ create table if not exists public.promotions (
   domain_status text not null default 'pending',     -- pending | active | manual | error
   name_fr       text,
   name_ar       text,
-  logo_url      text,                                -- NULL = شعار تلقائي حسب الرقم
+  logo_url      text,                                -- NULL = شعار تلقائي حسب القالب والدفعة
+  logo_style    text not null default 'academic',    -- قالب مستقل لكل دفعة
   is_default    boolean not null default false,      -- الدفعة القديمة (18)
   created_by    uuid references auth.users(id) on delete set null,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
+alter table public.promotions add column if not exists logo_style text not null default 'academic';
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname='promotions_logo_style_check' and conrelid='public.promotions'::regclass) then
+    alter table public.promotions add constraint promotions_logo_style_check
+      check (logo_style in ('academic','business','law','medicine','engineering','education','technology','agriculture','science','general'));
+  end if;
+end $$;
 create unique index if not exists promotions_number_uniq  on public.promotions (number);
 create unique index if not exists promotions_slug_uniq    on public.promotions (slug);
 create unique index if not exists promotions_domain_uniq  on public.promotions (lower(domain)) where domain is not null;
@@ -179,6 +189,28 @@ $$;
 grant execute on function public.mp_is_default_promotion(uuid) to anon, authenticated, service_role;
 grant execute on function public.can_manage_promotion(uuid)     to anon, authenticated, service_role;
 grant execute on function public.mp_can_write(uuid)             to anon, authenticated, service_role;
+
+-- رئيس التخصص يستطيع تحديث شعار دفعته فقط؛ لا تُفتح له صلاحية UPDATE عامة على promotions.
+create or replace function public.update_promotion_logo_for_specialty_head(_promotion_id uuid, _logo_url text)
+returns void language plpgsql security definer set search_path = public, storage as $$
+begin
+  if auth.uid() is null or _promotion_id is null or _logo_url is null then raise exception 'FORBIDDEN'; end if;
+  if length(_logo_url)>512
+     or left(_logo_url,length('promotions/'||_promotion_id::text||'/logos/')) <> ('promotions/'||_promotion_id::text||'/logos/')
+     or position('..' in _logo_url)>0 or position('://' in _logo_url)>0 then raise exception 'INVALID_PROMOTION_LOGO_PATH'; end if;
+  if not exists (
+    select 1 from public.admins a join public.specialties s on s.id=a.specialty_id and s.promotion_id=a.promotion_id
+     where a.user_id=auth.uid() and a.role='dept_admin' and coalesce(a.is_active,true)
+       and a.promotion_id=_promotion_id and public.current_promotion_id()=_promotion_id
+  ) then raise exception 'FORBIDDEN'; end if;
+  if not exists(select 1 from storage.objects o where o.bucket_id='student-photos' and o.name=_logo_url) then
+    raise exception 'PROMOTION_LOGO_NOT_FOUND';
+  end if;
+  update public.promotions set logo_url=_logo_url,updated_at=now() where id=_promotion_id;
+  if not found then raise exception 'PROMOTION_NOT_FOUND'; end if;
+end $$;
+revoke all on function public.update_promotion_logo_for_specialty_head(uuid,text) from public, anon;
+grant execute on function public.update_promotion_logo_for_specialty_head(uuid,text) to authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4) تعبئة promotion_id تلقائياً عند الإدراج (احتياط إضافي فوق ما يرسله الموقع)

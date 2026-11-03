@@ -1406,6 +1406,8 @@ async function completeCachedSearchStudent(st) {
 }
 const isSuper = () => state.me?.role === "super_admin";          // رئيس دفعة (أو المشرف العام) — صلاحيات المشرف الرئيسي داخل الدفعة
 const isPlatform = () => !!(state.me && state.me.is_platform);   // المشرف العام Superviseurs — كل الدفعات
+const isDeptAdmin = () => state.me?.role === "dept_admin";
+const singleSpecialtyOn = (promo = state.promo) => promo?.single_specialty_enabled === true;
 
 /* ------------------------- 1B. I18N (عربي / فرنسي) ------------------------- */
 const I18N = {
@@ -1810,6 +1812,19 @@ function suggestedInstitutionShort(value) {
   const parts = slugifyInstitution(value).split("-").filter(Boolean);
   return (parts.map(x => x[0]).join("").slice(0, 8) || "UNIV").toUpperCase();
 }
+function suggestedPromoLogoStyle(value) {
+  const key = slugifyInstitution(value);
+  if (/iscae|comptabilite|accounting/.test(key)) return "academic";
+  if (/droit|juridique|legal|law/.test(key)) return "law";
+  if (/med|sante|health|pharma/.test(key)) return "medicine";
+  if (/ingen|engineering|industrie|industrial/.test(key)) return "engineering";
+  if (/educ|pedag|teacher|school/.test(key)) return "education";
+  if (/agri|environnement|environment/.test(key)) return "agriculture";
+  if (/tech|digital|numerique|informatique|computer/.test(key)) return "technology";
+  if (/science|recherche|research|laboratoire/.test(key)) return "science";
+  if (/feg|econom|gestion|business|commerce|finance|management/.test(key)) return "business";
+  return "general";
+}
 /* ------------------------- PROMOTION — مصدر واحد (رقم ≠ اسم) -------------------------
    الرقم (18) واسم الدفعة (FR/AR، NULL حتى يحدده المشرف الرئيسي) يأتيان فقط من
    public.promotion_settings. كل واجهة تستعمل الدوال أدناه — لا نص مكرَّر. */
@@ -1822,39 +1837,40 @@ function promoName(lang = state.lang) {
   return String((lang === "fr" ? state.promo.name_fr : state.promo.name_ar) || "").trim();
 }
 let logoUid = 0;
-/** شعار افتراضي (شارة الدفعة) يُستبدل تلقائياً بشعار يرفعه المشرف الرئيسي. */
-function defaultPromoLogo(n, shortName = promoInstitutionShort()) {
-  const u = ++logoUid, fs = String(n).length > 2 ? 26 : 36;
-  const short = String(shortName || "UNIV").trim().slice(0, 10).toUpperCase();
-  const nodes = [0, 45, 90, 135, 180, 225, 270, 315].map(a => { const r = a * Math.PI / 180, x1 = 60 + 52.5 * Math.cos(r), y1 = 60 + 52.5 * Math.sin(r), x2 = 60 + 47 * Math.cos(r), y2 = 60 + 47 * Math.sin(r);
-    return `<line x1="${x2.toFixed(1)}" y1="${y2.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"/><circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="1.6"/>`; }).join("");
-  const bars = [6, 9, 12, 15].map((h, i) => `<rect x="${29.5 + i * 5.6}" y="${90 - h}" width="4" height="${h}" rx="1"/>`).join("");
-  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(promoNumberLabel(state.lang, n))}">
-    <defs><linearGradient id="pg${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#012328"/><stop offset=".55" stop-color="#001013"/><stop offset="1" stop-color="#000000"/></linearGradient>
-    <linearGradient id="gg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13878a"/><stop offset="1" stop-color="#04656c"/></linearGradient>
-    <radialGradient id="sh${u}" cx=".35" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
-    <circle cx="60" cy="60" r="58" fill="url(#gg${u})"/><circle cx="60" cy="60" r="55.5" fill="url(#pg${u})"/><circle cx="60" cy="60" r="55.5" fill="url(#sh${u})"/>
-    <circle cx="60" cy="60" r="44.5" fill="none" stroke="#04656c" stroke-opacity=".38" stroke-width=".8"/>
-    <g stroke="#04656c" stroke-opacity=".55" stroke-width=".9" fill="#04656c" fill-opacity=".8">${nodes}</g>
-    <g fill="url(#gg${u})"><polygon points="60,13 80,21.5 60,30 40,21.5"/><path d="M48.5 25.5v6.5c0 2.6 5 4.8 11.5 4.8s11.5-2.2 11.5-4.8v-6.5L60 31z" opacity=".78"/><rect x="78.6" y="21.5" width="1.5" height="9.5"/><circle cx="79.4" cy="33" r="1.9"/></g>
-    <text x="60" y="${fs > 30 ? 64 : 62}" text-anchor="middle" font-family="'Plus Jakarta Sans',Tajawal,sans-serif" font-weight="800" font-size="${fs}" fill="#04656c">${esc(n)}</text>
-    <g><line x1="44" y1="69.5" x2="56" y2="69.5" stroke="#04656c" stroke-opacity=".6" stroke-width=".8"/><line x1="64" y1="69.5" x2="76" y2="69.5" stroke="#04656c" stroke-opacity=".6" stroke-width=".8"/><rect x="58" y="67.5" width="4" height="4" transform="rotate(45 60 69.5)" fill="#04656c"/></g>
-    <g fill="url(#gg${u})">${bars}</g>
-    <polyline points="29,80 35,76 41,78 51,70" fill="none" stroke="#04656c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,68.6 47.6,69.4 51.6,73.4" fill="#04656c"/>
-    <g fill="none" stroke="url(#gg${u})" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M76 76l-6 6.5 6 6.5"/><path d="M84 74.5l-4.5 16"/><path d="M87.5 76l6 6.5-6 6.5" transform="translate(-0.5 0)"/></g>
-    <text x="60" y="105" text-anchor="middle" font-family="'Plus Jakarta Sans',sans-serif" font-weight="800" font-size="8" letter-spacing="2.2" fill="#fff" fill-opacity=".9">${esc(short)}</text></svg>`;
+/** Field-specific generated logos; the legacy academic seal remains available for existing batches. */
+const PROMO_LOGO_STYLES = {
+  academic: { color: "#14665f", ink: "#092d35", icon: `<path d="M34 43 60 31l26 12-26 12-26-12Zm9 5v13c9 8 25 8 34 0V48M60 55v17M47 75h26"/>` },
+  general: { color: "#9b4dca", ink: "#2d1748", icon: `<path d="M60 32 66 48l17 1-13 11 4 17-14-9-14 9 4-17-13-11 17-1 6-16Z"/>` },
+  business: { color: "#b68126", ink: "#24213a", icon: `<path d="M38 77V61h9v16m7 0V50h9v27m7 0V40h9v37M35 51l16-9 12 3 20-17m-9 0h9v9"/>` },
+  law: { color: "#795a9e", ink: "#29223d", icon: `<path d="M60 35v39m-23 4h46M42 48h36M48 48l-9 17h18l-9-17Zm24 0-9 17h18l-9-17Zm-12-13 5 5-5 5-5-5 5-5Z"/>` },
+  medicine: { color: "#138a7c", ink: "#123c43", icon: `<path d="M53 34h14v17h17v14H67v17H53V65H36V51h17V34Z"/>` },
+  engineering: { color: "#df713d", ink: "#35263b", icon: `<path d="M41 37h38v38H41zM48 67l9-18 8 12 5-7 7 13M50 45h.1M70 45h.1"/>` },
+  education: { color: "#3e73b8", ink: "#1d2f54", icon: `<path d="m31 47 29-15 29 15-29 15-29-15Zm9 6v15c11 9 29 9 40 0V53M60 62v15m-24 2c10-7 18-7 24-2 6-5 14-5 24 2"/>` },
+  technology: { color: "#585bd6", ink: "#202348", icon: `<path d="m48 42-15 18 15 18m24-36 15 18-15 18M66 35 54 85M60 30h.1M34 60h.1M86 60h.1"/>` },
+  agriculture: { color: "#5b8e42", ink: "#263d2d", icon: `<path d="M60 79c-2-23 8-39 28-47 1 22-8 39-28 47Zm0 0C58 60 47 49 32 47c0 17 10 29 28 32Zm0 0v8m-11-45 6 6m21-1-7 7"/>` },
+  science: { color: "#1085a5", ink: "#14334b", icon: `<ellipse cx="60" cy="60" rx="28" ry="11"/><ellipse cx="60" cy="60" rx="28" ry="11" transform="rotate(60 60 60)"/><ellipse cx="60" cy="60" rx="28" ry="11" transform="rotate(120 60 60)"/><circle cx="60" cy="60" r="4" fill="currentColor"/>` }
+};
+function logoStyleOptionsHTML(selected = state.promo.logo_style || "academic", id = "promoLogoStyle") {
+  return `<select id="${id}" name="logo_style">${Object.entries(PROMO_LOGO_STYLES).map(([key]) => `<option value="${key}" ${key === selected ? "selected" : ""}>${t("logo_style_" + key)}</option>`).join("")}</select>`;
 }
-function defaultPromoLogoDataUrl(n = state.promo.number, short = promoInstitutionShort()) {
-  const svg = defaultPromoLogo(n, short).replace("<svg ", '<svg width="512" height="512" ');
+function defaultPromoLogo(n, shortName = promoInstitutionShort(), style = state.promo.logo_style || "academic") {
+  const entry = PROMO_LOGO_STYLES[style] || PROMO_LOGO_STYLES.academic;
+  const u = ++logoUid, fs = String(n).length > 2 ? 27 : 36;
+  const short = String(shortName || "UNIV").trim().slice(0, 10).toUpperCase();
+  const shape = style === "law" || style === "engineering" ? `<path d="M60 7 104 31v48L60 103 16 79V31L60 7Z" fill="${entry.color}"/><path d="M60 12 99 34v42L60 98 21 76V34L60 12Z" fill="${entry.ink}"/>` : `<circle cx="60" cy="60" r="53" fill="${entry.color}"/><circle cx="60" cy="60" r="48" fill="${entry.ink}"/>`;
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(promoNumberLabel(state.lang, n))}" color="${entry.color}"><defs><linearGradient id="logo${u}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${entry.color}"/><stop offset="1" stop-color="${entry.ink}"/></linearGradient></defs>${shape}<path d="M60 14 98 35v41L60 98 22 76V35L60 14Z" fill="none" stroke="url(#logo${u})" stroke-width="2"/><g transform="translate(33 7) scale(.45)" fill="none" stroke="${entry.color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">${entry.icon}</g><text x="60" y="${fs > 30 ? 67 : 65}" text-anchor="middle" font-family="'Plus Jakarta Sans',Tajawal,sans-serif" font-weight="900" font-size="${fs}" fill="#fff" stroke="${entry.ink}" stroke-width="1.2" paint-order="stroke">${esc(n)}</text><text x="60" y="91" text-anchor="middle" font-family="'Plus Jakarta Sans',sans-serif" font-weight="800" font-size="8" letter-spacing="2" fill="#fff">${esc(short)}</text></svg>`;
+}
+function defaultPromoLogoDataUrl(n = state.promo.number, short = promoInstitutionShort(), style = state.promo.logo_style || "academic") {
+  const svg = defaultPromoLogo(n, short, style).replace("<svg ", '<svg width="512" height="512" ');
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 function promoLogoHTML(url, n, cls, shortName = promoInstitutionShort()) {
   const alt = `${promoInstitutionName()} — ${promoNumberLabel(state.lang, n)}`;
-  return url ? `<img class="${cls || ""}" src="${esc(url)}" alt="${esc(alt)}" decoding="async" />` : defaultPromoLogo(n, shortName);
+  return url ? `<img class="${cls || ""}" src="${esc(url)}" alt="${esc(alt)}" decoding="async" />` : defaultPromoLogo(n, shortName, state.promo.logo_style);
 }
 function renderHeroLogo() {
   const el = $("#heroLogo"); if (!el) return;
-  const url = state.promo.logo || "", key = [url, state.promo.number, state.lang, institutionSlug(), promoInstitutionShort()].join("|");
+  const url = state.promo.logo || "", key = [url, state.promo.logo_style, state.promo.number, state.lang, institutionSlug(), promoInstitutionShort()].join("|");
   if (el.dataset.key === key) return;
   el.dataset.key = key;
   el.classList.remove("promo-logo-enter");
@@ -1891,6 +1907,7 @@ function applyPromoRow(row) {
     institution_name_fr: institution?.name_fr || row.institution_name_fr || (prior.id === row.id ? prior.institution_name_fr : null),
     institution_logo_source: institution?.logo_url || (prior.id === row.id ? prior.institution_logo_source : null) || null,
     institution_logo: institution?.logo_url && /^https?:\/\//i.test(institution.logo_url) ? institution.logo_url : (prior.id === row.id ? prior.institution_logo || null : null),
+    logo_style: Object.prototype.hasOwnProperty.call(PROMO_LOGO_STYLES, row.logo_style) ? row.logo_style : "academic",
     logo_source: row.logo_url || null, logo: row.logo_url && /^https?:\/\//i.test(row.logo_url) ? row.logo_url : null,
     domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default,
     registration_mask: row.registration_mask || "I#####", night_event_enabled: row.night_event_enabled !== false,
@@ -1989,7 +2006,25 @@ Object.assign(I18N, {
   promo_logo_saved_live:{ar:"تم حفظ الشعار وإرساله إلى الزوار المتصلين.",fr:"Logo enregistré et envoyé aux visiteurs connectés."},
   promo_logo_reset:{ar:"العودة للشعار الافتراضي",fr:"Revenir à l'emblème par défaut"},
   promo_logo_fail:{ar:"تعذّر رفع الشعار: {msg}",fr:"Échec de l'envoi du logo : {msg}"},
-  promo_hint:{ar:"اترك اسم الدفعة فارغاً إذا لم يُحدَّد بعد — لن يظهر أي اسم للزوار.",fr:"Laissez le nom vide s'il n'est pas encore défini — aucun nom ne sera affiché aux visiteurs."}
+  promo_hint:{ar:"اترك اسم الدفعة فارغاً إذا لم يُحدَّد بعد — لن يظهر أي اسم للزوار.",fr:"Laissez le nom vide s'il n'est pas encore défini — aucun nom ne sera affiché aux visiteurs."},
+  promo_logo_style_label:{ar:"قالب الشعار بحسب نوع المؤسسة أو مجال الدفعة",fr:"Modèle du logo selon l'établissement ou le domaine"},
+  promo_logo_style_note:{ar:"اختيار القالب يغيّر الشعار الافتراضي لهذه الدفعة فقط، ولا يغيّر شعار المؤسسة.",fr:"Le modèle change uniquement le logo généré de cette promotion, pas celui de l'établissement."},
+  promo_logo_style_replace:{ar:"سيستبدل هذا القالب الشعار المرفوع حالياً عند الحفظ. هل تريد المتابعة؟",fr:"Ce modèle remplacera le logo importé lors de l'enregistrement. Continuer ?"},
+  logo_style_academic:{ar:"أكاديمي كلاسيكي",fr:"Académique classique"},logo_style_business:{ar:"إدارة وأعمال واقتصاد",fr:"Gestion, commerce et économie"},
+  logo_style_law:{ar:"قانون وحقوق",fr:"Droit et sciences juridiques"},logo_style_medicine:{ar:"طب وعلوم صحية",fr:"Médecine et santé"},
+  logo_style_engineering:{ar:"هندسة وصناعة",fr:"Ingénierie et industrie"},logo_style_education:{ar:"تعليم وتربية",fr:"Éducation et pédagogie"},
+  logo_style_technology:{ar:"تقنية ورقمنة",fr:"Technologie et numérique"},logo_style_agriculture:{ar:"زراعة وبيئة",fr:"Agriculture et environnement"},
+  logo_style_science:{ar:"علوم وبحث",fr:"Sciences et recherche"},logo_style_general:{ar:"عام / متعدد المجالات",fr:"Général / pluridisciplinaire"},
+  dept_settings_title:{ar:"إعدادات رئيس التخصص",fr:"Réglages du responsable de spécialité"},
+  dept_settings_note:{ar:"إعدادات محدودة لهذه الدفعة: رقمها للعرض فقط، ويمكنك رفع شعار جديد. لا تتغير إعدادات الدفعة الأخرى.",fr:"Réglages limités : le numéro est en lecture seule et vous pouvez importer un nouveau logo. Les autres paramètres restent inchangés."},
+  dept_settings_number:{ar:"رقم الدفعة (غير قابل للتغيير)",fr:"Numéro de promotion (non modifiable)"},
+  dept_settings_logo:{ar:"رفع شعار جديد",fr:"Importer un nouveau logo"},
+  dept_settings_logo_hint:{ar:"PNG أو JPG أو WebP، بحد أقصى 5 ميغابايت.",fr:"PNG, JPG ou WebP, 5 Mo maximum."},
+  dept_settings_save:{ar:"حفظ الشعار",fr:"Enregistrer le logo"},
+  dept_settings_required:{ar:"اختر صورة الشعار أولاً.",fr:"Choisissez d'abord un fichier image."},
+  dept_settings_saved:{ar:"تم تحديث الشعار وسيظهر للزوار بعد تحديث الهوية.",fr:"Le logo a été mis à jour et sera visible après actualisation de l'identité."},
+  stats_visits_only:{ar:"إحصائيات الزيارات",fr:"Statistiques des visites"},
+  err_platform_admin_only:{ar:"هذا الدخول مخصص للمشرف العام للمنصة.",fr:"Cette connexion est réservée à l'administrateur général de la plateforme."}
 });
 
 
@@ -2287,6 +2322,7 @@ async function refreshCachedPromotionSnapshot() {
     name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null,
     night_event_enabled: state.promo.night_event_enabled !== false,
     public_listing: state.promo.public_listing === true, single_specialty_enabled: state.promo.single_specialty_enabled === true,
+    logo_style: state.promo.logo_style || "academic",
     logo_source: state.promo.logo_source || null,
     institution_logo_source: state.promo.institution_logo_source || null,
     // Signed Storage URLs are temporary bearer links; keep only stable external logos in IndexedDB.
@@ -2310,6 +2346,7 @@ function applyPublicLaunchSnapshot(snapshot) {
       institution_id: snapshot.promo.institution_id || state.promo.institution_id, institution: snapshot.promo.institution || state.promo.institution,
       night_event_enabled: snapshot.promo.night_event_enabled === undefined ? state.promo.night_event_enabled !== false : snapshot.promo.night_event_enabled !== false,
       public_listing: snapshot.promo.public_listing === true, single_specialty_enabled: snapshot.promo.single_specialty_enabled === true,
+      logo_style: Object.prototype.hasOwnProperty.call(PROMO_LOGO_STYLES, snapshot.promo.logo_style) ? snapshot.promo.logo_style : state.promo.logo_style,
       name_fr: snapshot.promo.name_fr || null, name_ar: snapshot.promo.name_ar || null,
       logo_source: snapshot.promo.logo_source || state.promo.logo_source || null,
       institution_logo_source: snapshot.promo.institution_logo_source || state.promo.institution_logo_source || null,
@@ -2334,6 +2371,7 @@ function makePublicLaunchSnapshot() {
       institution_id: state.promo.institution_id || null, institution: state.promo.institution || null,
       night_event_enabled: state.promo.night_event_enabled !== false,
       public_listing: state.promo.public_listing === true, single_specialty_enabled: state.promo.single_specialty_enabled === true,
+      logo_style: state.promo.logo_style || "academic",
       name_fr: state.promo.name_fr || null, name_ar: state.promo.name_ar || null, logo_source: state.promo.logo_source || null,
       institution_logo_source: state.promo.institution_logo_source || null,
       institution_logo: state.promo.institution_logo_source && storageObjectPath(state.promo.institution_logo_source) ? "" : (state.promo.institution_logo || ""),
@@ -2883,7 +2921,7 @@ window.addEventListener("hashchange", routeFromHash);
 window.addEventListener("scroll", () => { const h = $(".topbar"); if (h) h.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
 
 /* ------------------------- 9. AUTH ------------------------- */
-function loginModal() {
+function loginModal({ platformOnly = false } = {}) {
   const m = openModal(`
     <div class="modal" style="max-width:440px">
       <div class="modal-head">
@@ -2920,6 +2958,11 @@ function loginModal() {
       const message = state.meError || t(state.meMismatch ? "err_admin_other_promo" : "err_not_registered_admin");
       state.meError = "";
       toast(message, "err"); return;
+    }
+    if (platformOnly && !isPlatform()) {
+      await db.auth.signOut(); state.session = null; state.me = null; syncHeader();
+      toast(t("err_platform_admin_only"), "err");
+      return;
     }
     closeModals();
     toast(t("welcome_msg", { name: adminName(state.me) }));
@@ -2976,7 +3019,11 @@ function tabsForRole() {
   const list = [{ k: "overview", n: t("nav_overview") }];
   if (isPlatform()) list.push({ k: "promos", n: t("nav_promos") });
   list.push({ k: "students", n: t("nav_students") });
-  if (isSuper()) list.push({ k: "stats", n: t("nav_stats") }, { k: "specialties", n: t("tab_specialties") }, { k: "admins", n: t("nav_admins") }, { k: "cards", n: t("nav_cards") }, { k: "notifs", n: t("nav_notifs") }, { k: "settings", n: t("nav_settings") });
+  if (isSuper()) {
+    list.push({ k: "stats", n: t("nav_stats") });
+    if (!singleSpecialtyOn()) list.push({ k: "specialties", n: t("tab_specialties") }, { k: "admins", n: t("nav_admins") });
+    list.push({ k: "cards", n: t("nav_cards") }, { k: "notifs", n: t("nav_notifs") }, { k: "settings", n: t("nav_settings") });
+  } else if (isDeptAdmin()) list.push({ k: "dept-settings", n: t("nav_settings") });
   list.push({ k: "exports", n: t("nav_exports") });
   return list;
 }
@@ -3011,6 +3058,7 @@ function renderDash() {
   dashboardRendering = true;
   try {
   const tabs = tabsForRole();
+  if (!tabs.some(tab => tab.k === state.tab)) state.tab = "overview";
   const mySpec = state.specialties.find(s => s.id === state.me.specialty_id);
   $("#sidebar").innerHTML = `
     <div class="side-user">
@@ -3039,6 +3087,7 @@ function renderDash() {
     cards: renderCardsTab,
     notifs: renderNotifsTab,
     settings: renderSettings,
+    "dept-settings": renderDeptSettings,
     exports: renderExports
   }[state.tab] || renderOverview)(panel);
   } finally { dashboardRendering = false; }
@@ -3057,14 +3106,14 @@ function renderOverview(panel) {
     <div class="panel-head"><h2>${t("nav_overview")}</h2></div>
     <div class="mini-grid">
       <div class="mini"><b>${list.length}</b><small>${t("kpi_students_count")}</small></div>
-      ${isSuper() ? `<div class="mini"><b>${state.specialties.length}</b><small>${t("kpi_specialties_count")}</small></div>
+      ${isSuper() && !singleSpecialtyOn() ? `<div class="mini"><b>${state.specialties.length}</b><small>${t("kpi_specialties_count")}</small></div>
       <div class="mini"><b>${state.admins.filter(a => a.role === "dept_admin").length}</b><small>${t("kpi_dept_admins_count")}</small></div>` : ""}
       <div class="mini"><b>${cats.A}</b><small>${t("kpi_cat_prefix")}A</small></div>
       <div class="mini"><b>${cats.B}</b><small>${t("kpi_cat_prefix")}B</small></div>
       <div class="mini"><b>${cats.C}</b><small>${t("kpi_cat_prefix")}C</small></div>
       <div class="mini"><b>${cats.D}</b><small>${t("kpi_cat_prefix")}D</small></div>
     </div>
-    ${isSuper() ? `
+    ${isSuper() && !singleSpecialtyOn() ? `
     <h3 style="font-weight:900;margin:18px 0 12px">${t("students_by_specialty_title")}</h3>
     <div class="table-wrap"><table>
       <thead><tr><th>${t("th_specialty")}</th><th>${t("th_students_count")}</th><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead>
@@ -3554,7 +3603,7 @@ function renderSettings(panel) {
       </div>
       <div class="grid-2">
         <div class="field"><label>${t("field_graduation_date")}</label><input name="graduation_date" type="datetime-local" value="${toLocalInput(s.graduation_date)}" /></div>
-        ${nightEventEnabled() ? `<div class="field"><label>${t("field_night_date")}</label><input name="night_party_date" type="datetime-local" value="${toLocalInput(s.night_party_date)}" /></div>` : `<input type="hidden" name="night_party_date" value="${esc(s.night_party_date || "")}" /><small class="muted">${t("field_night_disabled_note")}</small>`}
+        ${nightEventEnabled() ? `<div class="field"><label>${t("field_night_date")}</label><input name="night_party_date" type="datetime-local" value="${toLocalInput(s.night_party_date)}" /></div>` : ""}
       </div>
       <h3 style="font-weight:900;margin-top:8px">${t("categories_limits_title")}</h3>
       <p class="muted" style="font-size:13px;margin-top:-8px">${t("categories_limits_note")}</p>
@@ -3576,7 +3625,7 @@ function renderSettings(panel) {
           <input name="total_graduates_override" type="number" min="0" placeholder="${t("placeholder_auto", { n: state.students.length })}" value="${hasOverride(s.total_graduates_override) ? Number(s.total_graduates_override) : ""}" />
         </div>
       </div>
-      ${state.specialties.length ? `
+      ${state.specialties.length && !singleSpecialtyOn() ? `
         <h4 style="font-weight:800">${t("spec_counts_title")}</h4>
         <div class="grid-2">
           ${state.specialties.map(sp => {
@@ -3630,7 +3679,7 @@ function renderSettings(panel) {
       ...(tenantOn() ? {} : { id: 1 }),
       platform_name: f.platform_name.trim(),
       graduation_date: f.graduation_date ? new Date(f.graduation_date).toISOString() : null,
-      night_party_date: f.night_party_date ? new Date(f.night_party_date).toISOString() : null,
+      ...(nightEventEnabled() ? { night_party_date: f.night_party_date ? new Date(f.night_party_date).toISOString() : null } : {}),
       cat_a_limit: Number(f.cat_a_limit) || 0,
       cat_b_limit: Number(f.cat_b_limit) || 0,
       cat_c_limit: Number(f.cat_c_limit) || 0,
@@ -3647,7 +3696,9 @@ function renderSettings(panel) {
     const extraPayload = {
       show_category_stats: !!f.show_category_stats,
       total_graduates_override: totalRaw === "" ? null : Number(totalRaw),
-      specialty_counts_override: Object.keys(specOverride).length ? specOverride : null
+      specialty_counts_override: singleSpecialtyOn()
+        ? (state.settings?.specialty_counts_override ?? null)
+        : (Object.keys(specOverride).length ? specOverride : null)
     };
 
     let saveExtraSettings = true;
@@ -3673,6 +3724,35 @@ function renderSettings(panel) {
 }
 
 
+function renderDeptSettings(panel) {
+  if (!isDeptAdmin()) { panel.innerHTML = `<div class="empty">${t("err_forbidden_super")}</div>`; return; }
+  panel.innerHTML = `<div class="panel-head"><h2>${t("dept_settings_title")}</h2></div>
+    <p class="muted" style="font-size:13px;line-height:1.7">${t("dept_settings_note")}</p>
+    <div class="field" style="max-width:360px;margin:16px 0"><label>${t("dept_settings_number")}</label><input type="number" value="${esc(state.promo.number)}" readonly aria-readonly="true" /></div>
+    <form id="deptLogoForm" class="stack" style="max-width:520px">
+      <div class="field"><label for="deptLogoFile">${t("dept_settings_logo")}</label><input id="deptLogoFile" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" required /><small class="muted">${t("dept_settings_logo_hint")}</small></div>
+      <button class="btn btn-primary" type="submit" id="deptLogoSave" style="align-self:flex-start">${t("dept_settings_save")}</button>
+    </form>`;
+  const form = $("#deptLogoForm"), input = $("#deptLogoFile"), button = $("#deptLogoSave");
+  form.onsubmit = async event => {
+    event.preventDefault();
+    const file = input.files?.[0];
+    if (!file) { toast(t("dept_settings_required"), "err"); return; }
+    if (!validatePhotoFile(file)) { input.value = ""; return; }
+    button.disabled = true; button.innerHTML = `<span class="spinner"></span> ${t("btn_saving")}`;
+    try {
+      if (!tenantOn() || !state.promo.id || !isDeptAdmin()) throw new Error(t("promo_denied"));
+      const logoPath = await uploadDeptPromoLogo(file);
+      const { error } = await db.rpc("update_promotion_logo_for_specialty_head", { _promotion_id: state.promo.id, _logo_url: logoPath });
+      if (error) throw error;
+      await loadPromotion(); applyBranding(); renderStats(); renderEvents();
+      refreshCachedPromotionSnapshot().catch(error => console.warn("[Startup cache] promotion refresh failed", error));
+      notifyPromoBrandChange(); input.value = ""; toast(t("dept_settings_saved"));
+    } catch (error) { toast(t("err_save_failed", { msg: error.message || error }), "err"); }
+    finally { button.disabled = false; button.textContent = t("dept_settings_save"); }
+  };
+}
+
 /* ------------------------- GESTION DE LA PROMOTION (admin principal) ------------------------- */
 function promoPreviewHTML(lang, n, name) {
   const inst = promoInstitutionName(lang);
@@ -3688,6 +3768,14 @@ async function uploadPromoLogo(file) {
   if (file.size <= 350 * 1024) return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(error); r.readAsDataURL(file); });
   throw error;
 }
+async function uploadDeptPromoLogo(file) {
+  if (!(file instanceof File) || !tenantOn()) throw new Error(t("promo_denied"));
+  const ext = ((file.name || "").split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const path = `promotions/${TENANT.id}/logos/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await db.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (error) throw error;
+  return path;
+}
 let refreshPromoLogoEditor = null;
 function promoAdminHTML() {
   if (!isSuper()) return "";
@@ -3698,6 +3786,7 @@ function promoAdminHTML() {
       <div class="field"><label for="pNum">${t("promo_number")}</label><input id="pNum" name="n" type="number" min="1" max="999" value="${esc(p.number)}" dir="ltr" ${tenantOn() ? "readonly" : ""} /></div>
       <div class="field"><label for="pFr">${t("promo_name_fr")}</label><input id="pFr" name="fr" dir="ltr" lang="fr" maxlength="80" value="${esc(p.name_fr || "")}" /></div>
       <div class="field"><label for="pAr">${t("promo_name_ar")}</label><input id="pAr" name="ar" dir="rtl" lang="ar" maxlength="80" value="${esc(p.name_ar || "")}" /></div>
+      <div class="field"><label for="promoLogoStyle">${t("promo_logo_style_label")}</label>${logoStyleOptionsHTML(p.logo_style)}<small class="muted">${t("promo_logo_style_note")}</small></div>
       <div class="field"><label for="pLogo">${t("promo_logo")}</label>
         <div class="logo-editor">
           <div class="logo-canvas-shell"><canvas class="logo-editor-canvas" id="logoCanvas" width="512" height="512" role="img" aria-label="${esc(t("promo_logo"))}"></canvas></div>
@@ -3783,7 +3872,8 @@ function bindPromoAdmin() {
   let logoOnlySubmit = false, presetLoaded = false;
   let dirty = false, ready = false, tool = "draw", drawing = false, history = [];
   const setStatus = text => { if (status) status.textContent = text; };
-  const defaultLogoSource = () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(defaultPromoLogo(Math.max(1, Number(f.n.value) || state.promo.number), promoInstitutionShort()).replace("<svg ", '<svg width="512" height="512" '));
+  const styleSelect = $("#promoLogoStyle");
+  const defaultLogoSource = () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(defaultPromoLogo(Math.max(1, Number(f.n.value) || state.promo.number), promoInstitutionShort(), styleSelect?.value || state.promo.logo_style).replace("<svg ", '<svg width="512" height="512" '));
   const commitEdit = () => { dirty = true; setStatus(t("promo_logo_editor_hint")); syncDevicePreview(); };
   const takeSnapshot = () => { try { history.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (history.length > 8) history.shift(); } catch (e) {} };
   const drawSource = async source => {
@@ -3839,6 +3929,15 @@ function bindPromoAdmin() {
   const confirmDraftReplacement = async () => {
     if (!dirty && !(pending instanceof File && !presetLoaded)) return true;
     return await confirmDialog(t("promo_logo_reference"), t("promo_logo_reference_replace_draft"));
+  };
+  if (styleSelect) styleSelect.onchange = async () => {
+    const nextStyle = styleSelect.value;
+    if (state.promo.logo_source && !(await confirmDialog(t("promo_logo_style_label"), t("promo_logo_style_replace")))) {
+      styleSelect.value = state.promo.logo_style || "academic"; return;
+    }
+    if (!(await confirmDraftReplacement())) { styleSelect.value = state.promo.logo_style || "academic"; return; }
+    pending = null; presetLoaded = false; dirty = false; history = [];
+    await loadCurrent();
   };
   const presetPreview = $("#logoPresetPreview"), presetApply = $("#logoPresetApply");
   if (presetPreview) presetPreview.onclick = async () => {
@@ -3931,7 +4030,8 @@ function bindPromoAdmin() {
     controls.forEach(control => { control.disabled = true; });
     canvas.style.pointerEvents = "none";
     btn.innerHTML = `<span class="spinner"></span> ${t("btn_saving")}`;
-    const payload = logoOnly ? {} : { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null };
+    const payload = logoOnly ? {} : { promotion_number: n, promotion_name_fr: f.fr.value.trim() || null, promotion_name_ar: f.ar.value.trim() || null,
+      ...(tenantOn() && styleSelect ? { logo_style: styleSelect.value } : {}) };
     if (tenantOn()) delete payload.promotion_number;
     const oldLogo = state.promo.logo_source || state.promo.logo || null;
     let newLogo = null, uploadStage = false;
@@ -3945,6 +4045,7 @@ function bindPromoAdmin() {
         if (payload.promotion_name_fr !== undefined) mp.name_fr = payload.promotion_name_fr;
         if (payload.promotion_name_ar !== undefined) mp.name_ar = payload.promotion_name_ar;
         if (payload.promotion_logo_url !== undefined) mp.logo_url = payload.promotion_logo_url;
+        if (payload.logo_style !== undefined) mp.logo_style = payload.logo_style;
         ({ data, error } = await rawFrom("promotions").update(mp).eq("id", TENANT.id).select());
       } else ({ data, error } = await rawFrom("promotion_settings").update(payload).eq("id", 1).select());
       if (error) throw error;
@@ -4167,17 +4268,17 @@ function renderStatsTab(panel) {
   if (!isSuper()) return renderOverview(panel);
   const s = state.stats, seq = ++s.seq, r = statsRange(), today = dayKey(new Date());
   if (s.ro) { s.ro.disconnect(); s.ro = null; }
-  panel.innerHTML = `<div class="panel-head"><h2>${t("stats_title")}</h2></div>
+  panel.innerHTML = `<div class="panel-head"><h2>${t(singleSpecialtyOn() ? "stats_visits_only" : "stats_title")}</h2></div>
     <div class="st-filters no-print">
       <div class="st-chips">${[7, 30, 90, 365].map(n => `<button class="btn btn-sm ${!s.from && !s.to && s.days === n ? "btn-primary" : "btn-ghost"}" data-days="${n}">${t("st_last_n", { n })}</button>`).join("")}</div>
       <div class="field"><label>${t("st_from")}</label><input type="date" id="stFrom" max="${today}" value="${dayKey(r.from)}" dir="ltr" /></div>
       <div class="field"><label>${t("st_to")}</label><input type="date" id="stTo" max="${today}" value="${dayKey(new Date(r.end.getTime() - 86400000))}" dir="ltr" /></div>
-      <div class="field"><label>${t("th_specialty")}</label><select id="stSpec"><option value="all">${t("all_specialties_option")}</option>${state.specialties.map(x => `<option value="${x.id}" ${s.spec === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
-      <div class="field"><label>${t("st_registered_by")}</label><select id="stAdm"><option value="all">${t("st_admin_all")}</option>${state.admins.filter(a => a.user_id).map(a => `<option value="${a.user_id}" ${s.admin === a.user_id ? "selected" : ""}>${esc(adminName(a))}</option>`).join("")}</select></div>
+      ${singleSpecialtyOn() ? "" : `<div class="field"><label>${t("th_specialty")}</label><select id="stSpec"><option value="all">${t("all_specialties_option")}</option>${state.specialties.map(x => `<option value="${x.id}" ${s.spec === x.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
+      <div class="field"><label>${t("st_registered_by")}</label><select id="stAdm"><option value="all">${t("st_admin_all")}</option>${state.admins.filter(a => a.user_id).map(a => `<option value="${a.user_id}" ${s.admin === a.user_id ? "selected" : ""}>${esc(adminName(a))}</option>`).join("")}</select></div>`}
     </div><div id="stBody"><div class="empty">…</div></div>`;
   $$("[data-days]", panel).forEach(b => b.onclick = () => { s.days = +b.dataset.days; s.from = s.to = ""; s.logLimit = 50; renderStatsTab(panel); });
-  const chg = () => { s.from = $("#stFrom").value; s.to = $("#stTo").value; s.spec = $("#stSpec").value; s.admin = $("#stAdm").value; s.logLimit = 50; renderStatsTab(panel); };
-  ["#stFrom", "#stTo", "#stSpec", "#stAdm"].forEach(id => $(id).onchange = chg);
+  const chg = () => { s.from = $("#stFrom").value; s.to = $("#stTo").value; if (!singleSpecialtyOn()) { s.spec = $("#stSpec")?.value || "all"; s.admin = $("#stAdm")?.value || "all"; } s.logLimit = 50; renderStatsTab(panel); };
+  ["#stFrom", "#stTo", ...(singleSpecialtyOn() ? [] : ["#stSpec", "#stAdm"])].forEach(id => $(id).onchange = chg);
   panel.onmousemove = panel.onmouseover = showChartTip; panel.onmouseleave = () => { const tp = $("#chTip"); if (tp) tp.style.display = "none"; }; panel.ontouchstart = showChartTip;
   const mode = bucketMode(r.days.length);
   (async () => {
@@ -4191,9 +4292,18 @@ function renderStatsTab(panel) {
 }
 function drawStatsBody(r, daily, totals, err) {
   const s = state.stats, body = $("#stBody"); if (!body) return;
-  const mode = bucketMode(r.days.length), B = buildBuckets(r.days, mode), sts = statsStudents(r);
+  const mode = bucketMode(r.days.length), B = buildBuckets(r.days, mode);
   const vMap = {}; daily.forEach(x => { vMap[String(x.day).slice(0, 10)] = x; });
   const vis = B.list.map(b => +(vMap[b.key] ? vMap[b.key].visits : 0)), uni = B.list.map(b => +(vMap[b.key] ? vMap[b.key].unique_visitors : 0));
+  if (singleSpecialtyOn()) {
+    const tipV = B.list.map((b, i) => `${b.tip}\n${t("st_series_visits")}: ${vis[i]}\n${t("st_series_unique")}: ${uni[i]}`);
+    s.jobs = { visits: w => chartSVG({ labels: B.list.map(b => b.label), tips: tipV, type: "line", series: [{ color: "#7C3AED", values: vis }, { color: "#10B981", values: uni }] }, w) };
+    body.innerHTML = `<p class="muted st-note">${t("st_group")}: <b>${t("st_g_" + mode)}</b> · ${dayKey(r.from)} → ${dayKey(new Date(r.end.getTime() - 86400000))}</p>
+      <div class="mini-grid"><div class="mini"><b>${totals ? totals.unique_visitors : "—"}</b><small>${t("st_visitors")}</small></div><div class="mini"><b>${totals ? totals.visits : "—"}</b><small>${t("st_visits")}</small></div></div>
+      <div class="st-card"><h3>${t("st_chart_visits")}</h3>${err ? `<p class="muted">${err}</p>` : `<div class="ch-slot" data-chart="visits"></div>` + legendHTML([{ name: t("st_series_visits"), color: "#7C3AED" }, { name: t("st_series_unique"), color: "#10B981" }])}</div>`;
+    mountCharts(); watchStatsResize(); return;
+  }
+  const sts = statsStudents(r);
   const specs = state.specialties.filter(x => s.spec === "all" || x.id === s.spec).map(x => ({ id: x.id, name: x.name, color: x.color || "#7C3AED" }));
   const perBucket = {}, perDay = {}, hours = Array.from({ length: 24 }, () => 0), byAdm = {};
   sts.forEach(x => { const d = new Date(x.created_at); inc(perDay, dayKey(d), x.specialty_id); inc(perBucket, B.idx[bucketKeyOfDate(d, mode)], x.specialty_id); hours[d.getHours()]++; const k = x.created_by || "—"; byAdm[k] = (byAdm[k] || 0) + 1; });
@@ -4517,7 +4627,7 @@ function renderCardsTab(panel) {
   }
 
   const N = state.students.length;
-  const cers = state.ceremonies.slice().sort((a, b) => (a.type === "night") - (b.type === "night"));
+  const cers = state.ceremonies.filter(c => nightEventEnabled() || c.type !== "night").slice().sort((a, b) => (a.type === "night") - (b.type === "night"));
 
   panel.innerHTML = `
     <div class="panel-head">
@@ -4525,7 +4635,6 @@ function renderCardsTab(panel) {
       <button class="btn btn-primary btn-sm" id="addCer">${t("btn_add_ceremony")}</button>
     </div>
     <p class="muted" style="font-size:13px;margin-bottom:16px">${t("cards_intro")}</p>
-    ${nightEventEnabled() ? "" : `<div class="empty" role="status" style="margin-bottom:14px">${t("night_event_disabled_admin_note")}</div>`}
     ${cers.map(cer => cerAdminCard(cer, N)).join("") || `<div class="empty">${t("no_data")}</div>`}
   `;
 
@@ -5394,7 +5503,7 @@ async function renderNotifsTab(panel) {
 /* ------------------------- 18b. APP ICON = PROMO LOGO -------------------------
    أيقونة التثبيت (PWA) وأيقونة التبويب (favicon) وأيقونة iOS تُولَّد من شعار الدفعة نفسه،
    فإذا غيّر المشرف الرئيسي الشعار تتغير الأيقونة تلقائياً (manifest ديناميكي). */
-const PWA_ICON_CACHE = "promo-pwa-icons-v5-multi-university";
+const PWA_ICON_CACHE = "promo-pwa-icons-v6-field-templates";
 const pwaIconCacheKey = () => `${PWA_ICON_CACHE}:${tenantSelector() || "host"}`;
 let pwaIconKey = "", pwaIconToken = 0, pwaManifestUrl = "";
 function pwaLoadImg(src, cors) {
@@ -5406,7 +5515,7 @@ function pwaLoadImg(src, cors) {
 async function pwaLogoImage() {
   const url = state.promo.logo;
   if (!url) {
-    const svg = defaultPromoLogo(state.promo.number, promoInstitutionShort()).replace("<svg ", '<svg width="512" height="512" ');
+    const svg = defaultPromoLogo(state.promo.number, promoInstitutionShort(), state.promo.logo_style).replace("<svg ", '<svg width="512" height="512" ');
     return pwaLoadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
   }
   try { return await pwaLoadImg(url, true); } catch (e) { /* احتياط: جلب الملف كـ blob */ }
@@ -5460,7 +5569,7 @@ async function pwaApplyIcons(ic) {
 /** يُستدعى من applyBranding: يعيد توليد الأيقونات فقط عند تغيّر الشعار/رقم الدفعة. */
 async function syncPwaIcons() {
   if (!state.promoReady) return;
-  const key = [tenantSelector(), state.promo.logo_source || state.promo.logo || "default", state.promo.institution_logo_source || "", state.promo.number, promoLabel(), promoInstitutionShort()].join("|");
+  const key = [tenantSelector(), state.promo.logo_source || state.promo.logo || "default", state.promo.logo_style, state.promo.institution_logo_source || "", state.promo.number, promoLabel(), promoInstitutionShort()].join("|");
   if (key === pwaIconKey) { pwaIconsReady = true; refreshInstallButton(); return; }
   pwaIconsReady = false; refreshInstallButton();
   pwaIconKey = key; const token = ++pwaIconToken;
@@ -5648,7 +5757,7 @@ function promoDomBadge(p) {
 function promoRowLogoHTML(p) {
   const lang = state.lang, instName = promoInstitutionName(lang, p);
   if (p.logo_url && /^https?:\/\//i.test(p.logo_url)) return `<img src="${esc(p.logo_url)}" alt="${esc(instName)}" decoding="async" />`;
-  return defaultPromoLogo(p.number, promoInstitutionShort(p));
+  return defaultPromoLogo(p.number, promoInstitutionShort(p), p.logo_style);
 }
 async function renderPromosTab(panel) {
   if (!isPlatform()) { panel.innerHTML = `<div class="empty">${t("err_forbidden_platform")}</div>`; return; }
@@ -5775,6 +5884,7 @@ function promoCreateModal(data) {
       <div class="grid-2"><div class="field"><label>${t("promos_field_number")}</label><input name="n" id="pcNumber" type="number" min="1" max="999" required dir="ltr" value="${institutionReady ? 1 : fallbackNext}" /></div>
         <div class="field"><label>${t("promo_name_fr")}</label><input name="fr" dir="ltr" maxlength="80" /></div></div>
       <div class="field"><label>${t("promo_name_ar")}</label><input name="ar" dir="rtl" maxlength="80" /></div>
+      <div class="field"><label>${t("promo_logo_style_label")}</label>${logoStyleOptionsHTML("general", "pcLogoStyle")}<small class="muted">${t("promo_logo_style_note")}</small></div>
       ${institutionReady ? `<div class="field"><label>${t("promos_reg_mask")}</label><input name="registration_mask" id="pcRegMask" dir="ltr" maxlength="32" autocomplete="off" required /><small class="muted">${t("promos_reg_mask_hint")} ${t("promos_reg_mask_example")} <bdi id="pcRegExample" dir="ltr"></bdi></small></div>
         <label class="row" style="gap:10px;align-items:center;cursor:pointer;font-weight:700"><input name="night_event_enabled" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--violet-600)" /><span>${t("promos_night_enabled")}</span></label><small class="muted">${t("promos_night_note")}</small>` : ""}
       <div class="row" style="gap:14px;align-items:center"><div class="logo-prev" id="pcLogo" style="width:84px;height:84px"></div><small class="muted">${t("promos_logo_auto")}<br><b dir="ltr" id="pcUrl"></b></small></div>
@@ -5794,7 +5904,8 @@ function promoCreateModal(data) {
     </form><div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div></div>`);
   m.querySelector("[data-close]").onclick = closeModals;
   const f = m.querySelector("#pcForm"), number = m.querySelector("#pcNumber"), institutionSelect = m.querySelector("#pcInstitution");
-  let slugTouched = false, shortTouched = false, registrationMaskTouched = false, logoObjectUrl = "";
+  let slugTouched = false, shortTouched = false, registrationMaskTouched = false, logoStyleTouched = false, logoObjectUrl = "";
+  const logoStyleSelect = m.querySelector("#pcLogoStyle");
   const selectedInstitution = () => institutionReady && institutionSelect.value !== "__new__" ? institutions.find(x => x.id === institutionSelect.value) : null;
   const getInstitutionSlug = () => selectedInstitution()?.slug || String(m.querySelector("#pcSlug")?.value || "").trim().toLowerCase() || "iscae";
   const setNextNumber = () => {
@@ -5805,6 +5916,9 @@ function promoCreateModal(data) {
   const prev = () => {
     const n = Number(number.value) || 0, short = selectedInstitution()?.short_name || m.querySelector("#pcShort")?.value || suggestedInstitutionShort(m.querySelector("#pcNameFr")?.value || m.querySelector("#pcNameAr")?.value || "UNIV");
     const slug = getInstitutionSlug(), inst = selectedInstitution();
+    const styleSource = [slug, inst?.name_fr, inst?.name_ar, m.querySelector("#pcNameFr")?.value, m.querySelector("#pcNameAr")?.value].filter(Boolean).join(" ");
+    if (logoStyleSelect && !logoStyleTouched) logoStyleSelect.value = suggestedPromoLogoStyle(styleSource);
+    const logoStyle = logoStyleSelect?.value || suggestedPromoLogoStyle(styleSource);
     const regMaskInput = m.querySelector("#pcRegMask");
     if (regMaskInput && !registrationMaskTouched) regMaskInput.value = suggestedRegistrationMask(slug);
     const regMask = normalizeRegistrationMask(regMaskInput?.value || suggestedRegistrationMask(slug));
@@ -5812,10 +5926,10 @@ function promoCreateModal(data) {
     const typedInstitution = state.lang === "fr" ? (m.querySelector("#pcNameFr")?.value || m.querySelector("#pcNameAr")?.value) : (m.querySelector("#pcNameAr")?.value || m.querySelector("#pcNameFr")?.value);
     const institutionName = inst ? (state.lang === "fr" ? (inst.name_fr || inst.name_ar || inst.short_name) : (inst.name_ar || inst.name_fr || inst.short_name)) : (typedInstitution || short);
     const batchName = state.lang === "fr" ? (f.querySelector('[name="fr"]')?.value || "") : (f.querySelector('[name="ar"]')?.value || "");
-    m.querySelector("#pcLogo").innerHTML = logoObjectUrl ? `<img src="${esc(logoObjectUrl)}" alt="${esc(short)}" style="width:100%;height:100%;object-fit:contain" />` : n > 0 ? defaultPromoLogo(n, short) : "";
+    m.querySelector("#pcLogo").innerHTML = logoObjectUrl ? `<img src="${esc(logoObjectUrl)}" alt="${esc(short)}" style="width:100%;height:100%;object-fit:contain" />` : n > 0 ? defaultPromoLogo(n, short, logoStyle) : "";
     const previewPromoSlug = `${slug}-promo-${n}`;
     m.querySelector("#pcUrl").textContent = n > 0 ? `${promotionPlatformOrigin()}/site/index.html?promo=${previewPromoSlug}` : "";
-    const deviceLogo = m.querySelector("#pcDeviceLogo"); if (deviceLogo) deviceLogo.src = logoObjectUrl || (n > 0 ? defaultPromoLogoDataUrl(n, short) : "");
+    const deviceLogo = m.querySelector("#pcDeviceLogo"); if (deviceLogo) deviceLogo.src = logoObjectUrl || (n > 0 ? defaultPromoLogoDataUrl(n, short, logoStyle) : "");
     const deviceShort = m.querySelector("#pcDeviceShort"); if (deviceShort) deviceShort.textContent = short;
     const deviceNumber = m.querySelector("#pcDeviceNumber"); if (deviceNumber) deviceNumber.textContent = n > 0 ? promoNumberLabel(state.lang, n) : "";
     const deviceName = m.querySelector("#pcDeviceName"); if (deviceName) deviceName.textContent = batchName;
@@ -5826,6 +5940,7 @@ function promoCreateModal(data) {
     box.style.display = fresh ? "" : "none";
     setNextNumber(); prev();
   };
+  if (logoStyleSelect) logoStyleSelect.onchange = () => { logoStyleTouched = true; prev(); };
   const nameInput = m.querySelector("#pcNameFr") || m.querySelector("#pcNameAr");
   [m.querySelector("#pcNameFr"),m.querySelector("#pcNameAr")].filter(Boolean).forEach(input => input.addEventListener("input", () => {
     const source = m.querySelector("#pcNameFr").value || m.querySelector("#pcNameAr").value;
@@ -5891,6 +6006,12 @@ function promoCreateModal(data) {
       }
       const promo = Array.isArray(data) ? data[0] : data;
       const newPromoSlug = promo?.slug || `${instSlug}-promo-${n}`;
+      const selectedLogoStyle = Object.prototype.hasOwnProperty.call(PROMO_LOGO_STYLES, v.logo_style) ? v.logo_style : suggestedPromoLogoStyle(instSlug);
+      let logoTemplateError = "";
+      if (institutionReady && promo?.id) {
+        const styleResult = await rawFrom("promotions").update({ logo_style: selectedLogoStyle }).eq("id", promo.id);
+        if (styleResult.error) logoTemplateError = styleResult.error.message || String(styleResult.error);
+      }
       let logoUploadError = "";
       const logoFile = fileInput?.files?.[0];
       const targetInstitutionId = promo?.institution_id || chosen?.id;
@@ -5909,10 +6030,11 @@ function promoCreateModal(data) {
       const instForTitle = chosen || { slug: instSlug, short_name: instShort, name_ar: nameAr, name_fr: nameFr };
       closeModals(); toast(t("promos_created", { n }));
       openModal(`<div class="modal"><div class="modal-head"><h3>${t("promos_result_title")} — ${esc(promoInstitutionShort(instForTitle))} · ${esc(promoNumberLabel(state.lang, n))}</h3></div>
-        <div class="modal-body"><div class="row" style="gap:14px;align-items:center"><div class="logo-prev" style="width:84px;height:84px">${defaultPromoLogo(n, promoInstitutionShort(instForTitle))}</div>
+        <div class="modal-body"><div class="row" style="gap:14px;align-items:center"><div class="logo-prev" style="width:84px;height:84px">${defaultPromoLogo(n, promoInstitutionShort(instForTitle), fresh.logo_style || selectedLogoStyle)}</div>
         <div class="stack" style="gap:6px"><b>${t("promos_result_link")}</b><a dir="ltr" href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:800">${esc(link)}</a>
         <small class="muted">${fresh.domain && (fresh.is_default || fresh.domain_status === "active") ? t("promos_link_ok") : t("promos_temp_link")} · ${esc(newPromoSlug)}</small></div></div>
         ${logoUploadError ? `<p class="error-text">${esc(logoUploadError)}</p>` : ""}
+        ${logoTemplateError ? `<p class="error-text">${esc(t("promo_logo_fail", { msg: logoTemplateError }))}</p>` : ""}
         <p><b>${t("promos_result_head")}:</b> ${esc(headMsg)}</p></div>
         <div class="modal-foot"><button class="btn btn-primary" data-close>${t("promos_close")}</button></div></div>`).querySelector("[data-close]").onclick = closeModals;
       if (state.tab === "promos") renderPromosTab($("#panel"));
@@ -5991,7 +6113,7 @@ function promoBrandTopic() {
 }
 function promoBrandSignature() {
   const p = state.promo || {};
-  return JSON.stringify([p.id || null, p.slug || null, p.number, p.registration_mask || DEFAULT_REGISTRATION_MASK, p.night_event_enabled !== false, p.public_listing === true, p.single_specialty_enabled === true, p.name_fr || null, p.name_ar || null, p.logo_source || null,
+  return JSON.stringify([p.id || null, p.slug || null, p.number, p.registration_mask || DEFAULT_REGISTRATION_MASK, p.night_event_enabled !== false, p.public_listing === true, p.single_specialty_enabled === true, p.logo_style || "academic", p.name_fr || null, p.name_ar || null, p.logo_source || null,
     p.institution_id || null, p.institution?.name_ar || p.institution_name_ar || null, p.institution?.name_fr || p.institution_name_fr || null,
     p.institution?.short_name || p.institution_short || null, p.institution?.logo_url || p.institution_logo_source || null]);
 }
@@ -6050,6 +6172,13 @@ function showPromoNotFound() {
   ["btnLogin", "btnLoginText", "btnFooterLogin", "btnInstall", "btnNotif"].forEach(id => { const el = $("#" + id); if (el) el.classList.add("hidden"); });
 }
 async function init() {
+  const pageParams = new URLSearchParams(location.search);
+  const platformLoginRequested = pageParams.get("platform-login") === "1";
+  if (platformLoginRequested) {
+    pageParams.delete("platform-login");
+    const cleanSearch = pageParams.toString();
+    history.replaceState(null, "", location.pathname + (cleanSearch ? `?${cleanSearch}` : "") + location.hash);
+  }
   restorePwaIcons();
   initTheme();
   applyLangAttrs();
@@ -6076,6 +6205,13 @@ async function init() {
   }
   syncHeader();
   initNotifications();
+  if (platformLoginRequested) {
+    if (state.me && isPlatform()) showDash();
+    else {
+      if (state.session) { await db.auth.signOut(); state.session = null; state.me = null; syncHeader(); }
+      loginModal({ platformOnly: true });
+    }
+  }
 }
 init().catch(err => { console.error(err); toast(t("toast_db_error"), "err"); });
 
