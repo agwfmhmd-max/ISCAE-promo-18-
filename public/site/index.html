@@ -1485,6 +1485,9 @@ const I18N = {
   no_specialties_yet:{ar:"لا توجد تخصصات بعد.",fr:"Aucune spécialité pour le moment."},
   footer_login:{ar:"دخول المشرفين ←",fr:"Connexion administrateurs →"},
   login_modal_title:{ar:"دخول المشرفين",fr:"Connexion administrateurs"},
+  platform_login_title:{ar:"دخول مشرف منصة PROMO MR",fr:"Connexion — administration PROMO MR"},
+  platform_login_loading:{ar:"تهيئة مساحة المشرف العام…",fr:"Préparation de l’espace administrateur…"},
+  platform_dashboard_label:{ar:"إدارة منصة PROMO MR",fr:"Administration PROMO MR"},
   field_email:{ar:"البريد الإلكتروني",fr:"Adresse e-mail"},
   field_password:{ar:"كلمة المرور",fr:"Mot de passe"},
   btn_login_submit:{ar:"تسجيل الدخول",fr:"Se connecter"},
@@ -2921,12 +2924,32 @@ window.addEventListener("hashchange", routeFromHash);
 window.addEventListener("scroll", () => { const h = $(".topbar"); if (h) h.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
 
 /* ------------------------- 9. AUTH ------------------------- */
+let platformEntryMode = false;
+let platformAdminGate = null;
+function showPlatformAdminGate() {
+  if (platformAdminGate) return;
+  platformAdminGate = document.createElement("div");
+  platformAdminGate.id = "platformAdminGate";
+  platformAdminGate.setAttribute("role", "status");
+  platformAdminGate.style.cssText = "position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:#101c36;color:#f8f6ef;text-align:center;padding:24px";
+  platformAdminGate.innerHTML = `<div style="display:grid;justify-items:center;gap:14px"><img src="https://promo-mr.vercel.app/promo-mr-logo.webp" width="82" height="82" alt="PROMO MR" style="border-radius:16px;object-fit:cover"><strong style="font-size:23px;letter-spacing:.04em">PROMO MR</strong><span>${esc(t("platform_login_loading"))}</span></div>`;
+  document.body.appendChild(platformAdminGate);
+}
+function hidePlatformAdminGate() {
+  if (platformAdminGate) platformAdminGate.remove();
+  platformAdminGate = null;
+}
+function clearPlatformEntryMode() {
+  platformEntryMode = false;
+  try { sessionStorage.removeItem("promoMrPlatformAdminEntry"); } catch (_) {}
+}
 function loginModal({ platformOnly = false } = {}) {
+  const requirePlatformAdmin = platformOnly || platformEntryMode;
   const m = openModal(`
     <div class="modal" style="max-width:440px">
       <div class="modal-head">
-        <div class="brand-logo" style="width:38px;height:38px;font-size:10px">${esc(promoInstitutionShort())}</div>
-        <h3>${t("login_modal_title")}</h3>
+        ${requirePlatformAdmin ? `<img src="https://promo-mr.vercel.app/promo-mr-logo.webp" alt="PROMO MR" width="38" height="38" style="border-radius:9px;object-fit:cover;flex:0 0 auto">` : `<div class="brand-logo" style="width:38px;height:38px;font-size:10px">${esc(promoInstitutionShort())}</div>`}
+        <h3>${t(requirePlatformAdmin ? "platform_login_title" : "login_modal_title")}</h3>
       </div>
       <form class="modal-body" id="loginForm">
         <div class="field"><label>${t("field_email")}</label><input type="email" name="email" required dir="ltr" /></div>
@@ -2959,7 +2982,7 @@ function loginModal({ platformOnly = false } = {}) {
       state.meError = "";
       toast(message, "err"); return;
     }
-    if (platformOnly && !isPlatform()) {
+    if (requirePlatformAdmin && !isPlatform()) {
       await db.auth.signOut(); state.session = null; state.me = null; syncHeader();
       toast(t("err_platform_admin_only"), "err");
       return;
@@ -2996,12 +3019,18 @@ async function afterAuthChange(goDash) {
     // A public warm launch may hold only aggregate counts; load full rows before entering admin tools.
     if (goDash) await loadPublicData();
     if (isSuper()) await loadAdmins();
+    if (goDash && platformEntryMode && isPlatform()) state.tab = "promos";
     if (goDash) showDash();
   }
 }
 
 /* ------------------------- 10. PAGE SWITCH ------------------------- */
 function showPublic() {
+  if (platformEntryMode) {
+    clearPlatformEntryMode();
+    location.assign("/");
+    return;
+  }
   $("#pagePublic").classList.remove("hidden");
   $("#pageDash").classList.add("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3064,7 +3093,7 @@ function renderDash() {
     <div class="side-user">
       <b>${esc(adminName(state.me))}</b>
       <small>${isPlatform() ? t("role_platform") : isSuper() ? t("role_super_admin") : t("role_dept_admin_prefix") + esc(mySpec ? mySpec.name : "—")}</small>
-      <small style="display:block">${esc(promoLabel())}</small>
+      <small style="display:block">${platformEntryMode && isPlatform() ? t("platform_dashboard_label") : esc(promoLabel())}</small>
     </div>
     ${tabs.map(tb => `<button class="nav-item ${state.tab === tb.k ? "active" : ""}" data-tab="${tb.k}">${tb.n}</button>`).join("")}
     <button class="nav-item" data-home>${t("nav_back_home")}</button>
@@ -6174,6 +6203,13 @@ function showPromoNotFound() {
 async function init() {
   const pageParams = new URLSearchParams(location.search);
   const platformLoginRequested = pageParams.get("platform-login") === "1";
+  const loginSelector = String(pageParams.get("promo") || "").trim().toLowerCase();
+  const platformTenantSelector = loginSelector === "18" || loginSelector === "iscae-promo-18";
+  try {
+    if (platformLoginRequested && platformTenantSelector) sessionStorage.setItem("promoMrPlatformAdminEntry", "1");
+    else if (!platformTenantSelector) sessionStorage.removeItem("promoMrPlatformAdminEntry");
+    platformEntryMode = platformTenantSelector && sessionStorage.getItem("promoMrPlatformAdminEntry") === "1";
+  } catch (_) { platformEntryMode = platformLoginRequested && platformTenantSelector; }
   if (platformLoginRequested) {
     pageParams.delete("platform-login");
     const cleanSearch = pageParams.toString();
@@ -6183,12 +6219,13 @@ async function init() {
   initTheme();
   applyLangAttrs();
   applyStaticI18n();
+  if (platformEntryMode) showPlatformAdminGate();
   applyBranding();                 // رقم الدفعة من الرابط فوراً (قبل وصول البيانات) لتفادي ظهور «18» مؤقتاً
   refreshInstallButton();
   const { data: { session } } = await db.auth.getSession();
   state.session = session || null;
   await loadPublicData();
-  if (TENANT.notFound) { showPromoNotFound(); return; }
+  if (TENANT.notFound) { hidePlatformAdminGate(); showPromoNotFound(); return; }
   try { await db.realtime.setAuth(await getTenantAccessToken()); } catch (err) { console.warn("tenant realtime auth", err); }
   subscribePromoBrandRealtime();
   trackVisit();
@@ -6205,15 +6242,16 @@ async function init() {
   }
   syncHeader();
   initNotifications();
-  if (platformLoginRequested) {
-    if (state.me && isPlatform()) showDash();
+  if (platformLoginRequested || platformEntryMode) {
+    hidePlatformAdminGate();
+    if (state.me && isPlatform()) { state.tab = "promos"; showDash(); }
     else {
       if (state.session) { await db.auth.signOut(); state.session = null; state.me = null; syncHeader(); }
       loginModal({ platformOnly: true });
     }
   }
 }
-init().catch(err => { console.error(err); toast(t("toast_db_error"), "err"); });
+init().catch(err => { hidePlatformAdminGate(); console.error(err); toast(t("toast_db_error"), "err"); });
 
 db.auth.onAuthStateChange((event, session) => {
   tenantTokenCache = { key: "", token: "", until: 0 };
