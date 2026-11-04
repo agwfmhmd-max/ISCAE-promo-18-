@@ -2046,6 +2046,7 @@ function toast(msg, type = "ok") {
 function openModal(html) {
   const wrap = document.createElement("div");
   wrap.className = "overlay";
+  if (platformEntryMode) wrap.style.zIndex = "1101";
   wrap.innerHTML = html;
   wrap.addEventListener("mousedown", e => { if (e.target === wrap) wrap.remove(); });
   $("#modals").appendChild(wrap);
@@ -2209,6 +2210,13 @@ function applyBranding() {
   renderHeroLogo();
   set("#footerYear", new Date().getFullYear());
   syncPwaIcons();
+  if (platformEntryMode) {
+    document.title = `PROMO MR — ${t("platform_login_title")}`;
+    const platformName = $("#brandInstitutionName"); if (platformName) platformName.textContent = "PROMO MR";
+    const platformLabel = $("#brandPromoLabel"); if (platformLabel) platformLabel.textContent = t("platform_dashboard_label");
+    const platformLogo = $("#brandLogoImg");
+    if (platformLogo) { platformLogo.src = "https://promo-mr.vercel.app/promo-mr-logo.webp"; platformLogo.alt = "PROMO MR"; }
+  }
 }
 
 /** Re-render everything that depends on language/branding without losing app state. */
@@ -2959,7 +2967,22 @@ function loginModal({ platformOnly = false } = {}) {
       </form>
       <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_close")}</button></div>
     </div>`);
-  m.querySelector("[data-close]").onclick = closeModals;
+  const closePlatformLogin = () => {
+    closeModals();
+    if (requirePlatformAdmin && platformEntryMode && !state.me) {
+      hidePlatformAdminGate();
+      clearPlatformEntryMode();
+      applyBranding();
+    }
+  };
+  m.querySelector("[data-close]").onclick = closePlatformLogin;
+  m.addEventListener("mousedown", e => {
+    if (e.target === m && requirePlatformAdmin && platformEntryMode && !state.me) {
+      hidePlatformAdminGate();
+      clearPlatformEntryMode();
+      applyBranding();
+    }
+  });
   m.querySelector("#loginForm").onsubmit = async (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -2987,6 +3010,7 @@ function loginModal({ platformOnly = false } = {}) {
       toast(t("err_platform_admin_only"), "err");
       return;
     }
+    if (requirePlatformAdmin && platformEntryMode) hidePlatformAdminGate();
     closeModals();
     toast(t("welcome_msg", { name: adminName(state.me) }));
     await afterAuthChange(true);
@@ -6243,8 +6267,7 @@ async function init() {
   syncHeader();
   initNotifications();
   if (platformLoginRequested || platformEntryMode) {
-    hidePlatformAdminGate();
-    if (state.me && isPlatform()) { state.tab = "promos"; showDash(); }
+    if (state.me && isPlatform()) { hidePlatformAdminGate(); state.tab = "promos"; showDash(); }
     else {
       if (state.session) { await db.auth.signOut(); state.session = null; state.me = null; syncHeader(); }
       loginModal({ platformOnly: true });
