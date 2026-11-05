@@ -13,6 +13,17 @@
     if (pal && /^[a-z0-9-]+$/.test(pal)) document.documentElement.setAttribute("data-palette", pal);
     if (th === "dark" || (!th && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark");
     if (lg === "fr") { document.documentElement.setAttribute("lang","fr"); document.documentElement.setAttribute("dir","ltr"); }
+    var entryParams = new URLSearchParams(location.search);
+    var entryPromo = (entryParams.get("promo") || "").trim().toLowerCase();
+    var entryRequested = entryParams.get("platform-login") === "1";
+    try { entryRequested = entryRequested || sessionStorage.getItem("promoMrPlatformAdminEntry") === "1"; } catch (_) {}
+    if ((entryPromo === "18" || entryPromo === "iscae-promo-18") && entryRequested) {
+      document.documentElement.classList.add("platform-admin-entry-pending");
+      var entryStyle = document.createElement("style");
+      entryStyle.id = "platform-admin-entry-prepaint";
+      entryStyle.textContent = "html.platform-admin-entry-pending body>:not(#modals):not(#toasts):not(#platformAdminGate){display:none!important}";
+      document.head.appendChild(entryStyle);
+    }
   }catch(e){}
 })();
 </script>
@@ -2972,16 +2983,12 @@ function loginModal({ platformOnly = false } = {}) {
     if (requirePlatformAdmin && platformEntryMode && !state.me) {
       hidePlatformAdminGate();
       clearPlatformEntryMode();
-      applyBranding();
+      location.replace("https://promo-mr.vercel.app/");
     }
   };
   m.querySelector("[data-close]").onclick = closePlatformLogin;
   m.addEventListener("mousedown", e => {
-    if (e.target === m && requirePlatformAdmin && platformEntryMode && !state.me) {
-      hidePlatformAdminGate();
-      clearPlatformEntryMode();
-      applyBranding();
-    }
+    if (e.target === m && requirePlatformAdmin && platformEntryMode && !state.me) closePlatformLogin();
   });
   m.querySelector("#loginForm").onsubmit = async (e) => {
     e.preventDefault();
@@ -3061,6 +3068,7 @@ function showPublic() {
 }
 function showDash() {
   if (!state.me) { loginModal(); return; }
+  if (platformEntryMode && isPlatform()) document.documentElement.classList.remove("platform-admin-entry-pending");
   $("#pagePublic").classList.add("hidden");
   $("#pageDash").classList.remove("hidden");
   renderDash();
@@ -6243,11 +6251,42 @@ async function init() {
   initTheme();
   applyLangAttrs();
   applyStaticI18n();
-  if (platformEntryMode) showPlatformAdminGate();
-  applyBranding();                 // رقم الدفعة من الرابط فوراً (قبل وصول البيانات) لتفادي ظهور «18» مؤقتاً
+  if (platformEntryMode) {
+    document.documentElement.classList.add("platform-admin-entry-pending");
+    $("#pagePublic").classList.add("hidden");
+    $("#pageDash").classList.add("hidden");
+  }
+  applyBranding();
   refreshInstallButton();
   const { data: { session } } = await db.auth.getSession();
   state.session = session || null;
+
+  if (platformEntryMode) {
+    if (!state.session) {
+      loginModal({ platformOnly: true });
+      return;
+    }
+    showPlatformAdminGate();
+    try {
+      await resolveTenant();
+      if (!TENANT.notFound) await loadMe();
+    } catch (err) {
+      state.me = null;
+      state.meError = String(err?.message || t("toast_db_error"));
+      console.warn("[Platform admin] session validation failed", err);
+    }
+    if (!state.me || !isPlatform()) {
+      const authError = state.meError;
+      try { await db.auth.signOut(); } catch (_) {}
+      state.session = null; state.me = null; state.meError = "";
+      syncHeader();
+      hidePlatformAdminGate();
+      loginModal({ platformOnly: true });
+      if (authError) toast(authError, "err");
+      return;
+    }
+  }
+
   await loadPublicData();
   if (TENANT.notFound) { hidePlatformAdminGate(); showPromoNotFound(); return; }
   try { await db.realtime.setAuth(await getTenantAccessToken()); } catch (err) { console.warn("tenant realtime auth", err); }
@@ -6258,7 +6297,7 @@ async function init() {
   renderEvents();
   runSearch();
   routeFromHash();
-  if (state.session) {
+  if (state.session && !platformEntryMode) {
     await loadMe();
     if (state.meMismatch) { await db.auth.signOut(); state.session = null; toast(t("err_admin_other_promo"), "err"); }
     else if (state.meError) { toast(state.meError, "err"); state.meError = ""; }
@@ -6266,10 +6305,11 @@ async function init() {
   }
   syncHeader();
   initNotifications();
-  if (platformLoginRequested || platformEntryMode) {
+  if (platformEntryMode) {
     if (state.me && isPlatform()) { hidePlatformAdminGate(); state.tab = "promos"; showDash(); }
     else {
       if (state.session) { await db.auth.signOut(); state.session = null; state.me = null; syncHeader(); }
+      hidePlatformAdminGate();
       loginModal({ platformOnly: true });
     }
   }
