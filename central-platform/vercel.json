@@ -6,6 +6,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/platform-admin",
+      "destination": "https://iscae-promo-18.vercel.app/site/index.html?promo=18&platform-login=1"
+    },
+    {
       "source": "/promo/:path*",
       "destination": "https://iscae-promo-18.vercel.app/site/index.html?promo=:path*"
     },
