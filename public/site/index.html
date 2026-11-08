@@ -6314,6 +6314,16 @@ async function init() {
     }
   }
 }
+window.PromoMRFeatureBridge = {
+  get db() { return db; },
+  get state() { return state; },
+  get tenant() { return TENANT; },
+  get lang() { return state.lang; },
+  toast,
+  esc,
+  openModal,
+  refresh: () => loadPublicData().then(() => { renderStats(); renderEvents(); runSearch(); })
+};
 init().catch(err => { hidePlatformAdminGate(); console.error(err); toast(t("toast_db_error"), "err"); });
 
 db.auth.onAuthStateChange((event, session) => {
@@ -6322,5 +6332,6 @@ db.auth.onAuthStateChange((event, session) => {
   if (event === "SIGNED_OUT") { state.session = null; state.me = null; syncHeader(); }
 });
 </script>
+<script src="graduate-features.js" defer></script>
 </body>
 </html>
