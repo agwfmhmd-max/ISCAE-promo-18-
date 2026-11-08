@@ -6321,6 +6321,7 @@ window.PromoMRFeatureBridge = {
   get tenant() { return TENANT; },
   get lang() { return state.lang; },
   canManageGraduates: () => !!state.me && (isSuper() || (state.me.role === "dept_admin" && !state.me.specialty_id)),
+  canAssignGraduateStaff: () => !!state.me && (isPlatform() || (isSuper() && state.me.promotion_id === TENANT.id)),
   toast,
   esc,
   openModal,
