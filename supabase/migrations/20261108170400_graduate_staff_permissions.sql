@@ -6,7 +6,7 @@ returns boolean language sql stable security definer set search_path = public as
     select 1 from public.admins a
     where a.user_id = auth.uid() and coalesce(a.is_active,true)
       and (a.is_platform or a.promotion_id = _promotion_id)
-      and (a.role = 'super_admin' or a.role = 'dept_admin' or _roles is null or a.role = any(_roles))
+      and (a.role = 'super_admin' or (a.role = 'dept_admin' and a.specialty_id is null) or _roles is null or a.role = any(_roles))
   ) or exists (
     select 1 from public.promotion_staff s
     where s.user_id = auth.uid() and s.promotion_id = _promotion_id and s.is_active

@@ -6320,7 +6320,7 @@ window.PromoMRFeatureBridge = {
   get state() { return state; },
   get tenant() { return TENANT; },
   get lang() { return state.lang; },
-  canManageGraduates: () => !!state.me && (isSuper() || state.me.role === "dept_admin"),
+  canManageGraduates: () => !!state.me && (isSuper() || (state.me.role === "dept_admin" && !state.me.specialty_id)),
   toast,
   esc,
   openModal,
