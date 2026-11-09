@@ -1,5 +1,4 @@
 /* eslint-disable */
-// Developer: Mohamed Dah Agove (generated route index)
 
 // @ts-nocheck
 
@@ -11,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicGraduateSignupRouteImport } from './routes/api/public/graduate-signup'
 import { Route as ApiPublicTenantTokenRouteImport } from './routes/api/public/tenant-token'
 import { Route as ApiPublicAdminCreateAdminRouteImport } from './routes/api/public/admin/create-admin'
 import { Route as ApiPublicAdminCreateHeadRouteImport } from './routes/api/public/admin/create-head'
@@ -21,6 +21,11 @@ import { Route as ApiPublicPushVapidKeyRouteImport } from './routes/api/public/p
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicGraduateSignupRoute = ApiPublicGraduateSignupRouteImport.update({
+  id: '/api/public/graduate-signup',
+  path: '/api/public/graduate-signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicTenantTokenRoute = ApiPublicTenantTokenRouteImport.update({
@@ -58,6 +63,7 @@ const ApiPublicPushVapidKeyRoute = ApiPublicPushVapidKeyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/graduate-signup': typeof ApiPublicGraduateSignupRoute
   '/api/public/tenant-token': typeof ApiPublicTenantTokenRoute
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
   '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/graduate-signup': typeof ApiPublicGraduateSignupRoute
   '/api/public/tenant-token': typeof ApiPublicTenantTokenRoute
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
   '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/graduate-signup': typeof ApiPublicGraduateSignupRoute
   '/api/public/tenant-token': typeof ApiPublicTenantTokenRoute
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
   '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
@@ -88,6 +96,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/public/graduate-signup'
     | '/api/public/tenant-token'
     | '/api/public/admin/create-admin'
     | '/api/public/admin/create-head'
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/public/graduate-signup'
     | '/api/public/tenant-token'
     | '/api/public/admin/create-admin'
     | '/api/public/admin/create-head'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/api/public/graduate-signup'
     | '/api/public/tenant-token'
     | '/api/public/admin/create-admin'
     | '/api/public/admin/create-head'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicGraduateSignupRoute: typeof ApiPublicGraduateSignupRoute
   ApiPublicTenantTokenRoute: typeof ApiPublicTenantTokenRoute
   ApiPublicAdminCreateAdminRoute: typeof ApiPublicAdminCreateAdminRoute
   ApiPublicAdminCreateHeadRoute: typeof ApiPublicAdminCreateHeadRoute
@@ -131,6 +143,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/graduate-signup': {
+      id: '/api/public/graduate-signup'
+      path: '/api/public/graduate-signup'
+      fullPath: '/api/public/graduate-signup'
+      preLoaderRoute: typeof ApiPublicGraduateSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/tenant-token': {
@@ -180,6 +199,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicGraduateSignupRoute: ApiPublicGraduateSignupRoute,
   ApiPublicTenantTokenRoute: ApiPublicTenantTokenRoute,
   ApiPublicAdminCreateAdminRoute: ApiPublicAdminCreateAdminRoute,
   ApiPublicAdminCreateHeadRoute: ApiPublicAdminCreateHeadRoute,

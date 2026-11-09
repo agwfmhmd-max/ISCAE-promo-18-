@@ -493,7 +493,12 @@ html.dark .tag-D{background:#2b2f6b;color:#ccd3ff}
   .mobile-nav{display:flex}
 }
 @media (max-width:520px){
-  .topbar-inner{height:66px}
+  .topbar-inner{height:auto;min-height:66px;flex-wrap:wrap;gap:6px;padding:7px 8px;overflow:visible}
+  .topbar-inner>.spacer,.topbar-inner>.topnav{display:none}
+  .topbar-inner>.brand{margin-inline-start:auto;flex:0 0 auto}
+  #btnLoginText{display:none}
+  #btnLangToggle,#btnTheme,#btnLogin,#btnDash,#btnLogout,#btnInstall,#btnNotif{width:40px;height:40px;flex:0 0 40px}
+  .topbar-inner>.graduate-entry{margin-inline-start:0!important;padding:8px 10px!important;font-size:12px!important;flex:0 0 auto}
   .brand-text b{font-size:14px}
   .btn{padding:10px 14px;font-size:13px}
   .panel{padding:16px}
@@ -2419,6 +2424,16 @@ async function loadPublicData() {
   let cachedShown = false, launchSnapshot = null;
   try { launchSnapshot = await readPublicLaunchSnapshot(); cachedShown = applyPublicLaunchSnapshot(launchSnapshot); } catch (error) { console.warn("[Startup cache] restore failed", error); }
   if (cachedShown) await new Promise(resolve => requestAnimationFrame(() => resolve()));
+  const directGraduateEntry = new URLSearchParams(location.search).get("graduate") === "1";
+  if (directGraduateEntry && !cachedShown) {
+    const [settingsResult] = await Promise.all([
+      legacyId(db.from("settings").select("*")).maybeSingle(),
+      loadPromotion()
+    ]);
+    if (!settingsResult.error && settingsResult.data) state.settings = settingsResult.data;
+    applyStartupPalette(); applyBranding(); state.publicLoaded = true;
+    return;
+  }
   // For a recently opened public app, cached aggregate counts suffice for the home screen;
   // refresh small public metadata, but avoid downloading every student row again.
   if (cachedShown && !state.session && Date.now() - Number(launchSnapshot.savedAt || 0) < 10 * 60 * 1000) {
@@ -6252,6 +6267,8 @@ async function init() {
   initTheme();
   applyLangAttrs();
   applyStaticI18n();
+  const startupSearch = $("#searchInput");
+  if (startupSearch && pageParams.get("graduate") !== "1") { startupSearch.disabled = true; startupSearch.setAttribute("aria-busy", "true"); }
   if (platformEntryMode) {
     document.documentElement.classList.add("platform-admin-entry-pending");
     $("#pagePublic").classList.add("hidden");
@@ -6288,16 +6305,13 @@ async function init() {
     }
   }
 
-  await loadPublicData();
+  await resolveTenant();
   if (TENANT.notFound) { hidePlatformAdminGate(); showPromoNotFound(); return; }
+  const publicDataPromise = loadPublicData();
   try { await db.realtime.setAuth(await getTenantAccessToken()); } catch (err) { console.warn("tenant realtime auth", err); }
   subscribePromoBrandRealtime();
   trackVisit();
   applyBranding();
-  renderStats();
-  renderEvents();
-  runSearch();
-  routeFromHash();
   if (state.session && !platformEntryMode) {
     await loadMe();
     if (state.meMismatch) { await db.auth.signOut(); state.session = null; toast(t("err_admin_other_promo"), "err"); }
@@ -6306,6 +6320,14 @@ async function init() {
   }
   syncHeader();
   initNotifications();
+  await publicDataPromise;
+  if (TENANT.notFound) { hidePlatformAdminGate(); showPromoNotFound(); return; }
+  if (startupSearch) { startupSearch.disabled = false; startupSearch.removeAttribute("aria-busy"); }
+  applyBranding();
+  renderStats();
+  renderEvents();
+  runSearch();
+  routeFromHash();
   if (platformEntryMode) {
     if (state.me && isPlatform()) { hidePlatformAdminGate(); state.tab = "promos"; showDash(); }
     else {
@@ -6320,7 +6342,7 @@ window.PromoMRFeatureBridge = {
   get state() { return state; },
   get tenant() { return TENANT; },
   get lang() { return state.lang; },
-  canManageGraduates: () => !!state.me && (isSuper() || (state.me.role === "dept_admin" && !state.me.specialty_id)),
+  canManageGraduates: () => !!state.me && (isPlatform() || isSuper()),
   canAssignGraduateStaff: () => !!state.me && (isPlatform() || (isSuper() && state.me.promotion_id === TENANT.id)),
   toast,
   esc,
