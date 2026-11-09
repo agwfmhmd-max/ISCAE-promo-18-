@@ -8,6 +8,7 @@
   };
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  if (new URLSearchParams(location.search).get('graduate') === '1') document.documentElement.classList.add('graduate-direct-pending');
   const css = `
     .graduate-entry{margin-inline-start:8px!important;border:1px solid rgba(197,162,83,.48)!important;color:var(--ink,#102744)!important;background:var(--surface-solid,#fffdf8)!important;text-decoration:none!important;white-space:nowrap}
     .graduate-entry:hover{border-color:var(--accent,#c5a253)!important;box-shadow:0 8px 20px -12px var(--ink,#102744)!important;transform:translateY(-1px)}
@@ -34,6 +35,8 @@
     .graduate-finance-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.graduate-finance-stat{padding:14px;border-radius:15px;background:var(--bg);border:1px solid var(--stroke)}.graduate-finance-stat span{display:block;color:var(--muted);font-size:12px}.graduate-finance-stat b{display:block;margin-top:6px;color:var(--text);font-size:20px}
     .graduate-staff-note{padding:12px 14px;border-radius:13px;background:var(--violet-50);color:var(--text);font-size:13px;line-height:1.8}.graduate-bank-preview{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 14px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--accent,#c5a253) 45%,var(--stroke));border-radius:14px;background:linear-gradient(120deg,var(--surface-solid),var(--violet-50));color:var(--text);overflow-wrap:anywhere}.graduate-bank-preview bdi{font-weight:900;letter-spacing:.03em}.graduate-bank-row,.graduate-staff-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;margin-top:10px;padding:13px;border:1px solid var(--stroke);border-radius:15px;background:var(--bg)}.graduate-bank-row small,.graduate-staff-row small{display:block;color:var(--muted);font-size:12px;line-height:1.7}.graduate-request{margin-top:10px;border-color:var(--stroke)!important;background:var(--bg)!important}
     @media(max-width:560px){.graduate-modal{width:calc(100vw - 14px)!important;max-height:94dvh!important;border-radius:18px!important}.graduate-modal .modal-head{padding:16px!important}.graduate-modal .modal-body{max-height:calc(94dvh - 72px)!important;padding:14px!important}.graduate-intro{align-items:flex-start;padding:13px}.graduate-photo-list{grid-template-columns:repeat(3,minmax(0,1fr))}.graduate-actions .btn{flex:1 1 auto}.graduate-bank-row,.graduate-staff-row{grid-template-columns:1fr}.graduate-admin-hero{padding:18px}}
+    .graduate-direct-pending #pagePublic,.graduate-direct-pending #pageDash{visibility:hidden}
+    .dark .graduate-modal .modal-body{background:#101827!important;color:#e5edf7!important}.dark .graduate-card,.dark .graduate-auth-card,.dark .graduate-table td{background:#182435!important;color:#e5edf7!important;border-color:#33445c!important}.dark .graduate-card h4,.dark .graduate-card label,.dark .graduate-finance-stat b{color:#f3f7fb!important}.dark .graduate-muted,.dark .graduate-step span{color:#a9b8ca!important}.dark .graduate-admin-tabs button{background:#1b2a3e!important;color:#d8e5f2!important;border-color:#40546d!important}.dark .graduate-file,.dark .graduate-bank-row,.dark .graduate-staff-row{background:#111c2b!important;border-color:#33445c!important}
     @media(prefers-reduced-motion:reduce){.graduate-entry,.graduate-entry:hover{transition:none!important;transform:none!important}}
   `;
   const addStyle = () => { if (!document.getElementById('graduate-features-style')) { const s=document.createElement('style'); s.id='graduate-features-style'; s.textContent=css; document.head.appendChild(s); } };
@@ -48,7 +51,7 @@
   function clearGraduateRoute() { const url = new URL(window.location.href); if (url.searchParams.has('graduate')) { url.searchParams.delete('graduate'); history.replaceState(history.state, '', url); const bridge = window.PromoMRFeatureBridge; setTimeout(() => bridge?.refresh?.().catch((error) => console.warn('[PROMO MR] batch refresh after alumni entry', error)), 0); } }
   async function session(bridge) { const { data } = await bridge.db.auth.getSession(); return data?.session || null; }
   async function account(bridge, userId) {
-    const { data, error } = await bridge.db.from('graduate_accounts').select('*').eq('user_id', userId).maybeSingle();
+    const { data, error } = await bridge.db.from('graduate_accounts').select('*').eq('promotion_id', bridge.tenant.id).eq('user_id', userId).maybeSingle();
     if (error) throw error; return data;
   }
   async function signInOrUp(bridge, root) {
@@ -211,7 +214,8 @@
     const isHead = head.data === true, financePermission = finance.data === true, nightPermission = night.data === true;
     if (!isHead && !financePermission && !nightPermission) return notify(bridge, 'لا تملك صلاحية إدارة هذه الدفعة.', 'err');
     const canManageFinance = isHead || financePermission;
-    const canManageNight = isHead || nightPermission;
+    const nightEnabled = bridge.state?.promo?.night_event_enabled !== false;
+    const canManageNight = nightEnabled && (isHead || nightPermission);
     const root = modal(bridge, `<div class="modal-head"><h3>إدارة العضوية والفعاليات</h3><button class="icon-btn" aria-label="إغلاق" data-close>×</button></div><div class="modal-body graduate-content"><p class="graduate-muted">جاري التحميل...</p></div>`);
     const promotionId = bridge.tenant.id;
     const canAssignStaff = isHead;
@@ -251,7 +255,7 @@
   function addEntry(bridge) {
     if (document.getElementById('graduateEntryButton')) return;
     const header = document.querySelector('header .topbar') || document.querySelector('header'); if (!header) return;
-    const button = document.createElement('a'); button.id='graduateEntryButton'; button.className='btn btn-ghost btn-sm graduate-entry'; button.textContent='مساحة الخريج'; button.href=graduateUrl().toString(); button.setAttribute('aria-label','الانتقال مباشرة إلى مساحة الخريج');
+    const button = document.createElement('a'); button.id='graduateEntryButton'; button.className='btn btn-ghost btn-sm graduate-entry'; button.textContent='مساحة الخريج'; button.href=graduateUrl().toString(); button.setAttribute('aria-label','الانتقال مباشرة إلى مساحة الخريج'); button.addEventListener('click', (event) => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); history.pushState(history.state, '', button.href); openGraduateSpace(bridge); });
     const anchor = document.getElementById('btnLoginText'); anchor?.parentNode?.insertBefore(button, anchor); if (!anchor) header.appendChild(button);
     const adminButton = document.createElement('button'); adminButton.id='graduateAdminButton'; adminButton.type='button'; adminButton.className='btn btn-ghost btn-sm graduate-entry'; adminButton.textContent='إدارة العضويات'; adminButton.hidden = true; adminButton.addEventListener('click', () => openGraduateAdmin(bridge));
     const staffButton = document.createElement('button'); staffButton.id='graduateStaffButton'; staffButton.type='button'; staffButton.className='btn btn-ghost btn-sm graduate-entry'; staffButton.textContent='لوحة مسؤول الدفعة'; staffButton.hidden = true; staffButton.addEventListener('click', () => openGraduateAdmin(bridge));
@@ -272,7 +276,7 @@
     };
     sync();
     bridge.db.auth.onAuthStateChange(() => setTimeout(sync, 0));
-    if (new URLSearchParams(location.search).get('graduate') === '1') openGraduateSpace(bridge);
+    if (new URLSearchParams(location.search).get('graduate') === '1') { document.documentElement.classList.remove('graduate-direct-pending'); openGraduateSpace(bridge); }
   }
   addStyle(); wait((bridge) => { addEntry(bridge); });
 })();
