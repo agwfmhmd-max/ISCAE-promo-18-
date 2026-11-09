@@ -63,7 +63,6 @@ export const Route = createFileRoute("/api/public/graduate-signup")({
         const promotionId = String(body.promotion_id ?? "").trim();
         if (!EMAIL_RE.test(email)) return noStore({ error: "أدخل بريداً إلكترونياً صالحاً." }, 400);
         if (password.length < 6 || password.length > 128) return noStore({ error: "كلمة المرور يجب ألا تقل عن 6 أحرف." }, 400);
-        if (fullName.length < 2) return noStore({ error: "الاسم الكامل مطلوب." }, 400);
         if (!UUID_RE.test(promotionId)) return noStore({ error: "تعذر تحديد الدفعة الحالية." }, 400);
 
         const serviceKey = serverEnv("SUPABASE_SERVICE_ROLE_KEY") ?? serverEnv("SUPABASE_SERVICE_KEY");
@@ -80,7 +79,7 @@ export const Route = createFileRoute("/api/public/graduate-signup")({
         const created = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
           method: "POST",
           headers: adminHeaders,
-          body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { full_name: fullName } }),
+          body: JSON.stringify({ email, password, email_confirm: true, user_metadata: fullName ? { full_name: fullName } : {} }),
         });
         const user = await created.json().catch(() => ({})) as AuthUser;
         if (!created.ok || !user.id) {

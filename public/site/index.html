@@ -2801,11 +2801,13 @@ function avatarHTML(st, cls) {
 }
 function skeletons(n) { return `<div class="ggrid one" aria-hidden="true">${Array.from({ length: n }, () => `<div class="sk"></div>`).join("")}</div>`; }
 function cardHTML(st) {
+  const displayName = state.lang === "fr" ? (st.full_name_fr || st.full_name) : st.full_name;
+  const displaySpecialty = st.specialty_id ? specName(st.specialty_id) : (state.lang === "fr" ? (st.specialty_name_fr || st.specialty_name) : st.specialty_name);
   return `<article class="gcard" data-reg="${esc(st.registration_number)}">
     <div class="gcard-band"></div>${avatarHTML(st)}
-    <h3>${esc(st.full_name)}</h3>
+    <h3>${esc(displayName)}</h3>
     <span class="gcard-mat" dir="ltr" title="${esc(t("lbl_matricule"))}">${esc(st.registration_number)}</span>
-    ${st.specialty_name ? `<p class="gcard-spec">${esc(st.specialty_name)}</p>` : ""}
+    ${displaySpecialty ? `<p class="gcard-spec">${esc(displaySpecialty)}</p>` : ""}
     ${phoneVisible() && String(st.phone || "").trim() ? `<a class="gcard-phone" dir="ltr" href="tel:${esc(String(st.phone).replace(/[^\d+]/g, ""))}" title="${esc(t("label_phone"))}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>${esc(String(st.phone).trim())}</span></a>` : ""}
     <p class="gcard-promo">${esc(promoNumberLabel())}</p>
     <button type="button" class="btn gcard-btn" data-reg="${esc(st.registration_number)}">${t("view_profile")}</button>
@@ -2845,7 +2847,7 @@ async function runSearch(fromUser) {
     box.innerHTML = `<div class="gempty" role="status"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg><b>${t("empty_title")}</b><p>${t("search_no_results_text", { q: esc(q) })}</p></div>`;
     return;
   }
-  const fullName = String(st.full_name || "").trim().replace(/\s+/g, " ");   // الاسم الكامل للخريج
+  const fullName = String(state.lang === "fr" ? (st.full_name_fr || st.full_name || "") : (st.full_name || "")).trim().replace(/\s+/g, " ");   // الاسم الكامل للخريج
   box.innerHTML = `<div class="congrats" role="status"><div class="congrats-logo">${promoLogoHTML(state.promo.logo, state.promo.number, "plate")}</div>
       <div><b>${t("congrats_title", { name: esc(fullName) })}</b><p>${t("congrats_text", { promo: "<strong>" + esc(promoLabel()) + "</strong>", institution: `<strong>${esc(promoInstitutionName())}</strong>` })}</p></div></div>
     <div class="ggrid one">${cardHTML(enrichStudent(st))}</div>`;
@@ -3210,7 +3212,7 @@ function renderStudents(panel) {
   if (isSuper() && state.filterSpec !== "all") list = list.filter(s => s.specialty_id === state.filterSpec);
   if (state.query) {
     const q = state.query.toLowerCase();
-    list = list.filter(s => (s.full_name + " " + s.registration_number + " " + (s.phone || "")).toLowerCase().includes(q));
+    list = list.filter(s => (s.full_name + " " + (s.full_name_fr || "") + " " + s.registration_number + " " + (s.phone || "")).toLowerCase().includes(q));
   }
   list = list.slice().sort((a, b) =>
     a.specialty_id === b.specialty_id ? a.order_index - b.order_index
@@ -3219,7 +3221,7 @@ function renderStudents(panel) {
   panel.innerHTML = `
     <div class="panel-head">
       <h2>${t("students_title_count", { n: list.length })}</h2>
-      <button class="btn btn-primary btn-sm" id="addStudent">${t("btn_add_student")}</button>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="addStudent">${t("btn_add_student")}</button>${isPlatform() ? '<button class="btn btn-ghost btn-sm" id="importGraduateRoster">رفع قائمة الخريجين</button><input id="graduateRosterFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.pdf" hidden>' : ''}</div>
     </div>
     <div class="toolbar">
       <input id="q" placeholder="${t("search_students_placeholder")}" value="${esc(state.query)}" />
@@ -3237,7 +3239,7 @@ function renderStudents(panel) {
         <tr>
           <td><b>${s.order_index}</b></td>
           <td>${photoUrl(s) ? `<img class="student-thumb" src="${esc(photoUrl(s))}" alt="${esc(s.full_name)}" loading="lazy" />` : `<span class="muted">—</span>`}</td>
-          <td>${esc(s.full_name)}</td>
+          <td>${esc(studentDisplayName(s))}</td>
           <td>${esc(s.registration_number)}</td>
           <td dir="ltr">${esc(s.phone || "—")}</td>
           <td>${esc(sashName(s) || "—")}</td>
@@ -3259,6 +3261,23 @@ function renderStudents(panel) {
     </table></div>`;
 
   $("#addStudent").onclick = () => studentModal(null, specs);
+  if (isPlatform() && $("#importGraduateRoster")) {
+    $("#importGraduateRoster").onclick = () => $("#graduateRosterFile").click();
+    $("#graduateRosterFile").onchange = async (event) => {
+      const file = event.target.files?.[0]; if (!file) return;
+      try {
+        const rows = await parseGraduateRosterFile(file);
+        const registrations = rows.map(row=>row.registration_number.toUpperCase());
+        if (new Set(registrations).size !== registrations.length) throw new Error("يوجد رقم تسجيل مكرر في الملف. صحح التكرار ثم أعد الرفع.");
+        if (!rows.length) throw new Error("لم تُعثر على صفوف خريجين صالحة. استخدم الأعمدة: رقم التسجيل، الاسم العربي، الاسم الفرنسي، التخصص العربي، التخصص الفرنسي.");
+        if (!window.confirm(`سيتم استيراد/تحديث ${rows.length} سجلًا في الدفعة الحالية، وسيصبح رقم التسجيل وسجل الطالب أساس التحقق. متابعة؟`)) return;
+        const { data, error } = await db.rpc("platform_import_graduate_roster", { _promotion_id: state.promo.id, _rows: rows });
+        if (error) throw error;
+        toast(`تم استيراد ${data?.total ?? rows.length} خريجًا (${data?.inserted ?? 0} جديد، ${data?.updated ?? 0} تحديث).`, "success");
+        setTimeout(() => location.reload(), 700);
+      } catch (error) { toast(error.message || "تعذر قراءة الملف.", "err"); event.target.value = ""; }
+    };
+  }
   $("#q").oninput = (e) => { state.query = e.target.value; const p = e.target.selectionStart; renderStudents(panel); const f = $("#q"); f.focus(); f.setSelectionRange(p, p); };
   if ($("#fs")) $("#fs").onchange = e => { state.filterSpec = e.target.value; renderStudents(panel); };
   $$("[data-edit]").forEach(b => b.onclick = () => studentModal(state.students.find(s => s.id === b.dataset.edit), specs));
@@ -3267,6 +3286,43 @@ function renderStudents(panel) {
   $$("[data-down]").forEach(b => b.onclick = () => moveStudent(b.dataset.down, +1));
 }
 const specName = id => { const s=state.specialties.find(x=>x.id===id); return s ? (state.lang === 'fr' ? (s.name_fr || s.name) : s.name) : '—'; };
+const studentDisplayName = student => state.lang === 'fr' ? (student?.full_name_fr || student?.full_name || '') : (student?.full_name || student?.full_name_fr || '');
+function normalizeRosterHeader(value) { return String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s_./'’"-]+/g, ' ').trim(); }
+function rosterFieldIndex(headers, keys) { return headers.findIndex(header => keys.includes(normalizeRosterHeader(header))); }
+function mapGraduateRoster(matrix) {
+  if (!matrix?.length) return [];
+  const headers = matrix[0].map(normalizeRosterHeader);
+  const indexes = {
+    registration_number: rosterFieldIndex(headers, ['registration number','registration','numero inscription','numero d inscription','no inscription','n inscription','matricule','رقم التسجيل','الرقم الجامعي']),
+    full_name_ar: rosterFieldIndex(headers, ['full name ar','full name arabic','nom complet arabe','nom arabe','الاسم الكامل بالعربية','الاسم بالعربية','الاسم الكامل']),
+    full_name_fr: rosterFieldIndex(headers, ['full name fr','full name french','nom complet francais','nom complet français','nom francais','nom français','الاسم الكامل بالفرنسية','الاسم بالفرنسية']),
+    specialty_ar: rosterFieldIndex(headers, ['specialty ar','specialite arabe','spécialité arabe','التخصص بالعربية','التخصص العربي','التخصص']),
+    specialty_fr: rosterFieldIndex(headers, ['specialty fr','specialite francaise','spécialité française','specialite francais','التخصص بالفرنسية','التخصص الفرنسي'])
+  };
+  const missing = Object.entries(indexes).filter(([,i])=>i<0).map(([k])=>k);
+  if (missing.length) throw new Error('أعمدة الملف المطلوبة: رقم التسجيل، الاسم العربي، الاسم الفرنسي، التخصص العربي، التخصص الفرنسي.');
+  return matrix.slice(1).map(row=>({ registration_number:String(row[indexes.registration_number]??'').trim(), full_name_ar:String(row[indexes.full_name_ar]??'').trim(), full_name_fr:String(row[indexes.full_name_fr]??'').trim(), specialty_ar:String(row[indexes.specialty_ar]??'').trim(), specialty_fr:String(row[indexes.specialty_fr]??'').trim() })).filter(row=>Object.values(row).every(Boolean));
+}
+async function parseGraduateRosterFile(file) {
+  const name=file.name.toLowerCase();
+  if (name.endsWith('.csv') || name.endsWith('.tsv')) {
+    const text=await file.text(); const delimiter=name.endsWith('.tsv')?'\t':(text.split(/\r?\n/,1)[0].includes(';')?';':',');
+    const matrix=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean).map(line=>{const out=[];let cell='',quoted=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&line[i+1]==='"'){cell+='"';i++;}else if(c==='"')quoted=!quoted;else if(c===delimiter&&!quoted){out.push(cell);cell='';}else cell+=c;}out.push(cell);return out;});
+    return mapGraduateRoster(matrix);
+  }
+  if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+    const XLSX=await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
+    const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'}); return mapGraduateRoster(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{header:1,defval:'',raw:false}));
+  }
+  if (name.endsWith('.pdf')) {
+    const pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+    const pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise; const lines=[];
+    for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){const page=await pdf.getPage(pageNo),content=await page.getTextContent(),rows=[];for(const item of content.items){if(!item.str?.trim())continue;const y=Math.round(item.transform[5]/3)*3;let row=rows.find(x=>Math.abs(x.y-y)<=3);if(!row){row={y,cells:[]};rows.push(row);}row.cells.push({x:item.transform[4],text:item.str.trim()});}for(const row of rows.sort((a,b)=>b.y-a.y))lines.push(row.cells.sort((a,b)=>a.x-b.x).map(x=>x.text).join('\t'));}
+    return mapGraduateRoster(lines.map(line=>line.split('\t')));
+  }
+  throw new Error('الصيغ المدعومة هي Excel أو CSV أو TSV أو PDF نصي.');
+}
 
 function studentModal(student, specs) {
   if (student && !canModifyStudent(student)) { toast(t("student_locked"), "err"); return; }
