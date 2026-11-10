@@ -53,7 +53,7 @@
   const FR = new Map(Object.entries({
     'مساحة الخريج':'Espace diplômé','إدارة العضويات':'Gestion des adhésions','لوحة مسؤول الدفعة':'Administration de la promotion','إدارة العضوية والفعاليات':'Administration des adhésions et événements',
     'أنشئ حسابًا مرتبطًا بهذه الدفعة أو سجّل الدخول لمتابعة اشتراكك وذكرياتك وبطاقاتك.':'Créez un compte lié à cette promotion ou connectez-vous pour suivre votre adhésion, vos souvenirs et vos cartes.',
-    'دخول':'Connexion','إنشاء حساب':'Créer un compte','الاسم الكامل':'Nom complet','البريد الإلكتروني':'Adresse e-mail','كلمة المرور':'Mot de passe','متابعة':'Continuer','إلغاء':'Annuler',
+    'دخول':'Connexion','إنشاء حساب':'Créer un compte','الاسم الكامل':'Nom complet','البريد الإلكتروني':'Adresse e-mail','كلمة المرور':'Mot de passe','متابعة':'Continuer','إلغاء':'Annuler','تأكيد كلمة المرور الجديدة':'Confirmez le nouveau mot de passe','تسجيل الدخول':'Connexion','تحقق من رقم التسجيل قبل متابعة إنشاء الحساب.':'Vérifiez votre numéro d’inscription avant de créer le compte.','أكمل رقم الهاتف واسمي شهادة التكريم والوشاح (2–160 حرفًا) قبل المتابعة.':'Renseignez le téléphone et les noms du certificat et de l’écharpe (2 à 160 caractères).','تأكيد كلمة المرور غير مطابق.':'La confirmation du mot de passe ne correspond pas.','أكمل رقم الهاتف واسمي شهادة التكريم والوشاح قبل إنشاء الحساب.':'Renseignez le téléphone et les noms du certificat et de l’écharpe avant de créer le compte.','تم إنشاء الحساب لكن تعذر حفظ بيانات الخريج تلقائيًا؛ أكملها في نموذج ملفك قبل الدفع.':'Compte créé, mais les informations du diplômé n’ont pas pu être enregistrées automatiquement. Complétez votre profil avant le paiement.',
     'أدخل الاسم الكامل والبريد وكلمة مرور من 6 أحرف على الأقل عند إنشاء الحساب.':'Saisissez votre nom complet, votre e-mail et un mot de passe d’au moins 6 caractères pour créer un compte.','ستُستخرج بيانات الاسم والتخصص من قائمة خريجي الدفعة بعد إدخال رقم التسجيل.':'Votre nom et votre spécialité seront extraits de la liste des diplômés après la saisie du numéro d’inscription.',
     'جارٍ إنشاء الحساب…':'Création du compte…','جارٍ تسجيل الدخول…':'Connexion…','تعذّر إنشاء الحساب.':'Impossible de créer le compte.','إرسال إثبات الدفع':'Envoyer une preuve de paiement','المبلغ المطلوب:':'Montant dû :','البنك':'Banque','المبلغ المدفوع':'Montant payé','صورة إثبات الدفع':'Preuve de paiement','إرسال الطلب':'Envoyer la demande','اختر البنك والمبلغ وارفع إثبات الدفع.':'Choisissez une banque, indiquez le montant et téléversez le justificatif.','تم إرسال طلب الاشتراك إلى مسؤول المالية.':'La demande d’adhésion a été envoyée au responsable financier.',
     'إضافة ذكرى':'Ajouter un souvenir','يمكنك رفع':'Vous pouvez ajouter','صورة إضافية.':'photo(s) supplémentaire(s).','الصورة':'Photo','الوصف':'Description','الخصوصية':'Confidentialité','المشتركون':'Membres','خاصة':'Privée','العامة':'Publique','حفظ':'Enregistrer','حفظ ومتابعة إلى الدفع':'Enregistrer et passer au paiement',
@@ -105,37 +105,53 @@
     if (error) throw error; return data;
   }
   async function signInOrUp(bridge, root) {
-    const mode = root.querySelector('[name="graduateMode"]:checked')?.value || 'signin';
+    const rosterMode = bridge.state?.promo?.graduate_roster_uploaded === true;
+    const mode = rosterMode ? (root.dataset.existingLogin === 'true' ? 'signin' : 'signup') : (root.querySelector('[name="graduateMode"]:checked')?.value || 'signin');
     const email = root.querySelector('#graduateEmail').value.trim();
     const password = root.querySelector('#graduatePassword').value;
     const fullName = root.querySelector('#graduateName')?.value.trim() || '';
-    const rosterMode = bridge.state?.promo?.graduate_roster_uploaded === true;
+    const phone = root.querySelector('#graduateSignupPhone')?.value.trim() || '';
+    const certificateName = root.querySelector('#graduateSignupCertificate')?.value.trim() || '';
+    const sashName = root.querySelector('#graduateSignupSash')?.value.trim() || '';
+    let verifiedStudent = {};
+    try { verifiedStudent = JSON.parse(root.dataset.verifiedStudent || '{}'); } catch (_) {}
     const registrationNumber = mode === 'signup' ? root.querySelector('#graduateSignupRegistration').value.trim().toUpperCase() : '';
     if (mode === 'signup' && (!registrationNumber || root.dataset.verifiedRegistration !== registrationNumber)) return notify(bridge, 'تحقق من رقم التسجيل قبل متابعة إنشاء الحساب.', 'err');
     const confirmation = root.querySelector('#graduatePasswordConfirm')?.value || '';
+    if (mode === 'signup' && rosterMode && root.dataset.verifiedStudent === undefined) return notify(bridge, 'تحقق من رقم التسجيل قبل متابعة إنشاء الحساب.', 'err');
+    if (mode === 'signup' && rosterMode && (phone.length < 6 || phone.length > 30 || certificateName.length < 2 || certificateName.length > 160 || sashName.length < 2 || sashName.length > 160)) return notify(bridge, 'أكمل رقم الهاتف واسمي شهادة التكريم والوشاح (2–160 حرفًا) قبل المتابعة.', 'err');
     if (mode === 'signup' && rosterMode && password !== confirmation) return notify(bridge, 'تأكيد كلمة المرور غير مطابق.', 'err');
     if (!email || password.length < 6 || (mode === 'signup' && !rosterMode && fullName.length < 2)) return notify(bridge, 'أدخل الاسم الكامل والبريد وكلمة مرور من 6 أحرف على الأقل عند إنشاء الحساب.', 'err');
     const submit = root.querySelector('#graduateAuthSubmit');
-    submit.disabled = true; submit.textContent = mode === 'signup' ? 'جارٍ إنشاء الحساب…' : 'جارٍ تسجيل الدخول…';
+    const retryLabel = rosterMode ? (mode === 'signin' ? (isFrench(bridge) ? 'Connexion' : 'دخول') : (isFrench(bridge) ? 'Créer mon compte' : 'إنشاء الحساب')) : (isFrench(bridge) ? 'Continuer' : 'متابعة');
+    submit.disabled = true; submit.textContent = mode === 'signup' ? (isFrench(bridge) ? 'Création du compte…' : 'جارٍ إنشاء الحساب…') : (isFrench(bridge) ? 'Connexion…' : 'جارٍ تسجيل الدخول…');
     let result;
     if (mode === 'signup') {
       try {
-        const response = await fetch('/api/public/graduate-signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password, full_name: fullName, registration_number: registrationNumber, promotion_id: bridge.tenant.id, website: root.querySelector('#graduateWebsite').value }) });
+        const response = await fetch('/api/public/graduate-signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password, full_name: fullName || verifiedStudent.full_name || '', registration_number: registrationNumber, promotion_id: bridge.tenant.id, ...(rosterMode ? { phone, certificate_name: certificateName, sash_name: sashName } : {}), website: root.querySelector('#graduateWebsite').value }) });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.session) throw new Error(payload.error || 'تعذّر إنشاء الحساب.');
         result = await bridge.db.auth.setSession({ access_token: payload.session.access_token, refresh_token: payload.session.refresh_token });
-      } catch (error) { submit.disabled = false; submit.textContent = 'متابعة'; return notify(bridge, error.message || 'تعذّر إنشاء الحساب.', 'err'); }
+      } catch (error) { submit.disabled = false; submit.textContent = retryLabel; return notify(bridge, error.message || 'تعذّر إنشاء الحساب.', 'err'); }
     } else result = await bridge.db.auth.signInWithPassword({ email, password });
-    if (result.error) { submit.disabled = false; submit.textContent = 'متابعة'; return notify(bridge, result.error.message, 'err'); }
+    if (result.error) { submit.disabled = false; submit.textContent = retryLabel; return notify(bridge, result.error.message, 'err'); }
+    if (mode === 'signup' && rosterMode) {
+      const { error: profileError } = await bridge.db.rpc('register_graduate', { _promotion_id: bridge.tenant.id, _full_name: verifiedStudent.full_name || '', _registration_number: registrationNumber, _phone: phone, _specialty_id: verifiedStudent.specialty_id, _certificate_name: certificateName, _sash_name: sashName });
+      if (profileError) {
+        root.remove();
+        try { await openGraduateSpace(bridge); } catch (_) {}
+        return notify(bridge, 'تم إنشاء الحساب لكن تعذر حفظ بيانات الخريج تلقائيًا؛ أكملها في نموذج ملفك قبل الدفع.', 'err');
+      }
+    }
     root.remove(); openGraduateSpace(bridge);
   }
   function authModal(bridge) {
     const root = modal(bridge, `<div class="modal-head"><h3>مساحة الخريج</h3><button class="icon-btn" data-close>×</button></div>
-      <div class="modal-body"><p class="graduate-muted">أنشئ حسابًا مرتبطًا بهذه الدفعة أو سجّل الدخول لمتابعة اشتراكك وذكرياتك وبطاقاتك.</p>
+      <div class="modal-body"><p class="graduate-muted">${bridge.state?.promo?.graduate_roster_uploaded === true ? (isFrench(bridge) ? "Commencez par vérifier votre numéro d’inscription dans la liste officielle de la promotion." : "ابدأ بإدخال رقم التسجيل للتحقق من وجودك في القائمة الرسمية للدفعة.") : (isFrench(bridge) ? "Créez un compte lié à cette promotion ou connectez-vous pour suivre votre adhésion et vos souvenirs." : "أنشئ حسابًا مرتبطًا بهذه الدفعة أو سجّل الدخول لمتابعة اشتراكك وذكرياتك وبطاقاتك.")}</p>
       <label class="graduate-mode"><input type="radio" name="graduateMode" value="signin" checked> دخول</label>
       <label class="graduate-mode"><input type="radio" name="graduateMode" value="signup"> إنشاء حساب</label>
       <div id="graduateRegistrationWrap" hidden><label>رقم التسجيل الجامعي<input id="graduateSignupRegistration" class="input" dir="ltr" maxlength="64" autocomplete="off" required></label><div class="graduate-actions"><button type="button" id="graduateCheckRegistration" class="btn btn-ghost">التحقق من رقم التسجيل</button></div><p id="graduateRegistrationCheckMessage" class="graduate-muted" aria-live="polite"></p><div id="graduateVerifiedIdentity" class="graduate-staff-note" hidden></div></div>
-      <div id="graduateCredentialsWrap"><div id="graduateNameWrap" hidden><label>الاسم الكامل<input id="graduateName" class="input" autocomplete="name" maxlength="160"></label></div>${bridge.state?.promo?.graduate_roster_uploaded === true ? '<p class="graduate-muted">ستُستخرج بيانات الاسم والتخصص من القائمة الرسمية بعد التحقق من رقم التسجيل.</p>' : ''}
+      <div id="graduateCredentialsWrap"><div id="graduateNameWrap" hidden><label>الاسم الكامل<input id="graduateName" class="input" autocomplete="name" maxlength="160"></label></div>${bridge.state?.promo?.graduate_roster_uploaded === true ? '<p class="graduate-muted">ستُستخرج بيانات الاسم والتخصص من القائمة الرسمية بعد التحقق من رقم التسجيل.</p><div id="graduateRosterProfileFields" hidden><label>رقم الهاتف<input id="graduateSignupPhone" class="input" type="tel" dir="ltr" autocomplete="tel" maxlength="30"></label><label>الاسم على شهادة التكريم<input id="graduateSignupCertificate" class="input" maxlength="160"></label><label>الاسم على الوشاح<input id="graduateSignupSash" class="input" maxlength="160"></label></div>' : ''}
       <label>البريد الإلكتروني<input id="graduateEmail" class="input" type="email" autocomplete="email"></label>
       <label>كلمة المرور<input id="graduatePassword" class="input" type="password" autocomplete="current-password"></label>
       <input id="graduateWebsite" type="text" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;inset-inline-start:-10000px" value="">
@@ -151,15 +167,24 @@
       root.querySelector('#graduateForgotPassword').hidden = true;
     }
     const toggle = () => {
-      const mode=root.querySelector('[name="graduateMode"]:checked').value;
-      const registration=root.querySelector('#graduateSignupRegistration').value.trim().toUpperCase();
-      root.querySelector('#graduateRegistrationWrap').hidden=mode!=='signup';
-      root.querySelector('#graduateCredentialsWrap').hidden=mode==='signup' && root.dataset.verifiedRegistration!==registration;
-      root.querySelector('#graduateNameWrap').hidden=rosterMode || mode!=='signup';
-      root.querySelector('#graduateForgotPassword').hidden=mode!=='signin';
+      const existingLogin = rosterMode && root.dataset.existingLogin === 'true';
+      const mode = existingLogin ? 'signin' : (root.querySelector('[name="graduateMode"]:checked')?.value || 'signin');
+      const registration = root.querySelector('#graduateSignupRegistration').value.trim().toUpperCase();
+      const verified = !!registration && root.dataset.verifiedRegistration === registration;
+      root.querySelector('#graduateRegistrationWrap').hidden = rosterMode ? false : mode !== 'signup';
+      root.querySelector('#graduateCredentialsWrap').hidden = rosterMode ? !verified : (mode === 'signup' && !verified);
+      root.querySelector('#graduateNameWrap').hidden = rosterMode || mode !== 'signup';
+      const profileFields = root.querySelector('#graduateRosterProfileFields');
+      if (profileFields) profileFields.hidden = !verified || existingLogin;
+      const confirmWrap = root.querySelector('#graduatePasswordConfirmWrap');
+      if (confirmWrap) confirmWrap.hidden = existingLogin;
+      const password = root.querySelector('#graduatePassword');
+      if (password) password.setAttribute('autocomplete', existingLogin ? 'current-password' : 'new-password');
+      root.querySelector('#graduateAuthSubmit').textContent = existingLogin ? (isFrench(bridge) ? 'Connexion' : 'دخول') : (rosterMode ? (isFrench(bridge) ? 'Créer mon compte' : 'إنشاء الحساب') : (isFrench(bridge) ? 'Continuer' : 'متابعة'));
+      root.querySelector('#graduateForgotPassword').hidden = mode !== 'signin';
     };
     root.querySelectorAll('[name="graduateMode"]').forEach((x) => x.addEventListener('change', toggle));
-    root.querySelector('#graduateSignupRegistration').addEventListener('input',()=>{root.dataset.verifiedRegistration='';root.querySelector('#graduateRegistrationCheckMessage').textContent='';toggle();});
+    root.querySelector('#graduateSignupRegistration').addEventListener('input',()=>{root.dataset.verifiedRegistration='';delete root.dataset.verifiedStudent;root.dataset.existingLogin='false';root.querySelector('#graduateRegistrationCheckMessage').textContent='';root.querySelector('#graduateVerifiedIdentity').hidden=true;toggle();});
     root.querySelector('#graduateCheckRegistration').addEventListener('click',async()=>{
       const registration_number=root.querySelector('#graduateSignupRegistration').value.trim().toUpperCase();
       if(!/^[A-Z0-9-]{1,64}$/.test(registration_number))return notify(bridge,'أدخل رقم تسجيل صالحًا.','err');
@@ -167,13 +192,14 @@
       try{
         const response=await fetch('/api/public/graduate-registration-check',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({promotion_id:bridge.tenant.id,registration_number})});
         const payload=await response.json().catch(()=>({}));
-        if(!response.ok||payload.eligible!==true)throw new Error(payload.message||payload.error||'رقم التسجيل غير متاح لإنشاء الحساب. تحقق منه أو تواصل مع المشرف الرئيسي.');
+        if(!response.ok||(payload.eligible!==true&&payload.existing_account!==true))throw new Error(payload.message||payload.error||'رقم التسجيل غير متاح لإنشاء الحساب. تحقق منه أو تواصل مع الإدارة.');
         root.dataset.verifiedRegistration=registration_number;
-        const student=payload.student||{}; const identity=root.querySelector('#graduateVerifiedIdentity');
+        root.dataset.existingLogin=payload.existing_account===true?'true':'false';
+        const student=payload.student||{}; root.dataset.verifiedStudent=JSON.stringify(student); const identity=root.querySelector('#graduateVerifiedIdentity');
         if (identity && rosterMode) { identity.innerHTML=`<strong>${esc(isFrench(bridge)?(student.full_name_fr||student.full_name||''):(student.full_name||student.full_name_fr||''))}</strong><br><span>${esc(isFrench(bridge)?(student.specialty_name_fr||student.specialty_name||''):(student.specialty_name||student.specialty_name_fr||''))}</span><br><small dir="ltr">${esc(student.registration_number||registration_number)}</small>`; identity.hidden=false; }
-        root.querySelector('#graduateRegistrationCheckMessage').textContent='تم التحقق؛ أكمل البريد الإلكتروني وكلمة المرور.';toggle();
-      }catch(error){root.dataset.verifiedRegistration='';root.querySelector('#graduateVerifiedIdentity').hidden=true;root.querySelector('#graduateRegistrationCheckMessage').textContent=error.message;toggle();}
-      finally{button.disabled=false;button.textContent='التحقق من رقم التسجيل';}
+        root.querySelector('#graduateRegistrationCheckMessage').textContent=payload.existing_account===true?(isFrench(bridge)?'Numéro vérifié. Saisissez l’e-mail et le mot de passe de votre compte.':'تم التحقق؛ هذا الرقم مرتبط بحساب. أدخل البريد وكلمة مرور حسابك لتسجيل الدخول.'):(isFrench(bridge)?'Numéro vérifié. Complétez le téléphone, les noms du certificat et de l’écharpe, puis l’e-mail et un nouveau mot de passe.':'تم التحقق؛ أكمل الهاتف واسمي الشهادة والوشاح ثم البريد وكلمة المرور الجديدة.');toggle();
+      }catch(error){root.dataset.verifiedRegistration='';delete root.dataset.verifiedStudent;root.dataset.existingLogin='false';root.querySelector('#graduateVerifiedIdentity').hidden=true;root.querySelector('#graduateRegistrationCheckMessage').textContent=error.message;toggle();}
+      finally{button.disabled=false;button.textContent=isFrench(bridge)?'Vérifier le numéro d’inscription':'التحقق من رقم التسجيل';}
     });
     root.querySelector('#graduateAuthSubmit').addEventListener('click', () => signInOrUp(bridge, root));
     root.querySelector('#graduateForgotPassword').addEventListener('click', () => passwordResetRequestModal(bridge));

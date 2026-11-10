@@ -10,7 +10,7 @@ const PLATFORM_HOSTS = new Set([
   "iscae-promo-18.vercel.app",
   "iscae-promo-18-eight.vercel.app",
 ]);
-type SignupBody = { email?: unknown; password?: unknown; full_name?: unknown; promotion_id?: unknown; registration_number?: unknown; website?: unknown };
+type SignupBody = { email?: unknown; password?: unknown; full_name?: unknown; promotion_id?: unknown; registration_number?: unknown; phone?: unknown; certificate_name?: unknown; sash_name?: unknown; website?: unknown };
 type AuthUser = { id?: string; msg?: string; message?: string; error_code?: string };
 type AuthSession = { access_token?: string; refresh_token?: string; expires_in?: number; token_type?: string; user?: AuthUser };
 const signupAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -77,13 +77,17 @@ export const Route = createFileRoute("/api/public/graduate-signup")({
         if (!promotion) return noStore({ error: "الدفعة غير موجودة." }, 404);
         if (!check.eligible) return noStore({ error: "رقم التسجيل غير متاح لإنشاء الحساب. تحقق من الرقم أو تواصل مع المشرف الرئيسي." }, 409);
         if (!promotion.graduate_roster_uploaded && fullName.length < 2) return noStore({ error: "أدخل الاسم الكامل." }, 400);
+        const phone = String(body.phone ?? "").trim();
+        const certificateName = String(body.certificate_name ?? "").trim();
+        const sashName = String(body.sash_name ?? "").trim();
+        if (promotion.graduate_roster_uploaded && (!check.student || phone.length < 6 || phone.length > 30 || certificateName.length < 2 || certificateName.length > 160 || sashName.length < 2 || sashName.length > 160)) return noStore({ error: "أكمل رقم الهاتف واسمي شهادة التكريم والوشاح قبل إنشاء الحساب." }, 400);
         const allowedDomain = String(promotion.domain ?? "").toLowerCase().replace(/^https?:\/\//, "").split("/")[0]?.split(":")[0] ?? "";
         if (originHost && !PLATFORM_HOSTS.has(originHost) && originHost !== allowedDomain) return noStore({ error: "لا يمكن إنشاء حساب من هذا النطاق." }, 403);
 
         const created = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
           method: "POST",
           headers: adminHeaders,
-          body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { ...(fullName ? { full_name: fullName } : {}), registration_number: registration } }),
+          body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { full_name: fullName || check.student?.full_name || "", registration_number: registration } }),
         });
         const user = await created.json().catch(() => ({})) as AuthUser;
         if (!created.ok || !user.id) {

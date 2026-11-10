@@ -7,6 +7,7 @@ export type GraduateRegistrationCheck = {
   eligible: boolean;
   promotion?: Promotion;
   student?: Row;
+  accountExists?: boolean;
   error?: string;
 };
 
@@ -39,9 +40,9 @@ export async function checkGraduateRegistration(
   accountUrl.searchParams.set("select", "id"); accountUrl.searchParams.set("promotion_id", `eq.${promotionId}`); accountUrl.searchParams.set("registration_number", `ilike.${registration}`); accountUrl.searchParams.set("limit", "1");
   const existingResponse = await fetch(accountUrl, { headers, cache: "no-store" });
   if (!existingResponse.ok) return { eligible: false, promotion, error: "upstream" };
-  if ((await existingResponse.json() as Row[]).length) return { eligible: false, promotion };
+  const accountExists = (await existingResponse.json() as Row[]).length > 0;
 
-  if (!promotion.graduate_roster_uploaded) return { eligible: true, promotion };
+  if (!promotion.graduate_roster_uploaded) return { eligible: !accountExists, accountExists, promotion };
   const studentUrl = new URL(`${SUPABASE_URL}/rest/v1/students`);
   studentUrl.searchParams.set("select", "id,full_name,full_name_fr,registration_number,specialty_id,specialties(name,name_fr)");
   studentUrl.searchParams.set("promotion_id", `eq.${promotionId}`);
@@ -51,7 +52,7 @@ export async function checkGraduateRegistration(
   if (!studentResponse.ok) return { eligible: false, promotion, error: "upstream" };
   const students = await studentResponse.json() as Array<Row & { specialties?: { name?: string; name_fr?: string } | null }>;
   const row = students[0];
-  if (!row) return { eligible: false, promotion };
+  if (!row) return { eligible: false, accountExists, promotion };
   const student: Row = { id: row.id, full_name: row.full_name, full_name_fr: row.full_name_fr, registration_number: row.registration_number, specialty_id: row.specialty_id, specialty_name: row.specialties?.name, specialty_name_fr: row.specialties?.name_fr };
-  return { eligible: true, promotion, student };
+  return { eligible: !accountExists, accountExists, promotion, student };
 }
