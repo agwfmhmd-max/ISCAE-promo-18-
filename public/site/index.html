@@ -2406,7 +2406,7 @@ function makePublicLaunchSnapshot() {
       institution_logo_source: state.promo.institution_logo_source || null,
       institution_logo: state.promo.institution_logo_source && storageObjectPath(state.promo.institution_logo_source) ? "" : (state.promo.institution_logo || ""),
       logo: state.promo.logo_source && storageObjectPath(state.promo.logo_source) ? "" : (state.promo.logo || "") },
-    summary: { total: state.students.length, categories, specialties }
+    summary: state.publicSummary || { total: state.students.length, categories, specialties }
   };
 }
 function refreshVisibleStudentPhotos() {
@@ -2440,12 +2440,14 @@ async function loadPublicData() {
   // refresh small public metadata, but avoid downloading every student row again.
   if (cachedShown && !state.session && Date.now() - Number(launchSnapshot.savedAt || 0) < 10 * 60 * 1000) {
     try {
-      const [sp, se] = await Promise.all([
+      const [sp, se, summary] = await Promise.all([
         db.from("specialties").select("*").order("created_at"),
-        legacyId(db.from("settings").select("*")).maybeSingle()
+        legacyId(db.from("settings").select("*")).maybeSingle(),
+        tenantOn() ? db.rpc("public_graduate_roster_stats", { _promotion_id: TENANT.id }) : Promise.resolve({ data: null, error: null })
       ]);
       if (!sp.error) state.specialties = sp.data || [];
       if (!se.error && se.data) state.settings = { ...state.settings, ...Object.fromEntries(PUBLIC_STARTUP_SETTINGS.filter(name => Object.prototype.hasOwnProperty.call(se.data, name)).map(name => [name, se.data[name]])) };
+      if (!summary.error && summary.data) state.publicSummary = summary.data;
       applyStartupPalette();
     } catch (error) { console.warn("[Startup cache] lightweight refresh failed", error); }
     await Promise.all([
@@ -2455,10 +2457,12 @@ async function loadPublicData() {
     applyBranding(); renderStats(); renderEvents(); state.publicLoaded = true;
     return;
   }
-  const [sp, st, se] = await Promise.all([
+  state.publicSummary = null;
+  const [sp, st, se, summary] = await Promise.all([
     db.from("specialties").select("*").order("created_at"),
     fetchAllRows(() => db.from("students").select("*", { count: "exact" }).order("order_index").order("id")),
-    legacyId(db.from("settings").select("*")).maybeSingle()
+    legacyId(db.from("settings").select("*")).maybeSingle(),
+    tenantOn() ? db.rpc("public_graduate_roster_stats", { _promotion_id: TENANT.id }) : Promise.resolve({ data: null, error: null })
   ]);
   if (sp.error) console.error(sp.error); else state.specialties = sp.data || [];
   if (st.error) console.error(st.error);
@@ -2471,6 +2475,7 @@ async function loadPublicData() {
   }
   if (se.error) console.error(se.error);
   else state.settings = se.data || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE };
+  if (!summary.error && summary.data) state.publicSummary = summary.data;
   applyStartupPalette();
   await Promise.all([
     loadPromotion().catch(error => console.warn("load promotion", error)),
@@ -2618,16 +2623,13 @@ function autoSpecialtyCount(specId, counts = null) {
   if (!counts) return state.students.filter(s => s.specialty_id === specId).length;
   return counts.has(specId) ? counts.get(specId) : (counts.get(String(specId)) || 0);
 }
-/** Displayed number for a specialty: manual value if defined, otherwise automatic. */
-function displaySpecialtyCount(specId, counts = null, overrides = specialtyOverrides()) {
-  const ov = overrides[specId];
-  return hasOverride(ov) ? Number(ov) : autoSpecialtyCount(specId, counts);
+/** Public graduate statistics always reflect the official roster, never a manual override. */
+function displaySpecialtyCount(specId, counts = null) {
+  return autoSpecialtyCount(specId, counts);
 }
-/** Displayed total of graduates: manual value if defined, otherwise automatic. */
+/** Displayed total of graduates reflects the official roster summary when available. */
 function displayTotalGraduates() {
-  const ov = (state.settings || {}).total_graduates_override;
-  if (hasOverride(ov)) return Number(ov);
-  return state.publicCacheActive && state.publicSummary ? Number(state.publicSummary.total) || 0 : state.students.length;
+  return state.publicSummary ? Number(state.publicSummary.total) || 0 : state.students.length;
 }
 /** Category counters are visible unless the super admin hides them. */
 function categoryStatsVisible() {
@@ -2639,15 +2641,14 @@ function renderStats() {
   const specs = state.specialties.length;
   const cats  = { A: 0, B: 0, C: 0, D: 0 };
   let countBySpecialty;
-  if (state.publicCacheActive && state.publicSummary) {
+  if (state.publicSummary) {
     Object.assign(cats, state.publicSummary.categories || {});
     countBySpecialty = new Map(Object.entries(state.publicSummary.specialties || {}).map(([id, count]) => [id, Number(count) || 0]));
   } else {
     state.students.forEach(s => { const category = categoryOf(s.order_index); if (Object.prototype.hasOwnProperty.call(cats, category)) cats[category]++; });
     countBySpecialty = studentCountsBySpecialty();
   }
-  const overrides = specialtyOverrides();
-  const specialtyCounts = state.specialties.map(sp => displaySpecialtyCount(sp.id, countBySpecialty, overrides));
+  const specialtyCounts = state.specialties.map(sp => displaySpecialtyCount(sp.id, countBySpecialty));
 
   $("#statsGrid").innerHTML = `
     ${statCard("c-violet", total, t("stat_graduate"), iconUsers)}
@@ -2669,7 +2670,7 @@ function renderStats() {
               <div class="spec-card-num">${n}</div>
               <div class="badge" style="background:${barColor}20; color:${barColor}; border:1px solid ${barColor}30">${t("stat_graduate")}</div>
             </div>
-            <div class="spec-card-label">${esc(sp.name)}</div>
+            <div class="spec-card-label">${esc(state.lang === "fr" ? (sp.name_fr || sp.name) : (sp.name || sp.name_fr))}</div>
             <div class="spec-card-progress">
               <div class="spec-card-bar" style="width: ${p}%"></div>
             </div>

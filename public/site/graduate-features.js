@@ -11,6 +11,7 @@
   if (new URLSearchParams(location.search).get('graduate') === '1') document.documentElement.classList.add('graduate-direct-pending');
   const css = `
     .graduate-entry{margin-inline-start:8px!important;border:1px solid rgba(197,162,83,.48)!important;color:var(--ink,#102744)!important;background:var(--surface-solid,#fffdf8)!important;text-decoration:none!important;white-space:nowrap}
+    .graduate-entry[hidden]{display:none!important}
     .graduate-entry:hover{border-color:var(--accent,#c5a253)!important;box-shadow:0 8px 20px -12px var(--ink,#102744)!important;transform:translateY(-1px)}
     .dark .graduate-entry{color:#f3f7fb!important;background:#182435!important;border-color:#52657e!important}
     .dark .graduate-status.pending{background:#493817!important;color:#ffe29a!important}.dark .graduate-status.active,.dark .graduate-status.approved{background:#173d2c!important;color:#a9efc3!important}.dark .graduate-status.rejected{background:#4a2028!important;color:#ffc0c8!important}
