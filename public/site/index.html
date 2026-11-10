@@ -2258,6 +2258,7 @@ $("#btnLangToggle").onclick = () => {
 
 /* ------------------------- 4. CATEGORIES ------------------------- */
 /** Compute the category of a student from his order inside his specialty. */
+function paymentOrderOf(student) { return Number.isInteger(student?.payment_order_index) ? student.payment_order_index : null; }
 function categoryOf(order) {
   const s = state.settings || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150 };
   const a = s.cat_a_limit, b = a + s.cat_b_limit, c = b + s.cat_c_limit;
@@ -2786,7 +2787,7 @@ let searchTimer = null, searchSeq = 0;
 function enrichStudent(st) {
   if (!st) return st;
   const sp = state.specialties.find(x => x.id === st.specialty_id);
-  return { ...st, specialty_name: st.specialty_name || (sp ? sp.name : ""), category: st.category || categoryOf(st.order_index) };
+  return { ...st, specialty_name: st.specialty_name || (sp ? sp.name : ""), specialty_name_fr: st.specialty_name_fr || (sp ? sp.name_fr : ""), category: st.category || categoryOf(st.order_index) };
 }
 function initials(name) {
   const w = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -2838,10 +2839,6 @@ async function runSearch(fromUser) {
   let st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
   if (st && state.publicCacheActive) st = await completeCachedSearchStudent(st);
   if (seq !== searchSeq) return;
-  if (!st && !error) {                          // احتياط: مطابقة تامة محلياً إذا لم تُنشر الدالة بعد
-    const local = state.students.find(s => String(s.registration_number).trim().toUpperCase() === q);
-    if (local) st = local;
-  }
   if (st && String(st.registration_number).trim().toUpperCase() !== q) st = null;   // مطابقة تامة فقط
   if (!st) {
     box.innerHTML = `<div class="gempty" role="status"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg><b>${t("empty_title")}</b><p>${t("search_no_results_text", { q: esc(q) })}</p></div>`;
@@ -2896,7 +2893,6 @@ async function routeFromHash() {
     const { data } = await db.rpc("search_student", { _reg: reg });
     st = mergeStudentWithLocalFresh(Array.isArray(data) ? data[0] : data);
     if (st && state.publicCacheActive) st = await completeCachedSearchStudent(st);
-    if (!st) st = state.students.find(s => String(s.registration_number).trim().toUpperCase() === reg) || null;
   }
   showProfile(enrichStudent(st), reg);
 }
@@ -2905,8 +2901,10 @@ function showProfile(st, reg) {
   const ov = document.createElement("div");
   ov.id = "profileOverlay"; ov.className = "prof-overlay";
   ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+  const profileName = state.lang === "fr" ? (st?.full_name_fr || st?.full_name || "") : (st?.full_name || st?.full_name_fr || "");
+  const profileSpecialty = state.lang === "fr" ? (st?.specialty_name_fr || st?.specialty_name || "") : (st?.specialty_name || st?.specialty_name_fr || "");
   const facts = st ? [
-    [t("label_specialty"), st.specialty_name],
+    [t("label_specialty"), profileSpecialty],
     [t("label_category"), st.category],
     [t("label_order_in_specialty"), st.order_index],
     [t("label_phone"), phoneVisible() && st.phone ? String(st.phone).trim() : ""],
@@ -2922,7 +2920,7 @@ function showProfile(st, reg) {
     </div>
     ${st ? `${avatarHTML(st, "prof-av")}
     <div class="prof-body">
-      <h2 id="profName">${esc(st.full_name)}</h2>
+      <h2 id="profName">${esc(profileName)}</h2>
       <div class="prof-meta"><span class="gcard-mat" dir="ltr">${esc(st.registration_number)}</span>
         <span class="pm">${esc(promoLabel())}</span></div>
       ${facts.length ? `<dl class="prof-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd${k === t("label_phone") ? ' dir="ltr" style="unicode-bidi:isolate"' : ""}>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
@@ -3199,7 +3197,7 @@ function renderOverview(panel) {
       <tbody>${state.specialties.map(sp => {
         const l = state.students.filter(s => s.specialty_id === sp.id);
         const c = { A: 0, B: 0, C: 0, D: 0 }; l.forEach(s => c[categoryOf(s.order_index)]++);
-        return `<tr><td>${esc(sp.name)}</td><td>${l.length}</td><td>${c.A}</td><td>${c.B}</td><td>${c.C}</td><td>${c.D}</td></tr>`;
+        return `<tr><td>${esc(state.lang === "fr" ? (sp.name_fr || sp.name) : sp.name)}</td><td>${l.length}</td><td>${c.A}</td><td>${c.B}</td><td>${c.C}</td><td>${c.D}</td></tr>`;
       }).join("") || `<tr><td colspan="6" class="empty">${t("no_data")}</td></tr>`}</tbody>
     </table></div>` : ""}
   `;
@@ -3231,9 +3229,12 @@ function renderStudents(panel) {
     const q = state.query.toLowerCase();
     list = list.filter(s => (s.full_name + " " + (s.full_name_fr || "") + " " + s.registration_number + " " + (s.phone || "")).toLowerCase().includes(q));
   }
-  list = list.slice().sort((a, b) =>
-    a.specialty_id === b.specialty_id ? a.order_index - b.order_index
-      : (specName(a.specialty_id) > specName(b.specialty_id) ? 1 : -1));
+  list = list.slice().sort((a, b) => {
+    const ar = paymentOrderOf(a), br = paymentOrderOf(b);
+    if (ar === null && br !== null) return 1; if (ar !== null && br === null) return -1;
+    if (ar !== null && br !== null && ar !== br) return ar - br;
+    return a.specialty_id === b.specialty_id ? a.order_index - b.order_index : (specName(a.specialty_id) > specName(b.specialty_id) ? 1 : -1);
+  });
 
   panel.innerHTML = `
     <div class="panel-head">
@@ -3245,7 +3246,7 @@ function renderStudents(panel) {
       <input id="q" placeholder="${t("search_students_placeholder")}" value="${esc(state.query)}" />
       ${isSuper() ? `<select id="fs">
         <option value="all">${t("all_specialties_option")}</option>
-        ${state.specialties.map(s => `<option value="${s.id}" ${state.filterSpec === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
+        ${state.specialties.map(s => `<option value="${s.id}" ${state.filterSpec === s.id ? "selected" : ""}>${esc(state.lang === "fr" ? (s.name_fr || s.name) : s.name)}</option>`).join("")}
       </select>` : ""}
     </div>
     <div class="table-wrap"><table>
@@ -3255,7 +3256,7 @@ function renderStudents(panel) {
       </tr></thead>
       <tbody>${list.length ? list.map(s => `
         <tr>
-          <td><b>${s.order_index}</b></td>
+          <td><b>${paymentOrderOf(s) ?? "—"}</b></td>
           <td>${photoUrl(s) ? `<img class="student-thumb" src="${esc(photoUrl(s))}" alt="${esc(s.full_name)}" loading="lazy" />` : `<span class="muted">—</span>`}</td>
           <td>${esc(studentDisplayName(s))}</td>
           <td>${esc(s.registration_number)}</td>
@@ -3264,7 +3265,7 @@ function renderStudents(panel) {
           <td>${esc(certName(s) || "—")}</td>
           ${showPaymentStatus ? `<td><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;${paymentColor(paymentByStudent[s.id])}">${esc(paymentLabel(paymentByStudent[s.id]))}</span></td>` : ""}
           <td>${esc(specName(s.specialty_id))}</td>
-          <td><span class="tag tag-${categoryOf(s.order_index)}">${categoryOf(s.order_index)}</span></td>
+          <td>${paymentOrderOf(s) === null ? '<span class="muted">—</span>' : `<span class="tag tag-${categoryOf(paymentOrderOf(s))}">${categoryOf(paymentOrderOf(s))}</span>`}</td>
           <td>${new Date(s.created_at).toLocaleDateString("fr-FR")}</td>
           <td>
             <div class="row" style="gap:6px">
@@ -3673,7 +3674,7 @@ function adminModal(admin) {
           <div class="field"><label>${t("field_specialty_required")}</label>
             <select name="specialty_id" ${admin?.role === "super_admin" ? "disabled" : ""} required>
               <option value="">${t("field_choose_placeholder")}</option>
-              ${state.specialties.map(s => `<option value="${s.id}" ${admin?.specialty_id === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
+              ${state.specialties.map(s => `<option value="${s.id}" ${admin?.specialty_id === s.id ? "selected" : ""}>${esc(state.lang === "fr" ? (s.name_fr || s.name) : s.name)}</option>`).join("")}
             </select>
           </div>
           <div class="field"><label>${t("field_status")}</label>
@@ -4506,8 +4507,12 @@ function drawStatsBody(r, daily, totals, err) {
 /** قائمة الطلاب المصدَّرة مرتّبة (تُستخدم للتصدير والطباعة). */
 function exportStudentsSorted(specialtyId) {
   const list = specialtyId === "all" ? visibleStudents() : visibleStudents().filter(s => s.specialty_id === specialtyId);
-  return list.slice().sort((a, b) =>
-    a.specialty_id === b.specialty_id ? a.order_index - b.order_index : (specName(a.specialty_id) > specName(b.specialty_id) ? 1 : -1));
+  return list.slice().sort((a, b) => {
+    const ar = paymentOrderOf(a), br = paymentOrderOf(b);
+    if (ar === null && br !== null) return 1; if (ar !== null && br === null) return -1;
+    if (ar !== null && br !== null && ar !== br) return ar - br;
+    return a.specialty_id === b.specialty_id ? a.order_index - b.order_index : (specName(a.specialty_id) > specName(b.specialty_id) ? 1 : -1);
+  });
 }
 
 function exportRows(specialtyId) {
@@ -4517,14 +4522,14 @@ function exportRows(specialtyId) {
     sash: t("th_sash"), cert: t("th_certificate"), spec: t("th_specialty"), cat: t("th_category"), date: t("th_date_added")
   };
   return list.map(s => ({
-    [H.order]: s.order_index,
+    [H.order]: paymentOrderOf(s) ?? "—",
     [H.name]: s.full_name,
     [H.reg]: s.registration_number,
     [H.phone]: s.phone || "",
     [H.sash]: sashName(s),
     [H.cert]: certName(s),
     [H.spec]: specName(s.specialty_id),
-    [H.cat]: categoryOf(s.order_index),
+    [H.cat]: paymentOrderOf(s) === null ? "—" : categoryOf(paymentOrderOf(s)),
     [H.date]: new Date(s.created_at).toLocaleDateString("fr-FR")
   }));
 }
@@ -4609,7 +4614,7 @@ function renderExports(panel) {
     <div class="panel-head"><h2>${t("exports_title")}</h2></div>
     <div class="stack">
       ${isSuper() ? exportCard("all", t("export_general_list"), state.students.length) : ""}
-      ${specs.map(sp => exportCard(sp.id, sp.name, state.students.filter(s => s.specialty_id === sp.id).length)).join("")}
+      ${specs.map(sp => exportCard(sp.id, state.lang === "fr" ? (sp.name_fr || sp.name) : sp.name, state.students.filter(s => s.specialty_id === sp.id).length)).join("")}
       ${!specs.length && !isSuper() ? `<div class="empty">${t("no_specialty_linked")}</div>` : ""}
     </div>`;
   $$("[data-exp]").forEach(b => b.onclick = () => {
@@ -4650,8 +4655,11 @@ const exportCard = (id, label, count) => `
 const CARD_CAT_RANK = { A: 1, B: 2, C: 3, D: 4 };
 function studentsOrderedForCards(list) {
   return (list || state.students).slice().sort((a, b) => {
-    const r = CARD_CAT_RANK[categoryOf(a.order_index)] - CARD_CAT_RANK[categoryOf(b.order_index)];
+    const ao = paymentOrderOf(a), bo = paymentOrderOf(b);
+    const r = CARD_CAT_RANK[categoryOf(ao ?? a.order_index)] - CARD_CAT_RANK[categoryOf(bo ?? b.order_index)];
     if (r) return r;
+    if (ao !== null && bo !== null && ao !== bo) return ao - bo;
+    if (ao === null && bo !== null) return 1; if (ao !== null && bo === null) return -1;
     if (a.order_index !== b.order_index) return a.order_index - b.order_index;
     const sa = specName(a.specialty_id), sb = specName(b.specialty_id);
     if (sa !== sb) return sa > sb ? 1 : -1;
