@@ -17,6 +17,7 @@ import { Route as ApiPublicTenantTokenRouteImport } from './routes/api/public/te
 import { Route as ApiPublicAdminCreateAdminRouteImport } from './routes/api/public/admin/create-admin'
 import { Route as ApiPublicAdminCreateHeadRouteImport } from './routes/api/public/admin/create-head'
 import { Route as ApiPublicPromoProvisionRouteImport } from './routes/api/public/promo/provision'
+import { Route as ApiPublicPushGraduateStatusRouteImport } from './routes/api/public/push/graduate-status'
 import { Route as ApiPublicPushSendRouteImport } from './routes/api/public/push/send'
 import { Route as ApiPublicPushVapidKeyRouteImport } from './routes/api/public/push/vapid-key'
 
@@ -64,6 +65,12 @@ const ApiPublicPromoProvisionRoute = ApiPublicPromoProvisionRouteImport.update({
   path: '/api/public/promo/provision',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPushGraduateStatusRoute =
+  ApiPublicPushGraduateStatusRouteImport.update({
+    id: '/api/public/push/graduate-status',
+    path: '/api/public/push/graduate-status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPushSendRoute = ApiPublicPushSendRouteImport.update({
   id: '/api/public/push/send',
   path: '/api/public/push/send',
@@ -84,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
   '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
   '/api/public/promo/provision': typeof ApiPublicPromoProvisionRoute
+  '/api/public/push/graduate-status': typeof ApiPublicPushGraduateStatusRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesByTo {
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
   '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
   '/api/public/promo/provision': typeof ApiPublicPromoProvisionRoute
+  '/api/public/push/graduate-status': typeof ApiPublicPushGraduateStatusRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
@@ -109,6 +118,7 @@ export interface FileRoutesById {
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
   '/api/public/admin/create-head': typeof ApiPublicAdminCreateHeadRoute
   '/api/public/promo/provision': typeof ApiPublicPromoProvisionRoute
+  '/api/public/push/graduate-status': typeof ApiPublicPushGraduateStatusRoute
   '/api/public/push/send': typeof ApiPublicPushSendRoute
   '/api/public/push/vapid-key': typeof ApiPublicPushVapidKeyRoute
 }
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/api/public/admin/create-admin'
     | '/api/public/admin/create-head'
     | '/api/public/promo/provision'
+    | '/api/public/push/graduate-status'
     | '/api/public/push/send'
     | '/api/public/push/vapid-key'
   fileRoutesByTo: FileRoutesByTo
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/api/public/admin/create-admin'
     | '/api/public/admin/create-head'
     | '/api/public/promo/provision'
+    | '/api/public/push/graduate-status'
     | '/api/public/push/send'
     | '/api/public/push/vapid-key'
   id:
@@ -147,6 +159,7 @@ export interface FileRouteTypes {
     | '/api/public/admin/create-admin'
     | '/api/public/admin/create-head'
     | '/api/public/promo/provision'
+    | '/api/public/push/graduate-status'
     | '/api/public/push/send'
     | '/api/public/push/vapid-key'
   fileRoutesById: FileRoutesById
@@ -160,6 +173,7 @@ export interface RootRouteChildren {
   ApiPublicAdminCreateAdminRoute: typeof ApiPublicAdminCreateAdminRoute
   ApiPublicAdminCreateHeadRoute: typeof ApiPublicAdminCreateHeadRoute
   ApiPublicPromoProvisionRoute: typeof ApiPublicPromoProvisionRoute
+  ApiPublicPushGraduateStatusRoute: typeof ApiPublicPushGraduateStatusRoute
   ApiPublicPushSendRoute: typeof ApiPublicPushSendRoute
   ApiPublicPushVapidKeyRoute: typeof ApiPublicPushVapidKeyRoute
 }
@@ -222,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPromoProvisionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/push/graduate-status': {
+      id: '/api/public/push/graduate-status'
+      path: '/api/public/push/graduate-status'
+      fullPath: '/api/public/push/graduate-status'
+      preLoaderRoute: typeof ApiPublicPushGraduateStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/push/send': {
       id: '/api/public/push/send'
       path: '/api/public/push/send'
@@ -249,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAdminCreateAdminRoute: ApiPublicAdminCreateAdminRoute,
   ApiPublicAdminCreateHeadRoute: ApiPublicAdminCreateHeadRoute,
   ApiPublicPromoProvisionRoute: ApiPublicPromoProvisionRoute,
+  ApiPublicPushGraduateStatusRoute: ApiPublicPushGraduateStatusRoute,
   ApiPublicPushSendRoute: ApiPublicPushSendRoute,
   ApiPublicPushVapidKeyRoute: ApiPublicPushVapidKeyRoute,
 }

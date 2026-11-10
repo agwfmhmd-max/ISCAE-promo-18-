@@ -26,6 +26,7 @@ export type PushNotificationPayload = {
   id?: string | null;
   title: string;
   body: string;
+  lang?: string;
   url?: string;
   icon?: string;
   badge?: string;

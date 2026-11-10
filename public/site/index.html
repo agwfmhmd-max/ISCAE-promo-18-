@@ -6481,6 +6481,24 @@ init().catch(err => { hidePlatformAdminGate(); console.error(err); toast(t("toas
 db.auth.onAuthStateChange((event, session) => {
   tenantTokenCache = { key: "", token: "", until: 0 };
   if (session && TENANT.id) setTimeout(() => getTenantAccessToken().then(token => db.realtime.setAuth(token)).catch(err => console.warn("tenant realtime auth", err)), 0);
+  if (event === "SIGNED_IN" && pushSupported() && Notification.permission === "granted") {
+    setTimeout(async () => {
+      try {
+        const sub = await currentPushSub();
+        if (!sub || !tenantOn()) return;
+        const { error } = await db.rpc("save_push_subscription", {
+          p_endpoint: sub.endpoint,
+          p_p256dh: subKey(sub, "p256dh"),
+          p_auth: subKey(sub, "auth"),
+          p_device_id: notifDeviceId(),
+          p_user_agent: navigator.userAgent.slice(0, 300),
+          p_lang: state.lang,
+          p_promo: TENANT.id
+        });
+        if (error) console.warn("[Push] could not associate device with signed-in graduate", error.message);
+      } catch (err) { console.warn("[Push] device association after sign-in", err); }
+    }, 0);
+  }
   if (event === "SIGNED_OUT") { state.session = null; state.me = null; syncHeader(); }
 });
 </script>
