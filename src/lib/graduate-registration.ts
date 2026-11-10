@@ -1,11 +1,12 @@
 import { SUPABASE_URL } from "@/lib/iscae-config";
 
 type Promotion = { id: string; domain?: string | null; graduate_roster_uploaded?: boolean; registration_mask?: string | null };
-type Row = { id: string };
+type Row = { id: string; full_name?: string | null | undefined; full_name_fr?: string | null | undefined; registration_number?: string | null | undefined; specialty_id?: string | null | undefined; specialty_name?: string | null | undefined; specialty_name_fr?: string | null | undefined };
 
 export type GraduateRegistrationCheck = {
   eligible: boolean;
   promotion?: Promotion;
+  student?: Row;
   error?: string;
 };
 
@@ -34,24 +35,23 @@ export async function checkGraduateRegistration(
     if (!pattern.test(registration)) return { eligible: false, promotion };
   }
 
-  const queryRows = async (table: "graduate_accounts" | "students"): Promise<Row[] | null> => {
-    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
-    url.searchParams.set("select", "id");
-    url.searchParams.set("promotion_id", `eq.${promotionId}`);
-    url.searchParams.set("registration_number", `ilike.${registration}`);
-    url.searchParams.set("limit", "1");
-    const response = await fetch(url, { headers, cache: "no-store" });
-    if (!response.ok) return null;
-    return await response.json() as Row[];
-  };
+  const accountUrl = new URL(`${SUPABASE_URL}/rest/v1/graduate_accounts`);
+  accountUrl.searchParams.set("select", "id"); accountUrl.searchParams.set("promotion_id", `eq.${promotionId}`); accountUrl.searchParams.set("registration_number", `ilike.${registration}`); accountUrl.searchParams.set("limit", "1");
+  const existingResponse = await fetch(accountUrl, { headers, cache: "no-store" });
+  if (!existingResponse.ok) return { eligible: false, promotion, error: "upstream" };
+  if ((await existingResponse.json() as Row[]).length) return { eligible: false, promotion };
 
-  const existingAccounts = await queryRows("graduate_accounts");
-  if (!existingAccounts) return { eligible: false, promotion, error: "upstream" };
-  if (existingAccounts.length) return { eligible: false, promotion };
-  if (promotion.graduate_roster_uploaded) {
-    const officialStudents = await queryRows("students");
-    if (!officialStudents) return { eligible: false, promotion, error: "upstream" };
-    if (!officialStudents.length) return { eligible: false, promotion };
-  }
-  return { eligible: true, promotion };
+  if (!promotion.graduate_roster_uploaded) return { eligible: true, promotion };
+  const studentUrl = new URL(`${SUPABASE_URL}/rest/v1/students`);
+  studentUrl.searchParams.set("select", "id,full_name,full_name_fr,registration_number,specialty_id,specialties(name,name_fr)");
+  studentUrl.searchParams.set("promotion_id", `eq.${promotionId}`);
+  studentUrl.searchParams.set("registration_number", `ilike.${registration}`);
+  studentUrl.searchParams.set("limit", "1");
+  const studentResponse = await fetch(studentUrl, { headers, cache: "no-store" });
+  if (!studentResponse.ok) return { eligible: false, promotion, error: "upstream" };
+  const students = await studentResponse.json() as Array<Row & { specialties?: { name?: string; name_fr?: string } | null }>;
+  const row = students[0];
+  if (!row) return { eligible: false, promotion };
+  const student: Row = { id: row.id, full_name: row.full_name, full_name_fr: row.full_name_fr, registration_number: row.registration_number, specialty_id: row.specialty_id, specialty_name: row.specialties?.name, specialty_name_fr: row.specialties?.name_fr };
+  return { eligible: true, promotion, student };
 }

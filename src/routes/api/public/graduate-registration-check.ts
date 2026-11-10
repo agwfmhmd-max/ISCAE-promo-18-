@@ -51,7 +51,7 @@ export const Route = createFileRoute("/api/public/graduate-registration-check")(
           if (!PLATFORM_HOSTS.has(host) && host !== allowedDomain) return noStore({ error: "لا يمكن تنفيذ الطلب من هذا النطاق." }, 403);
         }
         if (!check.eligible) return noStore({ ok: false, eligible: false, message: "رقم التسجيل غير متاح لإنشاء الحساب. تحقق من الرقم أو تواصل مع المشرف الرئيسي." }, 409);
-        return noStore({ ok: true, eligible: true, message: "تم التحقق من رقم التسجيل. أكمل إنشاء الحساب." });
+        return noStore({ ok: true, eligible: true, message: "تم التحقق من رقم التسجيل. أكمل إنشاء الحساب.", student: check.student ?? null });
       },
     },
   },
