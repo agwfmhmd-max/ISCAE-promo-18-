@@ -1930,6 +1930,7 @@ function applyPromoRow(row) {
     logo_style: Object.prototype.hasOwnProperty.call(PROMO_LOGO_STYLES, row.logo_style) ? row.logo_style : "academic",
     logo_source: row.logo_url || null, logo: row.logo_url && /^https?:\/\//i.test(row.logo_url) ? row.logo_url : null,
     domain: row.domain || null, domain_status: row.domain_status || null, is_default: !!row.is_default,
+    graduate_roster_uploaded: row.graduate_roster_uploaded === true,
     registration_mask: row.registration_mask || "I#####", night_event_enabled: row.night_event_enabled !== false,
     public_listing: row.public_listing === true, single_specialty_enabled: row.single_specialty_enabled === true, graduate_editing_locked: row.graduate_editing_locked === true };
   state.promoReady = true;
@@ -5343,6 +5344,20 @@ try {
 } catch (e) {}
 
 if ("serviceWorker" in navigator) {
+  const SW_REFRESH_KEY = "iscae-sw-controller-refresh-once";
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    try {
+      if (sessionStorage.getItem(SW_REFRESH_KEY) === "1") {
+        sessionStorage.removeItem(SW_REFRESH_KEY);
+        return;
+      }
+      sessionStorage.setItem(SW_REFRESH_KEY, "1");
+    } catch (e) {}
+    window.location.reload();
+  });
+  window.addEventListener("pageshow", () => {
+    try { sessionStorage.removeItem(SW_REFRESH_KEY); } catch (e) {}
+  });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" })
       .then((registration) => {

@@ -1,5 +1,5 @@
 // Developer: Mohamed Dah Agove
-const ISCAE_SW_BUILD = "iscae-shell-cache-v7-national-promo";
+const ISCAE_SW_BUILD = "iscae-shell-cache-v8-roster-onboarding-20261110";
 const ISCAE_CACHE_PREFIX = "iscae-app-shell-";
 const ISCAE_CACHE_NAME = `${ISCAE_CACHE_PREFIX}${ISCAE_SW_BUILD}`;
 const ISCAE_SHELL_URL = new URL("./index.html", self.registration.scope).href;
@@ -22,11 +22,19 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames
-          .filter((name) => name.startsWith(ISCAE_CACHE_PREFIX) && name !== ISCAE_CACHE_NAME)
-          .map((name) => caches.delete(name)),
+      const previousCaches = cacheNames.filter(
+        (name) => name.startsWith(ISCAE_CACHE_PREFIX) && name !== ISCAE_CACHE_NAME,
       );
+      const currentCache = await caches.open(ISCAE_CACHE_NAME);
+      await Promise.all(previousCaches.map(async (name) => {
+        const previousCache = await caches.open(name);
+        for (const request of await previousCache.keys()) {
+          if (await currentCache.match(request)) continue;
+          const response = await previousCache.match(request);
+          if (response) await currentCache.put(request, response);
+        }
+        await caches.delete(name);
+      }));
       await self.clients.claim();
     })(),
   );
@@ -44,26 +52,16 @@ self.addEventListener("fetch", (event) => {
     request.mode === "navigate" &&
     (url.pathname.endsWith("/index.html") || url.pathname.endsWith("/site/"));
   if (isAppNavigation) {
-    const cachePromise = caches.open(ISCAE_CACHE_NAME);
-    const networkPromise = cachePromise.then((cache) =>
-      fetch(request).then((response) => {
-        if (response && response.ok && response.type === "basic")
-          cache.put(request, response.clone()).catch(() => {});
+    event.respondWith((async () => {
+      const cache = await caches.open(ISCAE_CACHE_NAME);
+      try {
+        const response = await fetch(new Request(request, { cache: "reload" }));
+        if (response && response.ok && response.type === "basic") await cache.put(request, response.clone());
         return response;
-      }),
-    );
-    event.waitUntil(
-      networkPromise.then(
-        () => undefined,
-        () => undefined,
-      ),
-    );
-    event.respondWith(
-      cachePromise.then(async (cache) => {
-        const cached = (await cache.match(request)) || (await cache.match(ISCAE_SHELL_URL));
-        return cached || networkPromise;
-      }),
-    );
+      } catch (error) {
+        return (await cache.match(request)) || (await cache.match(ISCAE_SHELL_URL)) || Response.error();
+      }
+    })());
     return;
   }
   // ملفات ثابتة من نفس التطبيق فقط؛ لا تُخزّن manifest أو الصور/الشعارات الديناميكية.
@@ -71,23 +69,16 @@ self.addEventListener("fetch", (event) => {
     /\.(?:css|js|woff2?|ttf|otf)$/i.test(url.pathname) &&
     !/service-worker\.js$/i.test(url.pathname);
   if (!isVersionedAsset) return;
-  const cachePromise = caches.open(ISCAE_CACHE_NAME);
-  const networkPromise = cachePromise.then((cache) =>
-    fetch(request).then((response) => {
-      if (response && response.ok && response.type === "basic")
-        cache.put(request, response.clone()).catch(() => {});
+  event.respondWith((async () => {
+    const cache = await caches.open(ISCAE_CACHE_NAME);
+    try {
+      const response = await fetch(new Request(request, { cache: "reload" }));
+      if (response && response.ok && response.type === "basic") await cache.put(request, response.clone());
       return response;
-    }),
-  );
-  event.waitUntil(
-    networkPromise.then(
-      () => undefined,
-      () => undefined,
-    ),
-  );
-  event.respondWith(
-    cachePromise.then(async (cache) => (await cache.match(request)) || networkPromise),
-  );
+    } catch (error) {
+      return (await cache.match(request)) || Response.error();
+    }
+  })());
 });
 
 /* WEB PUSH — إشعارات المشرف الرئيسي */
