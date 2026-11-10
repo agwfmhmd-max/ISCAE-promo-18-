@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/iscae-config";
 import { json, serverEnv } from "@/lib/iscae-server";
+import { checkGraduateRegistration } from "@/lib/graduate-registration";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -9,7 +10,7 @@ const PLATFORM_HOSTS = new Set([
   "iscae-promo-18.vercel.app",
   "iscae-promo-18-eight.vercel.app",
 ]);
-type SignupBody = { email?: unknown; password?: unknown; full_name?: unknown; promotion_id?: unknown; website?: unknown };
+type SignupBody = { email?: unknown; password?: unknown; full_name?: unknown; promotion_id?: unknown; registration_number?: unknown; website?: unknown };
 type AuthUser = { id?: string; msg?: string; message?: string; error_code?: string };
 type AuthSession = { access_token?: string; refresh_token?: string; expires_in?: number; token_type?: string; user?: AuthUser };
 const signupAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -60,26 +61,29 @@ export const Route = createFileRoute("/api/public/graduate-signup")({
         const email = String(body.email ?? "").trim().toLowerCase();
         const password = String(body.password ?? "");
         const fullName = String(body.full_name ?? "").trim().slice(0, 160);
+        const registration = String(body.registration_number ?? "").trim().toUpperCase();
         const promotionId = String(body.promotion_id ?? "").trim();
         if (!EMAIL_RE.test(email)) return noStore({ error: "أدخل بريداً إلكترونياً صالحاً." }, 400);
         if (password.length < 6 || password.length > 128) return noStore({ error: "كلمة المرور يجب ألا تقل عن 6 أحرف." }, 400);
         if (!UUID_RE.test(promotionId)) return noStore({ error: "تعذر تحديد الدفعة الحالية." }, 400);
+        if (!/^[A-Z0-9-]{1,64}$/.test(registration)) return noStore({ error: "أدخل رقم تسجيل صالحًا." }, 400);
 
         const serviceKey = serverEnv("SUPABASE_SERVICE_ROLE_KEY") ?? serverEnv("SUPABASE_SERVICE_KEY");
         if (!serviceKey) return noStore({ error: "التسجيل غير متاح مؤقتاً؛ إعدادات الخادم غير مكتملة." }, 503);
         const adminHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "content-type": "application/json" };
-        const promoResponse = await fetch(`${SUPABASE_URL}/rest/v1/promotions?select=id,domain&id=eq.${encodeURIComponent(promotionId)}&limit=1`, { headers: adminHeaders, cache: "no-store" });
-        if (!promoResponse.ok) return noStore({ error: "تعذر التحقق من الدفعة." }, 503);
-        const promotions = await promoResponse.json() as Array<{ id: string; domain?: string | null }>;
-        const promotion = promotions[0];
+        const check = await checkGraduateRegistration(promotionId, registration, serviceKey);
+        if (check.error) return noStore({ error: "تعذر التحقق من رقم التسجيل." }, 503);
+        const promotion = check.promotion;
         if (!promotion) return noStore({ error: "الدفعة غير موجودة." }, 404);
+        if (!check.eligible) return noStore({ error: "رقم التسجيل غير متاح لإنشاء الحساب. تحقق من الرقم أو تواصل مع المشرف الرئيسي." }, 409);
+        if (!promotion.graduate_roster_uploaded && fullName.length < 2) return noStore({ error: "أدخل الاسم الكامل." }, 400);
         const allowedDomain = String(promotion.domain ?? "").toLowerCase().replace(/^https?:\/\//, "").split("/")[0]?.split(":")[0] ?? "";
         if (originHost && !PLATFORM_HOSTS.has(originHost) && originHost !== allowedDomain) return noStore({ error: "لا يمكن إنشاء حساب من هذا النطاق." }, 403);
 
         const created = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
           method: "POST",
           headers: adminHeaders,
-          body: JSON.stringify({ email, password, email_confirm: true, user_metadata: fullName ? { full_name: fullName } : {} }),
+          body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { ...(fullName ? { full_name: fullName } : {}), registration_number: registration } }),
         });
         const user = await created.json().catch(() => ({})) as AuthUser;
         if (!created.ok || !user.id) {

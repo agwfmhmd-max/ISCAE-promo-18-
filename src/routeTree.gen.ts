@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicGraduatePasswordResetRouteImport } from './routes/api/public/graduate-password-reset'
+import { Route as ApiPublicGraduateRegistrationCheckRouteImport } from './routes/api/public/graduate-registration-check'
 import { Route as ApiPublicGraduateSignupRouteImport } from './routes/api/public/graduate-signup'
 import { Route as ApiPublicTenantTokenRouteImport } from './routes/api/public/tenant-token'
 import { Route as ApiPublicAdminCreateAdminRouteImport } from './routes/api/public/admin/create-admin'
@@ -23,6 +25,18 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicGraduatePasswordResetRoute =
+  ApiPublicGraduatePasswordResetRouteImport.update({
+    id: '/api/public/graduate-password-reset',
+    path: '/api/public/graduate-password-reset',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicGraduateRegistrationCheckRoute =
+  ApiPublicGraduateRegistrationCheckRouteImport.update({
+    id: '/api/public/graduate-registration-check',
+    path: '/api/public/graduate-registration-check',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicGraduateSignupRoute = ApiPublicGraduateSignupRouteImport.update({
   id: '/api/public/graduate-signup',
   path: '/api/public/graduate-signup',
@@ -63,6 +77,8 @@ const ApiPublicPushVapidKeyRoute = ApiPublicPushVapidKeyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/graduate-password-reset': typeof ApiPublicGraduatePasswordResetRoute
+  '/api/public/graduate-registration-check': typeof ApiPublicGraduateRegistrationCheckRoute
   '/api/public/graduate-signup': typeof ApiPublicGraduateSignupRoute
   '/api/public/tenant-token': typeof ApiPublicTenantTokenRoute
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
@@ -73,6 +89,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/graduate-password-reset': typeof ApiPublicGraduatePasswordResetRoute
+  '/api/public/graduate-registration-check': typeof ApiPublicGraduateRegistrationCheckRoute
   '/api/public/graduate-signup': typeof ApiPublicGraduateSignupRoute
   '/api/public/tenant-token': typeof ApiPublicTenantTokenRoute
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
@@ -84,6 +102,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/graduate-password-reset': typeof ApiPublicGraduatePasswordResetRoute
+  '/api/public/graduate-registration-check': typeof ApiPublicGraduateRegistrationCheckRoute
   '/api/public/graduate-signup': typeof ApiPublicGraduateSignupRoute
   '/api/public/tenant-token': typeof ApiPublicTenantTokenRoute
   '/api/public/admin/create-admin': typeof ApiPublicAdminCreateAdminRoute
@@ -96,6 +116,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/public/graduate-password-reset'
+    | '/api/public/graduate-registration-check'
     | '/api/public/graduate-signup'
     | '/api/public/tenant-token'
     | '/api/public/admin/create-admin'
@@ -106,6 +128,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/public/graduate-password-reset'
+    | '/api/public/graduate-registration-check'
     | '/api/public/graduate-signup'
     | '/api/public/tenant-token'
     | '/api/public/admin/create-admin'
@@ -116,6 +140,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/api/public/graduate-password-reset'
+    | '/api/public/graduate-registration-check'
     | '/api/public/graduate-signup'
     | '/api/public/tenant-token'
     | '/api/public/admin/create-admin'
@@ -127,6 +153,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicGraduatePasswordResetRoute: typeof ApiPublicGraduatePasswordResetRoute
+  ApiPublicGraduateRegistrationCheckRoute: typeof ApiPublicGraduateRegistrationCheckRoute
   ApiPublicGraduateSignupRoute: typeof ApiPublicGraduateSignupRoute
   ApiPublicTenantTokenRoute: typeof ApiPublicTenantTokenRoute
   ApiPublicAdminCreateAdminRoute: typeof ApiPublicAdminCreateAdminRoute
@@ -143,6 +171,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/graduate-password-reset': {
+      id: '/api/public/graduate-password-reset'
+      path: '/api/public/graduate-password-reset'
+      fullPath: '/api/public/graduate-password-reset'
+      preLoaderRoute: typeof ApiPublicGraduatePasswordResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/graduate-registration-check': {
+      id: '/api/public/graduate-registration-check'
+      path: '/api/public/graduate-registration-check'
+      fullPath: '/api/public/graduate-registration-check'
+      preLoaderRoute: typeof ApiPublicGraduateRegistrationCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/graduate-signup': {
@@ -199,6 +241,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicGraduatePasswordResetRoute: ApiPublicGraduatePasswordResetRoute,
+  ApiPublicGraduateRegistrationCheckRoute:
+    ApiPublicGraduateRegistrationCheckRoute,
   ApiPublicGraduateSignupRoute: ApiPublicGraduateSignupRoute,
   ApiPublicTenantTokenRoute: ApiPublicTenantTokenRoute,
   ApiPublicAdminCreateAdminRoute: ApiPublicAdminCreateAdminRoute,

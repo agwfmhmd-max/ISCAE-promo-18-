@@ -3208,6 +3208,23 @@ function renderOverview(panel) {
 /* ------------------------- 13. STUDENTS ------------------------- */
 function renderStudents(panel) {
   const specs = (isSuper() || isPlatform()) ? state.specialties : state.specialties.filter(s => s.id === state.me.specialty_id);
+  const promoId = state.promo?.id;
+  state.graduatePaymentStatusByPromotion ||= {};
+  const paymentRows = promoId ? state.graduatePaymentStatusByPromotion[promoId] : null;
+  const paymentByStudent = Object.fromEntries((paymentRows || []).map(row => [row.student_id,row.payment_status]));
+  const paymentCounts = (paymentRows || []).reduce((counts,row) => { counts[row.payment_status]=(counts[row.payment_status]||0)+1; return counts; }, {paid:0,pending:0,unpaid:0});
+  const paymentLabel = status => state.lang === 'fr' ? ({paid:'Payé',pending:'En attente de vérification',unpaid:'Non payé'}[status]||'—') : ({paid:'دافع',pending:'في انتظار التحقق',unpaid:'لم يدفع'}[status]||'—');
+  const paymentColor = status => status==='paid' ? 'background:#dcfce7;color:#166534' : status==='pending' ? 'background:#fef3c7;color:#854d0e' : 'background:#eef2f7;color:#475569';
+  if (promoId && !paymentRows && state.graduatePaymentStatusLoading !== promoId && state.graduatePaymentStatusFailed !== promoId) {
+    state.graduatePaymentStatusLoading = promoId;
+    db.rpc('get_graduate_student_payment_status',{_promotion_id:promoId}).then(({data,error})=>{
+      state.graduatePaymentStatusLoading = null;
+      if (error) state.graduatePaymentStatusFailed = promoId;
+      else state.graduatePaymentStatusByPromotion[promoId] = Array.isArray(data) ? data : [];
+      if (panel.isConnected) renderStudents(panel);
+    }).catch(()=>{state.graduatePaymentStatusLoading=null;state.graduatePaymentStatusFailed=promoId;if(panel.isConnected)renderStudents(panel);});
+  }
+  const showPaymentStatus = Array.isArray(paymentRows);
   let list = visibleStudents();
   if (isSuper() && state.filterSpec !== "all") list = list.filter(s => s.specialty_id === state.filterSpec);
   if (state.query) {
@@ -3221,8 +3238,9 @@ function renderStudents(panel) {
   panel.innerHTML = `
     <div class="panel-head">
       <h2>${t("students_title_count", { n: list.length })}</h2>
-      <div class="row" style="gap:8px;flex-wrap:wrap">${isPlatform() ? `<button class="btn btn-primary btn-sm" id="addStudent">${t("btn_add_student")}</button>` : ""}${isPlatform() ? '<button class="btn btn-ghost btn-sm" id="importGraduateRoster">رفع قائمة الخريجين</button><input id="graduateRosterFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.pdf" hidden>' : ''}</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">${isPlatform() ? `<button class="btn btn-primary btn-sm" id="addStudent">${t("btn_add_student")}</button><button class="btn btn-ghost btn-sm" id="allowGraduatePasswordReset">تمكين استعادة كلمة المرور</button>` : ""}${isPlatform() ? '<button class="btn btn-ghost btn-sm" id="importGraduateRoster">رفع قائمة الخريجين</button><input id="graduateRosterFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.pdf" hidden>' : ''}</div>
     </div>
+    ${showPaymentStatus ? `<section aria-label="حالات الاشتراك" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0"><div class="stat-card"><strong>${paymentCounts.paid}</strong><span>${state.lang==='fr'?'Payé':'دفعوا الاشتراك'}</span></div><div class="stat-card"><strong>${paymentCounts.pending}</strong><span>${state.lang==='fr'?'En attente':'في انتظار التحقق'}</span></div><div class="stat-card"><strong>${paymentCounts.unpaid}</strong><span>${state.lang==='fr'?'Non payé':'لم يدفعوا'}</span></div></section>` : ''}
     <div class="toolbar">
       <input id="q" placeholder="${t("search_students_placeholder")}" value="${esc(state.query)}" />
       ${isSuper() ? `<select id="fs">
@@ -3233,7 +3251,7 @@ function renderStudents(panel) {
     <div class="table-wrap"><table>
       <thead><tr>
         <th>#</th><th>${t("th_photo")}</th><th>${t("th_full_name")}</th><th>${t("th_reg_number")}</th><th>${t("th_phone")}</th>
-        <th>${t("th_sash")}</th><th>${t("th_certificate")}</th><th>${t("th_specialty")}</th><th>${t("th_category")}</th><th>${t("th_date_added")}</th><th>${t("th_actions")}</th>
+        <th>${t("th_sash")}</th><th>${t("th_certificate")}</th>${showPaymentStatus ? `<th>${state.lang==='fr'?'Adhésion':'حالة الاشتراك'}</th>` : ""}<th>${t("th_specialty")}</th><th>${t("th_category")}</th><th>${t("th_date_added")}</th><th>${t("th_actions")}</th>
       </tr></thead>
       <tbody>${list.length ? list.map(s => `
         <tr>
@@ -3244,6 +3262,7 @@ function renderStudents(panel) {
           <td dir="ltr">${esc(s.phone || "—")}</td>
           <td>${esc(sashName(s) || "—")}</td>
           <td>${esc(certName(s) || "—")}</td>
+          ${showPaymentStatus ? `<td><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;${paymentColor(paymentByStudent[s.id])}">${esc(paymentLabel(paymentByStudent[s.id]))}</span></td>` : ""}
           <td>${esc(specName(s.specialty_id))}</td>
           <td><span class="tag tag-${categoryOf(s.order_index)}">${categoryOf(s.order_index)}</span></td>
           <td>${new Date(s.created_at).toLocaleDateString("fr-FR")}</td>
@@ -3253,14 +3272,19 @@ function renderStudents(panel) {
                 <button class="btn btn-ghost btn-sm" data-up="${s.id}" title="${t("tooltip_up")}">▲</button>
                 <button class="btn btn-ghost btn-sm" data-down="${s.id}" title="${t("tooltip_down")}">▼</button>` : ""}
               ${canModifyStudent(s) ? `<button class="btn btn-ghost btn-sm" data-edit="${s.id}">${t("btn_edit")}</button>
-              <button class="btn btn-danger btn-sm" data-del="${s.id}">${t("btn_delete")}</button>` : `<span class="lock-note" title="${esc(t("student_locked"))}">🔒 ${t("student_locked_short")}</span>`}
+              ${isPlatform() ? `<button class="btn btn-danger btn-sm" data-del="${s.id}">${t("btn_delete")}</button>` : ""}` : `<span class="lock-note" title="${esc(t("student_locked"))}">🔒 ${t("student_locked_short")}</span>`}
             </div>
           </td>
-        </tr>`).join("") : `<tr><td colspan="11" class="empty">${t("no_students")}</td></tr>`}
+        </tr>`).join("") : `<tr><td colspan="${showPaymentStatus?12:11}" class="empty">${t("no_students")}</td></tr>`}
       </tbody>
     </table></div>`;
 
   if (isPlatform() && $("#addStudent")) $("#addStudent").onclick = () => studentModal(null, specs);
+  if (isPlatform() && $("#allowGraduatePasswordReset")) $("#allowGraduatePasswordReset").onclick = () => {
+    const m=openModal(`<div class="modal"><div class="modal-head"><h3>تمكين استعادة كلمة المرور</h3></div><div class="modal-body"><p class="muted">الدفعة المحددة: ${esc(state.promo?.name_ar || `الدفعة ${state.promo?.number ?? ''}`)}. لن تتغير بيانات الخريج؛ سيُرسل رابط استعادة آمن إلى بريده المسجل بعد إدخال رقم التسجيل والبريد المطابق.</p><label>رقم التسجيل<input id="resetGraduateRegistration" class="input" dir="ltr" maxlength="40" required></label><div class="actions"><button type="button" class="btn btn-primary" id="confirmGraduateResetPermission">تمكين الاستعادة</button><button type="button" class="btn btn-ghost" data-close>إلغاء</button></div></div></div>`);
+    m.querySelector('[data-close]').onclick=closeModals;
+    m.querySelector('#confirmGraduateResetPermission').onclick=async()=>{const reg=m.querySelector('#resetGraduateRegistration').value.trim().toUpperCase();if(!reg)return toast('أدخل رقم التسجيل.','err');const button=m.querySelector('#confirmGraduateResetPermission');button.disabled=true;const {error}=await db.rpc('platform_enable_graduate_password_reset',{_promotion_id:state.promo.id,_registration_number:reg});if(error){button.disabled=false;const message=error.message.includes('DUPLICATE_REGISTRATION_ACCOUNT')?'يوجد أكثر من حساب بهذا الرقم؛ لم يتم اختيار حساب عشوائي. راجع التعارض قبل تمكين الاستعادة.':error.message.includes('GRADUATE_ACCOUNT_NOT_FOUND')?'لا يوجد حساب خريج بهذا الرقم في الدفعة المحددة.':error.message;return toast(message,'err');}closeModals();toast('تم تمكين الاستعادة لهذا الحساب. سيحتاج الخريج إلى بريده المسجل ورابط التحقق.','success');};
+  };
   if (isPlatform() && $("#importGraduateRoster")) {
     $("#importGraduateRoster").onclick = () => $("#graduateRosterFile").click();
     $("#graduateRosterFile").onchange = async (event) => {
@@ -3291,17 +3315,27 @@ function normalizeRosterHeader(value) { return String(value ?? '').toLowerCase()
 function rosterFieldIndex(headers, keys) { return headers.findIndex(header => keys.includes(normalizeRosterHeader(header))); }
 function mapGraduateRoster(matrix) {
   if (!matrix?.length) return [];
-  const headers = matrix[0].map(normalizeRosterHeader);
-  const indexes = {
-    registration_number: rosterFieldIndex(headers, ['registration number','registration','numero inscription','numero d inscription','no inscription','n inscription','matricule','رقم التسجيل','الرقم الجامعي']),
-    full_name_ar: rosterFieldIndex(headers, ['full name ar','full name arabic','nom complet arabe','nom arabe','الاسم الكامل بالعربية','الاسم بالعربية','الاسم الكامل']),
-    full_name_fr: rosterFieldIndex(headers, ['full name fr','full name french','nom complet francais','nom complet français','nom francais','nom français','الاسم الكامل بالفرنسية','الاسم بالفرنسية']),
-    specialty_ar: rosterFieldIndex(headers, ['specialty ar','specialite arabe','spécialité arabe','التخصص بالعربية','التخصص العربي','التخصص']),
-    specialty_fr: rosterFieldIndex(headers, ['specialty fr','specialite francaise','spécialité française','specialite francais','التخصص بالفرنسية','التخصص الفرنسي'])
+  const aliases = {
+    registration_number: ['registration number','registration','numero inscription','numero d inscription','no inscription','n inscription','matricule','رقم التسجيل','الرقم الجامعي'],
+    full_name_ar: ['full name ar','full name arabic','nom complet arabe','nom arabe','الاسم الكامل بالعربية','الاسم بالعربية','الاسم العربي','الاسم الكامل'],
+    full_name_fr: ['full name fr','full name french','nom complet francais','nom complet français','nom francais','nom français','الاسم الكامل بالفرنسية','الاسم بالفرنسية','الاسم الفرنسي'],
+    specialty_ar: ['specialty ar','specialite arabe','spécialité arabe','التخصص بالعربية','التخصص العربي','التخصص'],
+    specialty_fr: ['specialty fr','specialite francaise','spécialité française','specialite francais','التخصص بالفرنسية','التخصص الفرنسي']
   };
-  const missing = Object.entries(indexes).filter(([,i])=>i<0).map(([k])=>k);
-  if (missing.length) throw new Error('أعمدة الملف المطلوبة: رقم التسجيل، الاسم العربي، الاسم الفرنسي، التخصص العربي، التخصص الفرنسي.');
-  return matrix.slice(1).map(row=>({ registration_number:String(row[indexes.registration_number]??'').trim(), full_name_ar:String(row[indexes.full_name_ar]??'').trim(), full_name_fr:String(row[indexes.full_name_fr]??'').trim(), specialty_ar:String(row[indexes.specialty_ar]??'').trim(), specialty_fr:String(row[indexes.specialty_fr]??'').trim() })).filter(row=>Object.values(row).every(Boolean));
+  let headerIndex = -1, indexes = null;
+  for (let rowIndex=0; rowIndex<Math.min(matrix.length,25); rowIndex++) {
+    const headers = (matrix[rowIndex] || []).map(normalizeRosterHeader);
+    const candidate = Object.fromEntries(Object.entries(aliases).map(([key,keys])=>[key,rosterFieldIndex(headers,keys)]));
+    if (Object.values(candidate).every(index=>index>=0)) { headerIndex=rowIndex; indexes=candidate; break; }
+  }
+  if (headerIndex<0) throw new Error('أعمدة الملف المطلوبة: رقم التسجيل، الاسم العربي، الاسم الفرنسي، التخصص العربي، التخصص الفرنسي. يمكن أن تسبقها أسطر عنوان أو بيانات تعريفية.');
+  return matrix.slice(headerIndex+1).map(row=>({
+    registration_number:String(row[indexes.registration_number]??'').trim(),
+    full_name_ar:String(row[indexes.full_name_ar]??'').trim(),
+    full_name_fr:String(row[indexes.full_name_fr]??'').trim(),
+    specialty_ar:String(row[indexes.specialty_ar]??'').trim(),
+    specialty_fr:String(row[indexes.specialty_fr]??'').trim()
+  })).filter(row=>Object.values(row).every(Boolean));
 }
 async function parseGraduateRosterFile(file) {
   const name=file.name.toLowerCase();
@@ -3328,54 +3362,27 @@ function studentModal(student, specs) {
   if (!student && !isPlatform()) { toast("إضافة الطلاب يدويًا متاحة للمشرف الرئيسي فقط.", "err"); return; }
   if (student && !canModifyStudent(student)) { toast(t("student_locked"), "err"); return; }
   const isEdit = !!student;
+  const platformCanEdit = isPlatform();
   const m = openModal(`
     <div class="modal">
       <div class="modal-head"><h3>${isEdit ? t("student_modal_edit_title") : t("student_modal_add_title")}</h3></div>
       <form class="modal-body" id="stForm">
-        <div class="field"><label>${t("field_full_name_required")}</label><input name="full_name" required value="${esc(student?.full_name || "")}" /></div>
-        <div class="grid-2">
-          <div class="field"><label>${t("field_reg_number_required")}</label><input name="registration_number" required dir="ltr" placeholder="${esc(registrationExample())}" value="${esc(student?.registration_number || "")}" /></div>
-          <div class="field"><label>${t("field_phone_plain")}</label><input name="phone" dir="ltr" value="${esc(student?.phone || "")}" /></div>
-        </div>
-        <div class="grid-2">
-          <div class="field"><label>${t("field_sash_optional")}</label><input name="sash_name" value="${esc(sashName(student))}" /></div>
-          <div class="field"><label>${t("field_certificate_optional")}</label><input name="certificate_name" value="${esc(rawCertName(student))}" /></div>
-        </div>
-        <div class="field">
-          <label>${t("field_photo_optional")}</label>
-          <div class="photo-box">
-            <div class="photo-thumb" id="stPhotoThumb">
-              ${photoUrl(student) ? `<img id="stPhotoImg" src="${esc(photoUrl(student))}" alt="" />` : `<span id="stPhotoEmpty">${t("photo_none")}</span>`}
-            </div>
-            <div class="stack" style="gap:8px">
-              <input type="file" id="stPhotoFile" accept="image/jpeg,image/jpg,image/png,image/webp" style="display:none" />
-              <input type="hidden" name="photo_url" id="stPhotoUrl" value="${esc(photoUrl(student))}" />
-              <div class="row" style="gap:8px;flex-wrap:wrap">
-                <button type="button" class="btn btn-ghost btn-sm" id="stPhotoPick">${photoUrl(student) ? t("photo_replace") : t("photo_choose")}</button>
-                <button type="button" class="btn btn-danger btn-sm ${photoUrl(student) ? "" : "hidden"}" id="stPhotoDel">${t("photo_remove")}</button>
-              </div>
-              <small class="muted" style="font-size:11px">${t("photo_hint")}</small>
-            </div>
-          </div>
-        </div>
-        ${state.promo.single_specialty_enabled && specs.length === 1 ? `<div class="field"><label>${t("field_specialty_required")}</label><input type="hidden" name="specialty_id" value="${esc(specs[0].id)}" /><div class="st-card" style="padding:12px 14px">${esc(state.lang === 'fr' ? (specs[0].name_fr || specs[0].name) : specs[0].name)}</div></div>` : `<div class="field"><label>${t("field_specialty_required")}</label>
-          <select name="specialty_id" required>
-            ${specs.map(s => `<option value="${s.id}" ${student?.specialty_id === s.id ? "selected" : ""}>${esc(state.lang === 'fr' ? (s.name_fr || s.name) : s.name)}</option>`).join("")}
-          </select>
-        </div>`}
-        ${isEdit ? `<p class="muted" style="font-size:12px">${t("current_order_info", { order: student.order_index, cat: categoryOf(student.order_index) })}${isSuper() ? "" : t("cannot_edit_note")}</p>`
-                 : `<p class="muted" style="font-size:12px">${t("auto_order_note")}</p>`}
+        <div class="field"><label>${t("field_full_name_required")}</label><input name="full_name" required maxlength="160" value="${esc(student?.full_name || "")}" /></div>
+        <div class="field"><label>${state.lang === 'fr' ? 'Nom complet (français)' : 'الاسم الكامل بالفرنسية'}</label><input name="full_name_fr" maxlength="160" value="${esc(student?.full_name_fr || "")}" /></div>
+        ${platformCanEdit ? `<div class="grid-2"><div class="field"><label>${t("field_reg_number_required")}</label><input name="registration_number" required dir="ltr" placeholder="${esc(registrationExample())}" value="${esc(student?.registration_number || "")}" /></div><div class="field"><label>${t("field_phone_plain")}</label><input name="phone" dir="ltr" value="${esc(student?.phone || "")}" /></div></div>` : `<div class="field"><label>${t("field_reg_number_required")}</label><input value="${esc(student?.registration_number || "")}" dir="ltr" readonly aria-readonly="true" /></div>`}
+        <div class="grid-2"><div class="field"><label>${t("field_sash_optional")}</label><input name="sash_name" maxlength="160" value="${esc(sashName(student))}" /></div><div class="field"><label>${t("field_certificate_optional")}</label><input name="certificate_name" maxlength="160" value="${esc(rawCertName(student))}" /></div></div>
+        ${platformCanEdit ? `<div class="field"><label>${t("field_photo_optional")}</label><div class="photo-box"><div class="photo-thumb" id="stPhotoThumb">${photoUrl(student) ? `<img id="stPhotoImg" src="${esc(photoUrl(student))}" alt="" />` : `<span id="stPhotoEmpty">${t("photo_none")}</span>`}</div><div class="stack" style="gap:8px"><input type="file" id="stPhotoFile" accept="image/jpeg,image/jpg,image/png,image/webp" style="display:none"/><input type="hidden" name="photo_url" id="stPhotoUrl" value="${esc(photoUrl(student))}"/><div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-ghost btn-sm" id="stPhotoPick">${photoUrl(student) ? t("photo_replace") : t("photo_choose")}</button><button type="button" class="btn btn-danger btn-sm ${photoUrl(student) ? "" : "hidden"}" id="stPhotoDel">${t("photo_remove")}</button></div><small class="muted" style="font-size:11px">${t("photo_hint")}</small></div></div></div><div class="field"><label>${t("field_specialty_required")}</label>${state.promo.single_specialty_enabled && specs.length === 1 ? `<input type="hidden" name="specialty_id" value="${esc(specs[0].id)}"/><div class="st-card" style="padding:12px 14px">${esc(state.lang === 'fr' ? (specs[0].name_fr || specs[0].name) : specs[0].name)}</div>` : `<select name="specialty_id" required>${specs.map(s=>`<option value="${s.id}" ${student?.specialty_id===s.id?"selected":""}>${esc(state.lang==='fr'?(s.name_fr||s.name):s.name)}</option>`).join("")}</select>`}</div>` : `<p class="muted" style="font-size:12px">يمكنك تعديل الأسماء واسم شهادة التكريم واسم الوشاح فقط؛ رقم التسجيل للقراءة فقط.</p>`}
+        ${isEdit ? `<p class="muted" style="font-size:12px">${t("current_order_info", { order: student.order_index, cat: categoryOf(student.order_index) })}${isSuper() ? "" : t("cannot_edit_note")}</p>` : `<p class="muted" style="font-size:12px">${t("auto_order_note")}</p>`}
         <button class="btn btn-primary btn-block" type="submit">${isEdit ? t("btn_save_changes") : t("btn_add_student_submit")}</button>
       </form>
       <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div>
     </div>`);
   m.querySelector("[data-close]").onclick = closeModals;
 
-  /* ---- إدارة الصورة: معاينة / استبدال / حذف ---- */
-  let pendingPhotoFile = null;                       // ملف جديد لم يُرفع بعد
-  let photoCleared = false;                          // المستخدم حذف الصورة
-  const oldPhoto = photoUrl(student);
-  const oldPhotoRef = photoRef(student);
+  let pendingPhotoFile = null;
+  let photoCleared = false;
+  const oldPhotoRef = photoUrl(student) ? photoRef(student) : null;
+  if (platformCanEdit) {
   const thumb = m.querySelector("#stPhotoThumb");
   const fileInput = m.querySelector("#stPhotoFile");
   const urlInput = m.querySelector("#stPhotoUrl");
@@ -3399,20 +3406,21 @@ function studentModal(student, specs) {
     fileInput.value = ""; urlInput.value = "";
     paintThumb("");
   };
+  }
 
   m.querySelector("#stForm").onsubmit = async e => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
-    const normalizedRegistration = String(f.registration_number || "").trim().toUpperCase();
     const existingRegistration = String(student?.registration_number || "").trim().toUpperCase();
-    if (!registrationNumberValid(normalizedRegistration) && !(isEdit && normalizedRegistration === existingRegistration)) {
+    const normalizedRegistration = platformCanEdit ? String(f.registration_number || "").trim().toUpperCase() : existingRegistration;
+    if (platformCanEdit && !registrationNumberValid(normalizedRegistration) && !(isEdit && normalizedRegistration === existingRegistration)) {
       toast(t("search_invalid_format", { mask: registrationMaskOf(), example: registrationExample() }), "err");
       return;
     }
 
     /* رفع الصورة (إن وُجدت) قبل الحفظ */
     let finalPhoto = photoCleared ? null : (oldPhotoRef || null);
-    if (pendingPhotoFile) {
+    if (platformCanEdit && pendingPhotoFile) {
       const btn = e.target.querySelector('button[type="submit"]');
       if (btn) { btn.disabled = true; btn.textContent = t("msg_photo_uploading"); }
       try { finalPhoto = await uploadStudentPhoto(pendingPhotoFile); }
@@ -3423,20 +3431,28 @@ function studentModal(student, specs) {
       }
     }
 
-    const payload = {
+    const payload = platformCanEdit ? {
       full_name: f.full_name.trim(),
+      full_name_fr: f.full_name_fr?.trim() || null,
       registration_number: normalizedRegistration,
       phone: f.phone?.trim() || null,
       sash_name: f.sash_name?.trim() || null,
       certificate_name: f.certificate_name?.trim() || null,
-      specialty_id: isSuper() ? f.specialty_id : state.me.specialty_id,
+      specialty_id: f.specialty_id || state.me.specialty_id,
       photo_url: finalPhoto
+    } : {
+      full_name: f.full_name.trim(),
+      full_name_fr: f.full_name_fr?.trim() || null,
+      sash_name: f.sash_name?.trim() || null,
+      certificate_name: f.certificate_name?.trim() || null
     };
     /* منع تكرار الطالب: رقم التسجيل موجود مسبقاً لدى طالب آخر (مثلاً أضافه رئيس آخر لنفس التخصص) */
     {
-      const regUp = payload.registration_number.toUpperCase();
-      const clash = state.students.find(x => String(x.registration_number || "").trim().toUpperCase() === regUp && (!isEdit || x.id !== student.id));
-      if (clash) { toast(t("err_reg_duplicate"), "err"); return; }
+      if (platformCanEdit && payload.registration_number) {
+        const regUp = payload.registration_number.toUpperCase();
+        const clash = state.students.find(x => String(x.registration_number || "").trim().toUpperCase() === regUp && (!isEdit || x.id !== student.id));
+        if (clash) { toast(t("err_reg_duplicate"), "err"); return; }
+      }
     }
     let error;
     if (isEdit) ({ error } = await db.from("students").update(payload).eq("id", student.id));
@@ -3466,6 +3482,7 @@ function studentModal(student, specs) {
     }
     /* حذف الملف القديم من التخزين بعد نجاح الحفظ */
     if (oldPhotoRef && (photoCleared || (pendingPhotoFile && finalPhoto !== oldPhotoRef))) await removeStoredPhoto(oldPhotoRef);
+    state.graduatePaymentStatusByPromotion && delete state.graduatePaymentStatusByPromotion[state.promo?.id];
     closeModals(); toast(isEdit ? t("msg_student_updated") : t("msg_student_added"));
     await loadPublicData(); renderDash();
   };
@@ -6433,7 +6450,8 @@ window.PromoMRFeatureBridge = {
   toast,
   esc,
   openModal,
-  refresh: () => loadPublicData().then(() => { renderStats(); renderEvents(); runSearch(); })
+  refresh: () => loadPublicData().then(() => { renderStats(); renderEvents(); runSearch(); }),
+  refreshStudentPaymentStatus: () => { if (state.graduatePaymentStatusByPromotion) delete state.graduatePaymentStatusByPromotion[TENANT.id]; state.graduatePaymentStatusFailed=null; }
 };
 init().catch(err => { hidePlatformAdminGate(); console.error(err); toast(t("toast_db_error"), "err"); });
 
