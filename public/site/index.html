@@ -3207,7 +3207,7 @@ function renderOverview(panel) {
 
 /* ------------------------- 13. STUDENTS ------------------------- */
 function renderStudents(panel) {
-  const specs = isSuper() ? state.specialties : state.specialties.filter(s => s.id === state.me.specialty_id);
+  const specs = (isSuper() || isPlatform()) ? state.specialties : state.specialties.filter(s => s.id === state.me.specialty_id);
   let list = visibleStudents();
   if (isSuper() && state.filterSpec !== "all") list = list.filter(s => s.specialty_id === state.filterSpec);
   if (state.query) {
@@ -3221,7 +3221,7 @@ function renderStudents(panel) {
   panel.innerHTML = `
     <div class="panel-head">
       <h2>${t("students_title_count", { n: list.length })}</h2>
-      <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="addStudent">${t("btn_add_student")}</button>${isPlatform() ? '<button class="btn btn-ghost btn-sm" id="importGraduateRoster">رفع قائمة الخريجين</button><input id="graduateRosterFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.pdf" hidden>' : ''}</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">${isPlatform() ? `<button class="btn btn-primary btn-sm" id="addStudent">${t("btn_add_student")}</button>` : ""}${isPlatform() ? '<button class="btn btn-ghost btn-sm" id="importGraduateRoster">رفع قائمة الخريجين</button><input id="graduateRosterFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.pdf" hidden>' : ''}</div>
     </div>
     <div class="toolbar">
       <input id="q" placeholder="${t("search_students_placeholder")}" value="${esc(state.query)}" />
@@ -3260,7 +3260,7 @@ function renderStudents(panel) {
       </tbody>
     </table></div>`;
 
-  $("#addStudent").onclick = () => studentModal(null, specs);
+  if (isPlatform() && $("#addStudent")) $("#addStudent").onclick = () => studentModal(null, specs);
   if (isPlatform() && $("#importGraduateRoster")) {
     $("#importGraduateRoster").onclick = () => $("#graduateRosterFile").click();
     $("#graduateRosterFile").onchange = async (event) => {
@@ -3325,6 +3325,7 @@ async function parseGraduateRosterFile(file) {
 }
 
 function studentModal(student, specs) {
+  if (!student && !isPlatform()) { toast("إضافة الطلاب يدويًا متاحة للمشرف الرئيسي فقط.", "err"); return; }
   if (student && !canModifyStudent(student)) { toast(t("student_locked"), "err"); return; }
   const isEdit = !!student;
   const m = openModal(`
