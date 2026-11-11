@@ -2224,9 +2224,32 @@ function applyLangAttrs() {
 
 /** Translate every static (non re-rendered) text node marked with data-i18n[-title]. */
 function applyStaticI18n() {
-  $$("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
-  $$("[data-i18n-title]").forEach(el => { el.setAttribute("title", t(el.dataset.i18nTitle)); });
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-title]').forEach(el => { el.setAttribute('title', t(el.dataset.i18nTitle)); });
   applyRegistrationFormatUI();
+}
+
+/** Translate legacy dynamic nodes that were rendered without data-i18n. */
+function applyDynamicI18n() {
+  const entries = Object.values(I18N).filter(x => x && x.ar && x.fr)
+    .map(x => state.lang === 'fr' ? [x.ar, x.fr] : [x.fr, x.ar])
+    .filter(([from, to]) => from && to && from !== to);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode, parent = node.parentElement;
+    if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA'].includes(parent.tagName)) nodes.push(node);
+  }
+  for (const node of nodes) {
+    let value = node.nodeValue;
+    for (const [from, to] of entries) if (value.includes(from)) value = value.split(from).join(to);
+    node.nodeValue = value;
+  }
+  document.querySelectorAll('[placeholder],[aria-label],[title]').forEach(el => ['placeholder','aria-label','title'].forEach(attr => {
+    if (!el.hasAttribute(attr)) return;
+    let value = el.getAttribute(attr);
+    for (const [from, to] of entries) if (value.includes(from)) value = value.split(from).join(to);
+    el.setAttribute(attr, value);
+  }));
 }
 
 function setMeta(sel, val) { const m = document.querySelector(sel); if (m) m.setAttribute("content", val); }
@@ -2286,6 +2309,7 @@ function refreshChrome() {
   if ($("#searchInput") && $("#searchInput").value.trim()) doSearch();
   if ($("#profileOverlay")) routeFromHash();
   if (state.me && !$("#pageDash").classList.contains("hidden")) renderDash();
+  applyDynamicI18n();
 }
 
 $("#btnLangToggle").onclick = () => {
@@ -2385,7 +2409,7 @@ function openPublicLaunchDB() {
   }).catch(error => { console.warn("[Startup cache] IndexedDB unavailable", error); publicLaunchDbPromise = Promise.resolve(null); return null; });
   return publicLaunchDbPromise;
 }
-function publicLaunchKey() { return `v3:${String(TENANT.host || location.hostname).toLowerCase()}:${tenantSelector()}:${TENANT.id || (TENANT.legacy ? "legacy" : "unresolved")}`; }
+function publicLaunchKey() { return `v4:${String(TENANT.host || location.hostname).toLowerCase()}:${tenantSelector()}:${TENANT.id || (TENANT.legacy ? "legacy" : "unresolved")}`; }
 async function readPublicLaunchSnapshot() {
   try {
     const database = await openPublicLaunchDB(); if (!database) return null;
@@ -2427,7 +2451,7 @@ function applyStartupPalette() {
   else applyPalette(state.settings?.theme_preset || DEFAULT_PALETTE, true);
 }
 function applyPublicLaunchSnapshot(snapshot) {
-  if (!snapshot || snapshot.schema !== 2 || snapshot.key !== publicLaunchKey() || snapshot.tenantId !== String(TENANT.id || "") || !Array.isArray(snapshot.specialties) || !snapshot.summary) return false;
+  if (!snapshot || snapshot.schema !== 3 || snapshot.key !== publicLaunchKey() || snapshot.tenantId !== String(TENANT.id || "") || !Array.isArray(snapshot.specialties) || !snapshot.summary) return false;
   state.specialties = snapshot.specialties;
   state.settings = { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, cat_d_limit: Math.max(0, (Number(snapshot.summary.total) || 0) - 350), graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE, ...(snapshot.settings || {}) };
   state.publicSummary = snapshot.summary;
@@ -2454,7 +2478,7 @@ function makePublicLaunchSnapshot() {
     if (student.specialty_id != null) specialties[String(student.specialty_id)] = (specialties[String(student.specialty_id)] || 0) + 1;
   }
   const key = publicLaunchKey();
-  return { key, schema: 2, tenantId: String(TENANT.id || ""), savedAt: Date.now(), promoUpdatedAt: Date.now(),
+  return { key, schema: 3, tenantId: String(TENANT.id || ""), savedAt: Date.now(), promoUpdatedAt: Date.now(),
     specialties: state.specialties.map(({ id, name, name_fr, color }) => ({ id, name, name_fr, color })),
     settings: Object.fromEntries(PUBLIC_STARTUP_SETTINGS.filter(name => state.settings && Object.prototype.hasOwnProperty.call(state.settings, name)).map(name => [name, state.settings[name]])),
     promo: { id: state.promo.id || null, slug: state.promo.slug || TENANT.slug || null, number: state.promo.number || TENANT.number || 18,
