@@ -136,6 +136,19 @@
       } catch (error) { submit.disabled = false; submit.textContent = retryLabel; return notify(bridge, error.message || 'تعذّر إنشاء الحساب.', 'err'); }
     } else result = await bridge.db.auth.signInWithPassword({ email, password });
     if (result.error) { submit.disabled = false; submit.textContent = retryLabel; return notify(bridge, result.error.message, 'err'); }
+    if (mode === 'signin' && rosterMode) {
+      const verifiedRegistration = String(root.dataset.verifiedRegistration || '').trim().toUpperCase();
+      const signedInUserId = result.data?.user?.id;
+      const { data: linkedAccount, error: linkedAccountError } = signedInUserId
+        ? await bridge.db.from('graduate_accounts').select('registration_number').eq('promotion_id', bridge.tenant.id).eq('user_id', signedInUserId).maybeSingle()
+        : { data: null, error: new Error('NO_USER') };
+      const linkedRegistration = String(linkedAccount?.registration_number || '').trim().toUpperCase();
+      if (linkedAccountError || !verifiedRegistration || !linkedAccount || linkedRegistration !== verifiedRegistration) {
+        await bridge.db.auth.signOut();
+        submit.disabled = false; submit.textContent = retryLabel;
+        return notify(bridge, isFrench(bridge) ? 'Cet e-mail et ce mot de passe ne correspondent pas au numéro d’inscription vérifié.' : 'هذا البريد الإلكتروني وكلمة المرور لا يطابقان حساب رقم التسجيل الذي تم التحقق منه.', 'err');
+      }
+    }
     if (mode === 'signup' && rosterMode) {
       const { error: profileError } = await bridge.db.rpc('register_graduate', { _promotion_id: bridge.tenant.id, _full_name: verifiedStudent.full_name || '', _registration_number: registrationNumber, _phone: phone, _specialty_id: verifiedStudent.specialty_id, _certificate_name: certificateName, _sash_name: sashName });
       if (profileError) {
