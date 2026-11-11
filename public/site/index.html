@@ -11,6 +11,7 @@
     var th = localStorage.getItem("iscae-theme");
     var pal = localStorage.getItem("iscae-palette");
     if (pal && /^[a-z0-9-]+$/.test(pal)) document.documentElement.setAttribute("data-palette", pal);
+    if (pal === "custom") { var custom = localStorage.getItem("iscae-custom-color"); if (custom && /^#[0-9a-f]{6}$/i.test(custom)) document.documentElement.style.setProperty("--custom-color", custom); }
     if (th === "dark" || (!th && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark");
     if (lg === "fr") { document.documentElement.setAttribute("lang","fr"); document.documentElement.setAttribute("dir","ltr"); }
     var entryParams = new URLSearchParams(location.search);
@@ -1054,6 +1055,40 @@ html.dark footer .mda:hover,html.dark footer .mda:focus-visible{color:var(--prim
 .theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.theme-choice{position:relative;display:flex;align-items:center;gap:12px;text-align:start;padding:12px;border:2px solid var(--stroke);border-radius:18px;background:var(--surface-solid);transition:.2s;cursor:pointer}.theme-choice:hover{border-color:var(--violet-300);transform:translateY(-2px)}.theme-choice.selected{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent)}.theme-swatches{display:flex;gap:4px;flex:none}.theme-swatches i{display:block;width:22px;height:42px;border-radius:6px}.theme-choice-copy{display:flex;flex-direction:column;gap:2px}.theme-choice-copy b{font-size:13px}.theme-choice-copy small{font-size:11px;color:var(--muted)}.theme-check{margin-inline-start:auto;opacity:0;color:var(--gold);font-weight:900}.theme-choice.selected .theme-check{opacity:1}.theme-preview-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.8fr);gap:16px;align-items:stretch;margin-top:14px}.theme-live-preview{overflow:hidden;border:1px solid var(--stroke);border-radius:18px;background:var(--bg-2);box-shadow:var(--shadow-sm);min-height:145px}.tlp-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--stroke);color:var(--text);font-size:12px}.tlp-head span{font-size:10px;color:var(--muted)}.tlp-hero{padding:18px 16px;background:linear-gradient(135deg,var(--ink),var(--primary));color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px}.tlp-hero small{font-weight:800}.tlp-hero strong{background:var(--accent);color:var(--ink);padding:7px 10px;border-radius:9px;font-size:11px}.tlp-body{display:flex;align-items:center;gap:14px;padding:15px}.tlp-card{display:flex;gap:4px;align-items:flex-end;height:36px}.tlp-card i,.tlp-card em{width:14px;height:32px;border-radius:4px;display:block}.tlp-card span{width:14px;height:24px;border-radius:4px;background:var(--violet-100);display:block}.tlp-lines{display:flex;flex-direction:column;gap:6px;flex:1}.tlp-lines b{height:6px;border-radius:5px;background:var(--violet-100);display:block}.tlp-lines b:nth-child(2){width:72%}.tlp-lines b:nth-child(3){width:48%}@media(max-width:720px){.theme-grid,.theme-preview-wrap{grid-template-columns:1fr}.theme-settings-head{display:block}}
 
 .custom-theme-box{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:14px;padding:14px;border:1px solid var(--stroke);border-radius:18px;background:var(--surface-solid)}.custom-theme-box h4{margin:0;font-weight:900}.custom-theme-box p{margin:4px 0 0;color:var(--muted);font-size:12px}.custom-theme-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.custom-theme-controls input[type=color]{width:42px;height:38px;padding:3px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface-solid);cursor:pointer}.custom-color-hex{width:102px;padding:9px 10px;border:1px solid var(--stroke);border-radius:10px;background:var(--bg-2);color:var(--text);font-weight:800;text-transform:uppercase}@media(max-width:720px){.custom-theme-box{display:block}.custom-theme-controls{margin-top:12px}}
+
+/* Contrast foundation: keep all palettes readable in either mode. Palette hues remain
+   decorative/brand accents; body copy, labels, controls and table text use AA-safe tokens. */
+html:not(.dark)[data-palette]{color-scheme:light;--text:#172033;--muted:#465365;--contrast-accent:#334155;--stroke:rgba(23,32,51,.19);--border:var(--stroke)}
+html.dark[data-palette]{color-scheme:dark;--bg:#0c1422;--bg-2:#142136;--surface:rgba(20,33,54,.96);--surface-solid:#17273e;--text:#f8fafc;--muted:#c3cedb;--contrast-accent:#e2e8f0;--stroke:rgba(203,213,225,.24);--border:var(--stroke);--violet-50:#1d2c43;--violet-100:#2a3d56;--violet-300:#91a7c2;--shadow-sm:0 1px 3px rgba(0,0,0,.38);--shadow-md:0 10px 25px -5px rgba(0,0,0,.48);--shadow-lg:0 20px 25px -5px rgba(0,0,0,.58);--grad-soft:linear-gradient(180deg,#0c1422 0%,#080e18 100%)}
+html[data-palette="custom"]{--bg:color-mix(in srgb,var(--custom-color,#102744) 4%,#fff);--bg-2:#fff;--surface:rgba(255,255,255,.92);--surface-solid:#fff;--text:#172033;--muted:#465365;--stroke:color-mix(in srgb,var(--custom-color,#102744) 20%,#d7dee8);--border:var(--stroke);--grad-soft:linear-gradient(180deg,var(--bg),color-mix(in srgb,var(--custom-color,#102744) 8%,#fff))}
+html.dark[data-palette="custom"]{--bg:color-mix(in srgb,var(--custom-color,#102744) 24%,#070d17);--bg-2:#101a2b;--surface:rgba(18,30,49,.96);--surface-solid:#17273e;--text:#f8fafc;--muted:#c3cedb;--stroke:rgba(203,213,225,.24);--border:var(--stroke);--violet-50:color-mix(in srgb,var(--custom-color,#102744) 32%,#111827);--violet-100:color-mix(in srgb,var(--custom-color,#102744) 44%,#1f2937);--grad-soft:linear-gradient(180deg,var(--bg),#080e18)}
+body{color:var(--text);background-color:var(--bg)}
+input,select,textarea{color:var(--text);background-color:var(--surface-solid);border-color:var(--stroke)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+option{color:var(--text);background:var(--surface-solid)}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--primary) 72%,#fff);outline-offset:2px}
+.muted,.finder-hint,.res-count,.gcard-spec,.prof-facts dt,.foot2,.theme-settings-head p,.theme-choice-copy small,.custom-theme-box p,.promo-device-note,.logo-editor-status,.logo-preset-copy small,.st-note,.lock-note{color:var(--muted)}
+.spec-card-label,.spec-card-num{color:var(--text)}
+.stat-card:not(.c-violet):not(.c-emerald):not(.c-indigo):not(.c-amber){min-height:unset;padding:16px;border:1px solid var(--stroke);border-radius:16px;background:var(--surface-solid);color:var(--text);box-shadow:var(--shadow-sm)}
+.stat-card:not(.c-violet):not(.c-emerald):not(.c-indigo):not(.c-amber)::after{display:none}
+.stat-card:not(.c-violet):not(.c-emerald):not(.c-indigo):not(.c-amber) strong,.stat-card:not(.c-violet):not(.c-emerald):not(.c-indigo):not(.c-amber) span{color:var(--text);opacity:1}
+.stat-card.c-emerald{background:linear-gradient(135deg,#065f46,#047857)}
+.stat-card.c-indigo{background:linear-gradient(135deg,#312e81,#4338ca)}
+.stat-card.c-amber{background:linear-gradient(135deg,#78350f,#92400e)}
+.stat-card.c-violet{background:linear-gradient(135deg,#111827,#26374d)}
+.stat-card.c-violet .num,.stat-card.c-violet .lbl,.stat-card.c-emerald .num,.stat-card.c-emerald .lbl,.stat-card.c-indigo .num,.stat-card.c-indigo .lbl,.stat-card.c-amber .num,.stat-card.c-amber .lbl{color:#fff;opacity:1}
+.spec-card-num{color:var(--text)!important}
+html.dark .spec-card-label,html.dark .spec-card-num{color:var(--text)!important}
+.spec-card .badge{color:var(--text)!important;background:var(--surface-solid)!important;border-color:var(--stroke)!important}
+.gcard,.prof-sheet,.st-card,.promo-card,.promo-device-preview,.custom-theme-box,.theme-choice{color:var(--text)}
+.graduate-card,.graduate-modal,.graduate-panel{color:var(--text)}
+.mini b,.brand-text span,.cd-box b,.ended,.search-field .hash,.congrats p strong,.promo-card .pc-link{color:var(--contrast-accent)!important}
+.mda:hover,.mda:focus-visible,footer .mda:hover,footer .mda:focus-visible{color:var(--contrast-accent)!important}
+.tlp-hero{background:linear-gradient(135deg,#111827,#26374d);color:#fff}
+.btn-primary{background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 45%,#000),color-mix(in srgb,var(--primary) 35%,#000));color:#fff}
+.btn-emerald{background:linear-gradient(135deg,#065f46,#047857);color:#fff}
+html.dark .tag,html.dark .chip,html.dark .badge{color:var(--text)}
+@media(forced-colors:active){:focus-visible{outline:2px solid Highlight}}
 </style>
 </head>
 <body>
@@ -1482,6 +1517,7 @@ const I18N = {
   stat_specialty:{ar:"تخصص",fr:"Spécialités"},
   stat_cat_ab:{ar:"فئة A + B",fr:"Catégorie A + B"},
   stat_cat_cd:{ar:"فئة C + D",fr:"Catégorie C + D"},
+  stat_unassigned:{ar:"بلا فئة حتى الآن",fr:"Sans catégorie pour l’instant"},
   events_title:{ar:"فعاليات الدفعة",fr:"Événements de la promotion"},
   events_subtitle:{ar:"احتفالات تكريم خريجي {promo}",fr:"Célébrations en l'honneur des diplômés de {promo}"},
   event_graduation:{ar:"حفل التخرج",fr:"Cérémonie de remise des diplômes"},
@@ -1560,9 +1596,9 @@ const I18N = {
   field_sash_optional:{ar:"اسم الوشاح (اختياري)",fr:"Nom sur l'écharpe (optionnel)"},
   field_certificate_optional:{ar:"اسم في شهادة التكريم (اختياري)",fr:"Nom sur le certificat d'honneur (optionnel)"},
   field_specialty_required:{ar:"التخصص *",fr:"Spécialité *"},
-  current_order_info:{ar:"الترتيب الحالي: {order} — الفئة: {cat}",fr:"Rang actuel : {order} — Catégorie : {cat}"},
+  current_order_info:{ar:"ترتيب الدفع الحالي: {order} — الفئة: {cat}",fr:"Rang de paiement actuel : {order} — Catégorie : {cat}"},
   cannot_edit_note:{ar:" (لا يمكن تعديلهما)",fr:" (non modifiables)"},
-  auto_order_note:{ar:"يُحسب الترتيب والفئة تلقائياً حسب تاريخ الإضافة.",fr:"Le rang et la catégorie sont calculés automatiquement selon la date d'ajout."},
+  auto_order_note:{ar:"قبل اعتماد الدفع لا يُسند ترتيب أو فئة للطالب؛ بعد الاعتماد يُحسبان حسب أسبقية الدفع.",fr:"Aucun rang ni catégorie n'est attribué avant l'approbation du paiement ; ils sont calculés selon l'ordre des paiements approuvés."},
   btn_save_changes:{ar:"حفظ التعديلات",fr:"Enregistrer les modifications"},
   btn_add_student_submit:{ar:"إضافة الطالب",fr:"Ajouter l'étudiant"},
   btn_cancel:{ar:"إلغاء",fr:"Annuler"},
@@ -1659,10 +1695,11 @@ const I18N = {
   field_night_date:{ar:"تاريخ الحفل الليلي",fr:"Date de la soirée de gala"},
   field_night_disabled_note:{ar:"الحفل الليلي مخفي لهذه الدفعة؛ تاريخ الحفل محفوظ ويمكن استعادته عند إعادة تفعيله.",fr:"La soirée est masquée pour cette promotion ; sa date est conservée et réapparaîtra si vous la réactivez."},
   categories_limits_title:{ar:"حدود الفئات",fr:"Limites des catégories"},
-  categories_limits_note:{ar:"A = أول (n) طالب، B = التالي، C = التالي، و D = البقية. التوزيع يتم تلقائياً حسب الترتيب.",fr:"A = les (n) premiers étudiants, B = les suivants, C = les suivants, et D = le reste. La répartition se fait automatiquement selon le rang."},
+  categories_limits_note:{ar:"لكل فئة A/B/C/D سعة قصوى مستقلة. قبل اعتماد أول دفع يظهر التوزيع الإجمالي فقط دون ترتيب أو تعيين فئة لطالب؛ وبعدها يُسند الترتيب والفئة حسب أسبقية اعتماد الدفع على مستوى الدفعة. إذا تجاوز عدد الطلاب مجموع السعات، يبقى الزائد بلا فئة حتى تعديل الحدود.",fr:"Chaque catégorie A/B/C/D a sa propre capacité maximale. Avant le premier paiement approuvé, seule la répartition globale est affichée, sans rang ni catégorie individuelle ; ensuite, le rang et la catégorie suivent l'ordre d'approbation des paiements dans la promotion. Si l'effectif dépasse la somme des capacités, les étudiants excédentaires restent sans catégorie jusqu'à modification des limites."},
   field_cat_a:{ar:"الفئة A",fr:"Catégorie A"},
   field_cat_b:{ar:"الفئة B",fr:"Catégorie B"},
   field_cat_c:{ar:"الفئة C",fr:"Catégorie C"},
+  field_cat_d:{ar:"الفئة D",fr:"Catégorie D"},
   btn_save_settings:{ar:"حفظ الإعدادات",fr:"Enregistrer les paramètres"},
   msg_settings_saved:{ar:"تم حفظ الإعدادات",fr:"Paramètres enregistrés"},
   exports_title:{ar:"تصدير القوائم",fr:"Exportation des listes"},
@@ -2122,10 +2159,10 @@ function clearCustomPaletteVars() { ["--custom-color","--custom-dark","--custom-
 function applyCustomPalette(color, persist = false) {
   const hex = normalizeHex(color); if (!hex) return null;
   const dark = mixHex(hex, "#000000", .38), soft = mixHex(hex, "#FFFFFF", .88), pale = mixHex(hex, "#FFFFFF", .93), accent = mixHex(hex, "#F6C453", .48);
-  const text = mixHex(hex, "#000000", .74), muted = mixHex(hex, "#64748B", .35);
+  const text = "#172033", muted = "#465365";
   clearCustomPaletteVars();
   const root = document.documentElement;
-  const vars = { "--custom-color":hex, "--custom-dark":dark, "--custom-soft":soft, "--custom-surface":pale, "--custom-text":text, "--custom-muted":muted, "--primary":hex, "--secondary":mixHex(hex,"#FFFFFF",.18), "--accent":accent, "--ink":dark, "--ink-2":mixHex(hex,"#000000",.2), "--violet-50":pale, "--violet-100":soft, "--violet-300":mixHex(hex,"#FFFFFF",.55), "--violet-500":hex, "--violet-600":mixHex(hex,"#000000",.12), "--violet-700":dark, "--emerald":mixHex(hex,"#10B981",.35), "--emerald-dark":mixHex(hex,"#000000",.2), "--bg":mixHex(hex,"#FFFFFF",.96), "--bg-2":"#FFFFFF", "--surface":"rgba(255,255,255,.88)", "--surface-solid":"#FFFFFF", "--stroke":`color-mix(in srgb, ${hex} 16%, transparent)`, "--text":text, "--muted":muted, "--gold":accent, "--grad-primary":`linear-gradient(135deg,${dark} 0%,${hex} 64%,${accent} 150%)`, "--grad-emerald":`linear-gradient(135deg,${mixHex(hex,"#000000",.2)} 0%,${mixHex(hex,"#10B981",.35)} 100%)`, "--grad-soft":`linear-gradient(180deg,${mixHex(hex,"#FFFFFF",.96)} 0%,${pale} 100%)`, "--ring":`0 0 0 4px color-mix(in srgb, ${hex} 22%, transparent)` };
+  const vars = { "--custom-color":hex, "--custom-dark":dark, "--custom-soft":soft, "--custom-surface":pale, "--custom-text":text, "--custom-muted":muted, "--primary":hex, "--secondary":mixHex(hex,"#FFFFFF",.18), "--accent":accent, "--ink":dark, "--ink-2":mixHex(hex,"#000000",.2), "--violet-50":pale, "--violet-100":soft, "--violet-300":mixHex(hex,"#FFFFFF",.55), "--violet-500":hex, "--violet-600":mixHex(hex,"#000000",.12), "--violet-700":dark, "--emerald":mixHex(hex,"#10B981",.35), "--emerald-dark":mixHex(hex,"#000000",.2), "--gold":accent, "--grad-primary":`linear-gradient(135deg,${dark} 0%,${hex} 64%,${accent} 150%)`, "--grad-emerald":`linear-gradient(135deg,${mixHex(hex,"#000000",.2)} 0%,${mixHex(hex,"#10B981",.35)} 100%)`, "--ring":`0 0 0 4px color-mix(in srgb, ${hex} 22%, transparent)` };
   Object.entries(vars).forEach(([k,v]) => root.style.setProperty(k,v));
   root.setAttribute("data-palette", "custom");
   if (persist) { localStorage.setItem("iscae-palette", "custom"); localStorage.setItem("iscae-custom-color", hex); }
@@ -2171,6 +2208,7 @@ function initTheme() {
 $("#btnTheme").onclick = () => {
   document.documentElement.classList.toggle("dark");
   localStorage.setItem("iscae-theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+  if (currentPalette() === "custom") applyCustomPalette(activeCustomColor());
   updateThemeIcon();
 };
 
@@ -2258,15 +2296,38 @@ $("#btnLangToggle").onclick = () => {
 };
 
 /* ------------------------- 4. CATEGORIES ------------------------- */
-/** Compute the category of a student from his order inside his specialty. */
-function paymentOrderOf(student) { return Number.isInteger(student?.payment_order_index) ? student.payment_order_index : null; }
-function categoryOf(order) {
-  const s = state.settings || { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150 };
-  const a = s.cat_a_limit, b = a + s.cat_b_limit, c = b + s.cat_c_limit;
-  if (order <= a) return "A";
-  if (order <= b) return "B";
-  if (order <= c) return "C";
-  return "D";
+/** Only an approved payment rank can assign a student category; roster/upload order never does. */
+function paymentOrderOf(student) { const n = Number(student?.payment_order_index); return Number.isInteger(n) && n > 0 ? n : null; }
+function categoryOf(order, settings = state.settings || {}) {
+  const rank = Number(order);
+  if (!Number.isInteger(rank) || rank < 1) return null;
+  const a = Math.max(0, Number(settings.cat_a_limit ?? 100) || 0);
+  const b = Math.max(0, Number(settings.cat_b_limit ?? 100) || 0);
+  const c = Math.max(0, Number(settings.cat_c_limit ?? 150) || 0);
+  const d = Math.max(0, Number(settings.cat_d_limit ?? 0) || 0);
+  if (rank <= a) return "A";
+  if (rank <= a + b) return "B";
+  if (rank <= a + b + c) return "C";
+  if (rank <= a + b + c + d) return "D";
+  return null;
+}
+/** Before the first payment, show only how the roster fits the configured capacities—never a student assignment. */
+function plannedCategoryCounts(total, settings = state.settings || {}) {
+  let left = Math.max(0, Number(total) || 0);
+  const out = {};
+  for (const [key, value] of [["A", settings.cat_a_limit ?? 100], ["B", settings.cat_b_limit ?? 100], ["C", settings.cat_c_limit ?? 150], ["D", settings.cat_d_limit ?? Math.max(0, left - (Number(settings.cat_a_limit ?? 100) + Number(settings.cat_b_limit ?? 100) + Number(settings.cat_c_limit ?? 150)))]] ) {
+    const capacity = Math.max(0, Number(value) || 0);
+    out[key] = Math.min(left, capacity);
+    left -= out[key];
+  }
+  return out;
+}
+function assignedCategoryCounts(students, fallbackTotal = students.length) {
+  const ranks = (students || []).map(paymentOrderOf).filter(rank => rank !== null);
+  if (!ranks.length) return plannedCategoryCounts(fallbackTotal);
+  const counts = { A: 0, B: 0, C: 0, D: 0 };
+  ranks.forEach(rank => { const cat = categoryOf(rank); if (cat) counts[cat]++; });
+  return counts;
 }
 
 /* ------------------------- 5. DATE HELPERS ------------------------- */
@@ -2309,10 +2370,10 @@ async function fetchAllRows(makeQuery) {
 
 /** صف إعدادات الدفعة (الوضع القديم: الصف id = 1). */
 const legacyId = q => (tenantOn() ? q : q.eq("id", 1));
-const PUBLIC_LAUNCH_DB = "iscae-public-launch-v1";
+const PUBLIC_LAUNCH_DB = "iscae-public-launch-v2";
 const PUBLIC_LAUNCH_STORE = "snapshots";
 let publicLaunchDbPromise = null;
-const PUBLIC_STARTUP_SETTINGS = ["graduation_date", "night_party_date", "theme_preset", "theme_custom_color", "show_category_stats", "total_graduates_override", "specialty_counts_override", "show_phone_in_search"];
+const PUBLIC_STARTUP_SETTINGS = ["graduation_date", "night_party_date", "theme_preset", "theme_custom_color", "show_category_stats", "total_graduates_override", "specialty_counts_override", "show_phone_in_search", "cat_a_limit", "cat_b_limit", "cat_c_limit", "cat_d_limit"];
 function openPublicLaunchDB() {
   if (!window.indexedDB) return Promise.resolve(null);
   if (!publicLaunchDbPromise) publicLaunchDbPromise = new Promise((resolve, reject) => {
@@ -2324,7 +2385,7 @@ function openPublicLaunchDB() {
   }).catch(error => { console.warn("[Startup cache] IndexedDB unavailable", error); publicLaunchDbPromise = Promise.resolve(null); return null; });
   return publicLaunchDbPromise;
 }
-function publicLaunchKey() { return `v2:${String(TENANT.host || location.hostname).toLowerCase()}:${tenantSelector()}:${TENANT.id || (TENANT.legacy ? "legacy" : "unresolved")}`; }
+function publicLaunchKey() { return `v3:${String(TENANT.host || location.hostname).toLowerCase()}:${tenantSelector()}:${TENANT.id || (TENANT.legacy ? "legacy" : "unresolved")}`; }
 async function readPublicLaunchSnapshot() {
   try {
     const database = await openPublicLaunchDB(); if (!database) return null;
@@ -2366,9 +2427,9 @@ function applyStartupPalette() {
   else applyPalette(state.settings?.theme_preset || DEFAULT_PALETTE, true);
 }
 function applyPublicLaunchSnapshot(snapshot) {
-  if (!snapshot || snapshot.schema !== 1 || snapshot.key !== publicLaunchKey() || snapshot.tenantId !== String(TENANT.id || "") || !Array.isArray(snapshot.specialties) || !snapshot.summary) return false;
+  if (!snapshot || snapshot.schema !== 2 || snapshot.key !== publicLaunchKey() || snapshot.tenantId !== String(TENANT.id || "") || !Array.isArray(snapshot.specialties) || !snapshot.summary) return false;
   state.specialties = snapshot.specialties;
-  state.settings = { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE, ...(snapshot.settings || {}) };
+  state.settings = { cat_a_limit: 100, cat_b_limit: 100, cat_c_limit: 150, cat_d_limit: Math.max(0, (Number(snapshot.summary.total) || 0) - 350), graduation_date: null, night_party_date: null, theme_preset: DEFAULT_PALETTE, ...(snapshot.settings || {}) };
   state.publicSummary = snapshot.summary;
   state.publicCacheActive = true;
   if (snapshot.promo && snapshot.promo.id === TENANT.id) {
@@ -2388,13 +2449,12 @@ function applyPublicLaunchSnapshot(snapshot) {
   return true;
 }
 function makePublicLaunchSnapshot() {
-  const categories = { A: 0, B: 0, C: 0, D: 0 }, specialties = {};
+  const categories = assignedCategoryCounts(state.students, state.students.length), specialties = {};
   for (const student of state.students) {
-    const category = categoryOf(student.order_index); if (Object.prototype.hasOwnProperty.call(categories, category)) categories[category]++;
     if (student.specialty_id != null) specialties[String(student.specialty_id)] = (specialties[String(student.specialty_id)] || 0) + 1;
   }
   const key = publicLaunchKey();
-  return { key, schema: 1, tenantId: String(TENANT.id || ""), savedAt: Date.now(), promoUpdatedAt: Date.now(),
+  return { key, schema: 2, tenantId: String(TENANT.id || ""), savedAt: Date.now(), promoUpdatedAt: Date.now(),
     specialties: state.specialties.map(({ id, name, name_fr, color }) => ({ id, name, name_fr, color })),
     settings: Object.fromEntries(PUBLIC_STARTUP_SETTINGS.filter(name => state.settings && Object.prototype.hasOwnProperty.call(state.settings, name)).map(name => [name, state.settings[name]])),
     promo: { id: state.promo.id || null, slug: state.promo.slug || TENANT.slug || null, number: state.promo.number || TENANT.number || 18,
@@ -2639,15 +2699,16 @@ function categoryStatsVisible() {
 function renderStats() {
   const total = displayTotalGraduates();
   const specs = state.specialties.length;
-  const cats  = { A: 0, B: 0, C: 0, D: 0 };
+  const cats = { A: 0, B: 0, C: 0, D: 0 };
   let countBySpecialty;
   if (state.publicSummary) {
     Object.assign(cats, state.publicSummary.categories || {});
     countBySpecialty = new Map(Object.entries(state.publicSummary.specialties || {}).map(([id, count]) => [id, Number(count) || 0]));
   } else {
-    state.students.forEach(s => { const category = categoryOf(s.order_index); if (Object.prototype.hasOwnProperty.call(cats, category)) cats[category]++; });
+    Object.assign(cats, assignedCategoryCounts(state.students, state.students.length));
     countBySpecialty = studentCountsBySpecialty();
   }
+  const unassigned = Math.max(0, total - (Number(cats.A) || 0) - (Number(cats.B) || 0) - (Number(cats.C) || 0) - (Number(cats.D) || 0));
   const specialtyCounts = state.specialties.map(sp => displaySpecialtyCount(sp.id, countBySpecialty));
 
   $("#statsGrid").innerHTML = `
@@ -2655,7 +2716,8 @@ function renderStats() {
     ${statCard("c-emerald", specs, t("stat_specialty"), iconBook)}
     ${categoryStatsVisible() ? `
       ${statCard("c-indigo", cats.A + cats.B, t("stat_cat_ab"), iconStar)}
-      ${statCard("c-amber", cats.C + cats.D, t("stat_cat_cd"), iconStar)}` : ""}
+      ${statCard("c-amber", cats.C + cats.D, t("stat_cat_cd"), iconStar)}
+      ${unassigned ? statCard("c-neutral", unassigned, t("stat_unassigned"), iconUsers) : ""}` : ""}
   `;
 
   const maxCount = Math.max(...specialtyCounts, 1);
@@ -2789,7 +2851,7 @@ let searchTimer = null, searchSeq = 0;
 function enrichStudent(st) {
   if (!st) return st;
   const sp = state.specialties.find(x => x.id === st.specialty_id);
-  return { ...st, specialty_name: st.specialty_name || (sp ? sp.name : ""), specialty_name_fr: st.specialty_name_fr || (sp ? sp.name_fr : ""), category: st.category || categoryOf(st.order_index) };
+  return { ...st, specialty_name: st.specialty_name || (sp ? sp.name : ""), specialty_name_fr: st.specialty_name_fr || (sp ? sp.name_fr : ""), category: st.category || categoryOf(paymentOrderOf(st)) };
 }
 function initials(name) {
   const w = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -3179,8 +3241,7 @@ function visibleStudents() {
 
 function renderOverview(panel) {
   const list = visibleStudents();
-  const cats = { A: 0, B: 0, C: 0, D: 0 };
-  list.forEach(s => cats[categoryOf(s.order_index)]++);
+  const cats = assignedCategoryCounts(list, isSuper() && !singleSpecialtyOn() ? list.length : 0);
   panel.innerHTML = `
     <div class="panel-head"><h2>${t("nav_overview")}</h2></div>
     <div class="mini-grid">
@@ -3198,7 +3259,7 @@ function renderOverview(panel) {
       <thead><tr><th>${t("th_specialty")}</th><th>${t("th_students_count")}</th><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead>
       <tbody>${state.specialties.map(sp => {
         const l = state.students.filter(s => s.specialty_id === sp.id);
-        const c = { A: 0, B: 0, C: 0, D: 0 }; l.forEach(s => c[categoryOf(s.order_index)]++);
+        const c = { A: 0, B: 0, C: 0, D: 0 }; l.forEach(s => { const cat = categoryOf(paymentOrderOf(s)); if (cat) c[cat]++; });
         return `<tr><td>${esc(state.lang === "fr" ? (sp.name_fr || sp.name) : sp.name)}</td><td>${l.length}</td><td>${c.A}</td><td>${c.B}</td><td>${c.C}</td><td>${c.D}</td></tr>`;
       }).join("") || `<tr><td colspan="6" class="empty">${t("no_data")}</td></tr>`}</tbody>
     </table></div>` : ""}
@@ -3267,7 +3328,7 @@ function renderStudents(panel) {
           <td>${esc(certName(s) || "—")}</td>
           ${showPaymentStatus ? `<td><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;${paymentColor(paymentByStudent[s.id])}">${esc(paymentLabel(paymentByStudent[s.id]))}</span></td>` : ""}
           <td>${esc(specName(s.specialty_id))}</td>
-          <td>${paymentOrderOf(s) === null ? '<span class="muted">—</span>' : `<span class="tag tag-${categoryOf(paymentOrderOf(s))}">${categoryOf(paymentOrderOf(s))}</span>`}</td>
+          <td>${categoryOf(paymentOrderOf(s)) ? `<span class="tag tag-${categoryOf(paymentOrderOf(s))}">${categoryOf(paymentOrderOf(s))}</span>` : '<span class="muted">—</span>'}</td>
           <td>${new Date(s.created_at).toLocaleDateString("fr-FR")}</td>
           <td>
             <div class="row" style="gap:6px">
@@ -3765,6 +3826,7 @@ function renderSettings(panel) {
         <div class="field"><label>${t("field_cat_a")}</label><input name="cat_a_limit" type="number" min="0" value="${s.cat_a_limit ?? 100}" /></div>
         <div class="field"><label>${t("field_cat_b")}</label><input name="cat_b_limit" type="number" min="0" value="${s.cat_b_limit ?? 100}" /></div>
         <div class="field"><label>${t("field_cat_c")}</label><input name="cat_c_limit" type="number" min="0" value="${s.cat_c_limit ?? 150}" /></div>
+        <div class="field"><label>${t("field_cat_d")}</label><input name="cat_d_limit" type="number" min="0" value="${s.cat_d_limit ?? 0}" /></div>
       </div>
       <label class="row" style="gap:10px;align-items:center;cursor:pointer;font-weight:700">
         <input type="checkbox" name="show_category_stats" ${s.show_category_stats === false ? "" : "checked"} style="width:18px;height:18px;accent-color:var(--violet-600)" />
@@ -3837,6 +3899,7 @@ function renderSettings(panel) {
       cat_a_limit: Number(f.cat_a_limit) || 0,
       cat_b_limit: Number(f.cat_b_limit) || 0,
       cat_c_limit: Number(f.cat_c_limit) || 0,
+      cat_d_limit: Number(f.cat_d_limit) || 0,
       theme_preset: pendingPalette,
       ...(pendingPalette === "custom" ? { theme_custom_color: pendingCustomColor } : {})
     };
@@ -4531,7 +4594,7 @@ function exportRows(specialtyId) {
     [H.sash]: sashName(s),
     [H.cert]: certName(s),
     [H.spec]: specName(s.specialty_id),
-    [H.cat]: paymentOrderOf(s) === null ? "—" : categoryOf(paymentOrderOf(s)),
+    [H.cat]: categoryOf(paymentOrderOf(s)) || "—",
     [H.date]: new Date(s.created_at).toLocaleDateString("fr-FR")
   }));
 }
@@ -4658,7 +4721,8 @@ const CARD_CAT_RANK = { A: 1, B: 2, C: 3, D: 4 };
 function studentsOrderedForCards(list) {
   return (list || state.students).slice().sort((a, b) => {
     const ao = paymentOrderOf(a), bo = paymentOrderOf(b);
-    const r = CARD_CAT_RANK[categoryOf(ao ?? a.order_index)] - CARD_CAT_RANK[categoryOf(bo ?? b.order_index)];
+    const ar = CARD_CAT_RANK[categoryOf(ao)] || 5, br = CARD_CAT_RANK[categoryOf(bo)] || 5;
+    const r = ar - br;
     if (r) return r;
     if (ao !== null && bo !== null && ao !== bo) return ao - bo;
     if (ao === null && bo !== null) return 1; if (ao !== null && bo === null) return -1;
