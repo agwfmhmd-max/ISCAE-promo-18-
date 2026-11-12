@@ -5083,6 +5083,7 @@ function ceremonyCreateModal() {
     }
 
     const payload = {
+      promotion_id: TENANT.id,
       name: f.name.trim(), name_fr: (f.name_fr || "").trim() || null,
       type, total_cards: total, updated_at: new Date().toISOString(),
     };
@@ -5091,7 +5092,7 @@ function ceremonyCreateModal() {
     const newId = r.data?.id;
 
     if (type === "graduation" && newId && colorsPayload.length) {
-      const ctPayload = colorsPayload.map(c => ({ ...c, ceremony_id: newId, updated_at: new Date().toISOString() }));
+      const ctPayload = colorsPayload.map(c => ({ ...c, promotion_id: TENANT.id, ceremony_id: newId, updated_at: new Date().toISOString() }));
       const { error: ctErr } = await db.from("ceremony_card_types").insert(ctPayload);
       if (ctErr) { toast(t("err_save_failed", { msg: ctErr.message }), "err"); return; }
     }
@@ -5146,7 +5147,7 @@ function ceremonyModal(cer) {
     const changed = !isEdit || total !== (Number(cer.total_cards) || 0);
     if (changed && isEdit && !await confirmDialog(t("confirm_redistribute_title"), t("confirm_redistribute_text"))) return;
 
-    const payload = { name: f.name.trim(), name_fr: (f.name_fr || "").trim() || null, type, total_cards: total, updated_at: new Date().toISOString() };
+    const payload = { promotion_id: TENANT.id, name: f.name.trim(), name_fr: (f.name_fr || "").trim() || null, type, total_cards: total, updated_at: new Date().toISOString() };
     let error, newId = cer?.id;
     if (isEdit) ({ error } = await db.from("ceremonies").update(payload).eq("id", cer.id));
     else {
@@ -5219,7 +5220,7 @@ function cardTypeModal(ceremonyId, ct) {
     if (!await confirmDialog(t("confirm_redistribute_title"), t("confirm_redistribute_text"))) return;
 
     const payload = {
-      ceremony_id: cer.id, name: f.name.trim(), name_fr: (f.name_fr || "").trim() || null,
+      promotion_id: TENANT.id, ceremony_id: cer.id, name: f.name.trim(), name_fr: (f.name_fr || "").trim() || null,
       color: f.color || "#ef4444", total_cards: value, updated_at: new Date().toISOString()
     };
     let error;
@@ -5521,8 +5522,14 @@ function subKey(sub, name) {
 
 async function swRegistration() {
   if (!("serviceWorker" in navigator)) return null;
-  try { return await navigator.serviceWorker.ready; }
-  catch (e) { return await navigator.serviceWorker.register("./service-worker.js"); }
+  try {
+    const registration = await navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" });
+    await registration.update().catch(() => {});
+    return registration;
+  } catch (e) {
+    try { return await Promise.race([navigator.serviceWorker.ready, new Promise(resolve => setTimeout(() => resolve(null), 4000))]); }
+    catch (_) { return null; }
+  }
 }
 
 async function currentPushSub() {
@@ -5567,7 +5574,7 @@ async function enablePush() {
   }
   notifState.busy = true;
   try {
-    const perm = await Notification.requestPermission();
+    const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
     if (perm !== "granted") { toast(t("err_notif_denied"), "err"); return; }
 
     const reg = await swRegistration();
@@ -6168,6 +6175,7 @@ function promoCreateModal(data) {
       <div class="grid-2"><div class="field"><label>${t("promos_field_number")}</label><input name="n" id="pcNumber" type="number" min="1" max="999" required dir="ltr" value="${institutionReady ? 1 : fallbackNext}" /></div>
         <div class="field"><label>${t("promo_name_fr")}</label><input name="fr" dir="ltr" maxlength="80" /></div></div>
       <div class="field"><label>${t("promo_name_ar")}</label><input name="ar" dir="rtl" maxlength="80" /></div>
+      <div class="field"><label>${t("field_platform_name")}</label><input name="platform_name" maxlength="120" placeholder="${esc(t("field_platform_name"))}" /></div>
       <div class="field"><label>${t("promo_logo_style_label")}</label>${logoStyleOptionsHTML("general", "pcLogoStyle")}<small class="muted">${t("promo_logo_style_note")}</small></div>
       ${institutionReady ? `<div class="field"><label>${t("promos_reg_mask")}</label><input name="registration_mask" id="pcRegMask" dir="ltr" maxlength="32" autocomplete="off" required /><small class="muted">${t("promos_reg_mask_hint")} ${t("promos_reg_mask_example")} <bdi id="pcRegExample" dir="ltr"></bdi></small></div>
         <label class="row" style="gap:10px;align-items:center;cursor:pointer;font-weight:700"><input name="night_event_enabled" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--violet-600)" /><span>${t("promos_night_enabled")}</span></label><small class="muted">${t("promos_night_note")}</small>` : ""}
@@ -6297,6 +6305,12 @@ function promoCreateModal(data) {
         if (delegation.error) paymentDelegationError = delegation.error.message || String(delegation.error);
       }
       const newPromoSlug = promo?.slug || `${instSlug}-promo-${n}`;
+      const platformName = String(v.platform_name || "").trim();
+      let platformNameError = "";
+      if (platformName && promo?.id) {
+        const settingsResult = await rawFrom("settings").upsert({ promotion_id: promo.id, platform_name: platformName, updated_at: new Date().toISOString() }, { onConflict: "promotion_id" });
+        if (settingsResult.error) platformNameError = settingsResult.error.message || String(settingsResult.error);
+      }
       const selectedLogoStyle = Object.prototype.hasOwnProperty.call(PROMO_LOGO_STYLES, v.logo_style) ? v.logo_style : suggestedPromoLogoStyle(instSlug);
       let logoTemplateError = "";
       if (institutionReady && promo?.id) {
@@ -6326,6 +6340,7 @@ function promoCreateModal(data) {
         <small class="muted">${fresh.domain && (fresh.is_default || fresh.domain_status === "active") ? t("promos_link_ok") : t("promos_temp_link")} · ${esc(newPromoSlug)}</small></div></div>
         ${logoUploadError ? `<p class="error-text">${esc(logoUploadError)}</p>` : ""}
         ${logoTemplateError ? `<p class="error-text">${esc(t("promo_logo_fail", { msg: logoTemplateError }))}</p>` : ""}
+        ${platformNameError ? `<p class="error-text">${esc(t("err_generic", { msg: platformNameError }))}</p>` : ""}
         ${paymentDelegationError ? `<p class="error-text">${esc(t("promos_payment_delegate_error", { msg: paymentDelegationError }))}</p>` : delegatePaymentForNewPromo ? `<p class="muted">${t("promos_payment_delegate_done")}</p>` : ""}
         <p><b>${t("promos_result_head")}:</b> ${esc(headMsg)}</p></div>
         <div class="modal-foot"><button class="btn btn-primary" data-close>${t("promos_close")}</button></div></div>`).querySelector("[data-close]").onclick = closeModals;

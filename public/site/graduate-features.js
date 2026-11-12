@@ -93,9 +93,19 @@
     const wrapper=doc.body.firstElementChild; return wrapper ? wrapper.innerHTML : html;
   }
   function notify(bridge, message, type = 'info') { if (isFrench(bridge)) for (const [ar,fr] of FR) message=String(message).split(ar).join(fr); bridge.toast?.(message, type); }
+  function subscribeGraduateNotifications(bridge, userId, onNotice) {
+    if (!bridge?.db || !bridge?.tenant?.id || !userId) return () => {};
+    const channel = bridge.db.channel(`graduate-notifications-${bridge.tenant.id}-${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'graduate_notifications', filter: `promotion_id=eq.${bridge.tenant.id}` }, (payload) => {
+        const row = payload?.new;
+        if (row?.user_id === userId) onNotice(row);
+      });
+    channel.subscribe((status) => { if (status === 'CHANNEL_ERROR') console.warn('[PROMO MR] graduate notification channel unavailable'); });
+    return () => { try { bridge.db.removeChannel(channel); } catch (_) {} };
+  }
   function modal(bridge, content) {
     const root = bridge.openModal(`<div class="modal graduate-modal" lang="${isFrench(bridge) ? 'fr' : 'ar'}" dir="${isFrench(bridge) ? 'ltr' : 'rtl'}">${translateMarkup(bridge, content)}</div>`);
-    root.querySelectorAll('[data-close]').forEach((x) => x.addEventListener('click', () => { root.remove(); if (!document.querySelector('.graduate-modal')) clearGraduateRoute(); }));
+    root.querySelectorAll('[data-close]').forEach((x) => x.addEventListener('click', () => { root._graduateNotifCleanup?.(); root.remove(); if (!document.querySelector('.graduate-modal')) clearGraduateRoute(); }));
     return root;
   }
   function graduateUrl() { const url = new URL(window.location.href); url.searchParams.set('graduate', '1'); return url; }
@@ -335,6 +345,10 @@
       ${cards.length ? `<section class="graduate-card"><h4>${isFrench(bridge) ? 'Mes cartes d’événements' : 'بطاقات فعالياتي'}</h4>${cards.map(card => `<article class="graduate-bank-row"><div><b>${esc(isFrench(bridge) ? (card.ceremony_name_fr || card.ceremony_name || '') : (card.ceremony_name || card.ceremony_name_fr || ''))}</b><small>${esc(isFrench(bridge) ? (card.card_type_name_fr || card.card_type_name || 'Carte') : (card.card_type_name || card.card_type_name_fr || 'بطاقة'))}</small></div><strong>${esc(card.quantity)} ×</strong></article>`).join('')}</section>` : ''}${reportsHtml}
     </div>`;
     translateElement(bridge, root.querySelector('.graduate-content'));
+    root._graduateNotifCleanup?.();
+    root._graduateNotifCleanup = subscribeGraduateNotifications(bridge, acc.user_id, (row) => {
+      notify(bridge, `${row.title}: ${row.body}`, 'success');
+    });
     root.querySelector('#graduateEditNames')?.addEventListener('click', () => editDisplayNames(bridge, acc, root));
     root.querySelector('#graduatePayBtn')?.addEventListener('click', () => paymentModal(bridge, acc, settings, banks, root));
     root.querySelector('#graduateMemoryBtn')?.addEventListener('click', () => memoryModal(bridge, acc, memories.length, root));
@@ -470,8 +484,23 @@
     const canManageFinance = isHead || financePermission || isPlatformAdmin;
     const nightEnabled = bridge.state?.promo?.night_event_enabled !== false;
     const canManageNight = nightEnabled && (isHead || isPlatformAdmin || (nightPermission && !financePermission));
-    const root = modal(bridge, `<div class="modal-head"><h3>${isHead || isPlatformAdmin ? 'إدارة العضوية والفعاليات' : financePermission ? 'طلبات الاشتراك المالية' : 'مسح بطاقات الحفل الليلي'}</h3><button class="icon-btn" aria-label="إغلاق" data-close>×</button></div><div class="modal-body graduate-content"><p class="graduate-muted">جاري التحميل...</p></div>`);
     const promotionId = bridge.tenant.id;
+    const root = modal(bridge, `<div class="modal-head"><h3>${isHead || isPlatformAdmin ? 'إدارة العضوية والفعاليات' : financePermission ? 'طلبات الاشتراك المالية' : 'مسح بطاقات الحفل الليلي'}</h3><button class="icon-btn" aria-label="إغلاق" data-close>×</button></div><div class="modal-body graduate-content"><p class="graduate-muted">جاري التحميل...</p></div>`);
+    root._graduateNotifCleanup = subscribeGraduateNotifications(bridge, s.user.id, (row) => {
+      notify(bridge, `${row.title}: ${row.body}`, 'success');
+    });
+    const requestChannel = bridge.db.channel(`subscription-requests-${promotionId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscription_requests', filter: `promotion_id=eq.${bridge.tenant.id}` }, (payload) => {
+        if (payload?.new?.status === 'pending' && canManageFinance) {
+          notify(bridge, isFrench(bridge) ? 'Nouvelle demande de paiement reçue.' : 'وصل طلب اشتراك مالي جديد.', 'success');
+          root._graduateNotifCleanup?.();
+          root.remove();
+          openGraduateAdmin(bridge).catch(() => {});
+        }
+      });
+    requestChannel.subscribe();
+    const oldCleanup = root._graduateNotifCleanup;
+    root._graduateNotifCleanup = () => { oldCleanup?.(); try { bridge.db.removeChannel(requestChannel); } catch (_) {} };
     const canAssignStaff = isHead || isPlatformAdmin;
     const [financeData, staffResult] = await Promise.all([
       canManageFinance ? Promise.all([
