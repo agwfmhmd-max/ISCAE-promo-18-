@@ -5083,25 +5083,31 @@ function ceremonyCreateModal() {
     }
 
     const saveButton = e.target.querySelector('button[type="submit"]');
-    if (saveButton) { saveButton.disabled = true; saveButton.dataset.originalText = saveButton.textContent; saveButton.textContent = t("loading"); }
-    const { data: saved, error: saveError } = await db.rpc("create_ceremony_with_cards", {
-      _promotion_id: TENANT.id,
-      _name: f.name.trim(),
-      _name_fr: (f.name_fr || "").trim() || null,
-      _type: type,
-      _total_cards: total,
-      _card_types: colorsPayload
-    });
-    if (saveError) {
-      if (saveButton) { saveButton.disabled = false; saveButton.textContent = saveButton.dataset.originalText || t("btn_save"); }
-      toast(t("err_save_failed", { msg: saveError.message }), "err");
-      return;
+    const originalText = saveButton?.textContent || t("btn_save");
+    if (saveButton) { saveButton.disabled = true; saveButton.textContent = t("loading") || originalText; }
+    try {
+      const request = db.rpc("create_ceremony_with_cards", {
+        _promotion_id: TENANT.id,
+        _name: f.name.trim(),
+        _name_fr: (f.name_fr || "").trim() || null,
+        _type: type,
+        _total_cards: total,
+        _card_types: colorsPayload
+      });
+      const { data: saved, error: saveError } = await Promise.race([
+        request,
+        new Promise(resolve => setTimeout(() => resolve({ data: null, error: new Error("انتهت مهلة الحفظ؛ تحقق من الاتصال والصلاحية ثم أعد المحاولة.") }), 20000))
+      ]);
+      if (saveError) { toast(t("err_save_failed", { msg: saveError.message }), "err"); return; }
+      closeModals(); toast(t("msg_cards_saved"));
+      await loadCeremonies();
+      if (saved?.distributed != null) toast(t("msg_redistributed", { n: saved.students || state.students.length }), "success");
+      renderDash();
+    } catch (error) {
+      toast(t("err_save_failed", { msg: error?.message || "تعذر حفظ الحفل." }), "err");
+    } finally {
+      if (saveButton && document.body.contains(saveButton)) { saveButton.disabled = false; saveButton.textContent = originalText; }
     }
-    const newId = saved?.ceremony_id;
-    closeModals(); toast(t("msg_cards_saved"));
-    await loadCeremonies();
-    if (saved?.distributed != null) toast(t("msg_redistributed", { n: saved.students || state.students.length }), "success");
-    renderDash();
   };
 }
 
@@ -5292,7 +5298,16 @@ async function redistributeCeremony(ceremonyId, silentConfirm) {
   }
   if (!silentConfirm && !await confirmDialog(t("confirm_redistribute_title"), t("confirm_redistribute_text"))) return;
 
-  const { data, error } = await db.rpc("redistribute_ceremony_cards", { _ceremony_id: ceremonyId });
+  let data, error;
+  try {
+    ({ data, error } = await Promise.race([
+      db.rpc("redistribute_ceremony_cards", { _ceremony_id: ceremonyId }),
+      new Promise(resolve => setTimeout(() => resolve({ data: null, error: new Error("انتهت مهلة توزيع البطاقات؛ تحقق من الاتصال والصلاحية ثم أعد المحاولة.") }), 20000))
+    ]));
+  } catch (requestError) {
+    toast(t("err_redistribute", { msg: requestError?.message || "تعذر توزيع البطاقات." }), "err");
+    return;
+  }
   if (error) {
     const msg = String(error.message || "");
     if (/does not exist|not found|404|schema cache/i.test(msg)) toast(t("err_rpc_missing"), "err");
