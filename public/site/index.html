@@ -5082,24 +5082,25 @@ function ceremonyCreateModal() {
       if (sum !== total) { toast(t("err_cards_mismatch", { sum, total }), "err"); return; }
     }
 
-    const payload = {
-      promotion_id: TENANT.id,
-      name: f.name.trim(), name_fr: (f.name_fr || "").trim() || null,
-      type, total_cards: total, updated_at: new Date().toISOString(),
-    };
-    const r = await db.from("ceremonies").insert(payload).select("id").maybeSingle();
-    if (r.error) { toast(t("err_save_failed", { msg: r.error.message }), "err"); return; }
-    const newId = r.data?.id;
-
-    if (type === "graduation" && newId && colorsPayload.length) {
-      const ctPayload = colorsPayload.map(c => ({ ...c, promotion_id: TENANT.id, ceremony_id: newId, updated_at: new Date().toISOString() }));
-      const { error: ctErr } = await db.from("ceremony_card_types").insert(ctPayload);
-      if (ctErr) { toast(t("err_save_failed", { msg: ctErr.message }), "err"); return; }
+    const saveButton = e.target.querySelector('button[type="submit"]');
+    if (saveButton) { saveButton.disabled = true; saveButton.dataset.originalText = saveButton.textContent; saveButton.textContent = t("loading"); }
+    const { data: saved, error: saveError } = await db.rpc("create_ceremony_with_cards", {
+      _promotion_id: TENANT.id,
+      _name: f.name.trim(),
+      _name_fr: (f.name_fr || "").trim() || null,
+      _type: type,
+      _total_cards: total,
+      _card_types: colorsPayload
+    });
+    if (saveError) {
+      if (saveButton) { saveButton.disabled = false; saveButton.textContent = saveButton.dataset.originalText || t("btn_save"); }
+      toast(t("err_save_failed", { msg: saveError.message }), "err");
+      return;
     }
-
+    const newId = saved?.ceremony_id;
     closeModals(); toast(t("msg_cards_saved"));
     await loadCeremonies();
-    if (newId) await redistributeCeremony(newId, true);
+    if (saved?.distributed != null) toast(t("msg_redistributed", { n: saved.students || state.students.length }), "success");
     renderDash();
   };
 }
@@ -5485,11 +5486,13 @@ async function loadVapidPublicKey() {
 
 const NOTIF_DEVICE_KEY = "iscae-notif-device";
 const notifState = { on: false, busy: false };
+let notifRealtimeChannel = null;
 let notifBannerDismissed = false;
 try { notifBannerDismissed = sessionStorage.getItem("iscae-notif-dismissed") === "1"; } catch (e) {}
 
 const pushSupported = () =>
   "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const realtimeNotifSupported = () => !!db && typeof db.channel === "function";
 
 function notifDeviceId() {
   let v = null;
@@ -5542,7 +5545,7 @@ async function currentPushSub() {
 function refreshNotifButton() {
   const btn = $("#btnNotif");
   if (btn) {
-    btn.classList.toggle("hidden", !pushSupported());
+    btn.classList.toggle("hidden", !pushSupported() && !realtimeNotifSupported());
     btn.classList.toggle("on", notifState.on);
     btn.title = notifState.on ? t("notif_tooltip_on") : t("notif_tooltip");
     const dot = btn.querySelector(".nb-dot");
@@ -5555,7 +5558,7 @@ function refreshNotifButton() {
   const banner = $("#notifBanner");
   if (banner) {
     const denied = ("Notification" in window) && Notification.permission === "denied";
-    const show = pushSupported() && !notifState.on && !notifBannerDismissed && !denied;
+    const show = (pushSupported() || realtimeNotifSupported()) && !notifState.on && !notifBannerDismissed && !denied;
     banner.classList.toggle("hidden", !show);
     const ti = $("#nbTitle"), tx = $("#nbText"), be = $("#nbEnable"), bc = $("#nbClose");
     if (ti) ti.textContent = t("notif_banner_title");
@@ -5569,6 +5572,15 @@ function refreshNotifButton() {
 async function enablePush() {
   if (notifState.busy) return;
   if (!pushSupported()) {
+    if (realtimeNotifSupported()) {
+      subscribeNotifRealtime();
+      notifState.on = true;
+      notifBannerDismissed = true;
+      try { sessionStorage.setItem("iscae-notif-dismissed", "1"); } catch (e) {}
+      refreshNotifButton();
+      toast(t("msg_notif_enabled"));
+      return;
+    }
     toast(isIOSDevice && !isStandaloneMode() ? t("err_notif_ios") : t("err_notif_unsupported"), "err");
     return;
   }
@@ -5639,8 +5651,9 @@ function toggleNotifications() {
 
 /** \u0625\u0634\u0639\u0627\u0631 \u062f\u0627\u062e\u0644\u064a \u0641\u0648\u0631\u064a \u0639\u0646\u062f\u0645\u0627 \u064a\u0643\u0648\u0646 \u0627\u0644\u0645\u0648\u0642\u0639 \u0645\u0641\u062a\u0648\u062d\u0627\u064b */
 function subscribeNotifRealtime() {
+  if (notifRealtimeChannel) return;
   try {
-    db.channel("iscae-notifications-live")
+    notifRealtimeChannel = db.channel("iscae-notifications-live")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", ...(tenantOn() ? { filter: "promotion_id=eq." + TENANT.id } : {}) }, (payload) => {
         const n = payload && payload.new;
         if (!n) return;
@@ -5648,18 +5661,19 @@ function subscribeNotifRealtime() {
         if (state.me && isSuper() && state.tab === "notifs") renderDash();
       })
       .subscribe();
-  } catch (e) { console.warn("[Push] realtime unavailable", e); }
+  } catch (e) { notifRealtimeChannel = null; console.warn("[Push] realtime unavailable", e); }
 }
 
 /** \u062a\u0647\u064a\u0626\u0629 \u062d\u0627\u0644\u0629 \u0627\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0639\u0646\u062f \u0627\u0644\u0625\u0642\u0644\u0627\u0639 */
 async function initNotifications() {
   refreshNotifButton();
-  if (!pushSupported()) return;
-  await loadVapidPublicKey();
-  try {
-    const sub = await currentPushSub();
-    notifState.on = !!sub && Notification.permission === "granted";
-    if (notifState.on) {
+  subscribeNotifRealtime();
+  if (pushSupported()) {
+    await loadVapidPublicKey();
+    try {
+      const sub = await currentPushSub();
+      notifState.on = !!sub && Notification.permission === "granted";
+      if (notifState.on) {
       // \u062a\u062c\u062f\u064a\u062f \u0627\u0644\u0635\u0641 \u0641\u064a \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a (\u0625\u0646 \u062d\u064f\u062f\u0650\u0641 \u0623\u0648 \u062a\u063a\u064a\u0631 endpoint)
       const { error } = await db.rpc("save_push_subscription", {
         p_endpoint: sub.endpoint,
@@ -5671,8 +5685,9 @@ async function initNotifications() {
         ...(tenantOn() ? { p_promo: TENANT.id } : {})
       });
       if (error) throw error;
-    }
-  } catch (e) { console.warn("[Push] init", e); }
+      }
+    } catch (e) { console.warn("[Push] init", e); }
+  }
   refreshNotifButton();
   subscribeNotifRealtime();
 }
