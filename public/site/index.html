@@ -5158,13 +5158,25 @@ function ceremonyModal(cer) {
     let error, newId = cer?.id;
     if (isEdit) ({ error } = await db.from("ceremonies").update(payload).eq("id", cer.id));
     else {
-      const r = await db.from("ceremonies").insert(payload).select("id").maybeSingle();
-      error = r.error; newId = r.data?.id;
+      /* إنشاء الحفل عبر RPC الذرية يمنع insert ثم select من الاصطدام بسياسة
+         عرض الحفل الليلي العامة؛ كما يضمن أن الحفل لا يُحفظ دون توزيع البطاقات. */
+      const created = await Promise.race([
+        db.rpc("create_ceremony_with_cards", {
+          _promotion_id: TENANT.id,
+          _name: payload.name,
+          _name_fr: payload.name_fr,
+          _type: type,
+          _total_cards: total,
+          _card_types: []
+        }),
+        new Promise(resolve => setTimeout(() => resolve({ data: null, error: new Error("انتهت مهلة الحفظ؛ تحقق من الاتصال والصلاحية ثم أعد المحاولة.") }), 20000))
+      ]);
+      error = created.error; newId = created.data?.ceremony_id;
     }
     if (error) { toast(t("err_save_failed", { msg: error.message }), "err"); return; }
     closeModals(); toast(t("msg_cards_saved"));
     await loadCeremonies();
-    if (newId && changed) await redistributeCeremony(newId, true);
+    if (newId && changed && isEdit) await redistributeCeremony(newId, true);
     renderDash();
   };
 }
