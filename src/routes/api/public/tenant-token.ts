@@ -74,7 +74,9 @@ async function promotionBySelector(selector: { slug?: string; id?: string } | nu
   if (!found[0] && selector.slug?.startsWith("iscae-promo-")) {
     const n = Number(selector.slug.slice("iscae-promo-".length));
     if (Number.isInteger(n) && n >= 1 && n <= 999) {
-      found = await rows(`promotions?select=*&number=eq.${n}&is_default=eq.true&limit=1`, key);
+      /* بعض الدفعات القديمة لا تملك slug أو is_default=true. الرقم هو
+         المعرّف العام الاحتياطي، ولا يجوز أن يمنع فتح الدفعة من الرابط المركزي. */
+      found = await rows(`promotions?select=*&number=eq.${n}&limit=1`, key);
     }
   }
   const row = found[0];

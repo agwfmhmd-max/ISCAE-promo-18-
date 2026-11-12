@@ -95,13 +95,23 @@
   function notify(bridge, message, type = 'info') { if (isFrench(bridge)) for (const [ar,fr] of FR) message=String(message).split(ar).join(fr); bridge.toast?.(message, type); }
   function subscribeGraduateNotifications(bridge, userId, onNotice) {
     if (!bridge?.db || !bridge?.tenant?.id || !userId) return () => {};
+    const seen = new Set(); let pollTimer = null; let stopped = false;
+    const consume = (row) => {
+      if (!row?.id || row.user_id !== userId || seen.has(row.id)) return;
+      seen.add(row.id); onNotice(row);
+    };
     const channel = bridge.db.channel(`graduate-notifications-${bridge.tenant.id}-${userId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'graduate_notifications', filter: `promotion_id=eq.${bridge.tenant.id}` }, (payload) => {
-        const row = payload?.new;
-        if (row?.user_id === userId) onNotice(row);
+        consume(payload?.new);
       });
-    channel.subscribe((status) => { if (status === 'CHANNEL_ERROR') console.warn('[PROMO MR] graduate notification channel unavailable'); });
-    return () => { try { bridge.db.removeChannel(channel); } catch (_) {} };
+    channel.subscribe((status) => { if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('[PROMO MR] graduate notification realtime unavailable; polling fallback enabled'); });
+    const poll = async () => {
+      if (stopped) return;
+      const { data, error } = await bridge.db.from('graduate_notifications').select('id,user_id,title,body,created_at').eq('promotion_id', bridge.tenant.id).eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+      if (!error) (data || []).reverse().forEach(consume);
+    };
+    poll(); pollTimer = window.setInterval(poll, 10000);
+    return () => { stopped = true; if (pollTimer) window.clearInterval(pollTimer); try { bridge.db.removeChannel(channel); } catch (_) {} };
   }
   function modal(bridge, content) {
     const root = bridge.openModal(`<div class="modal graduate-modal" lang="${isFrench(bridge) ? 'fr' : 'ar'}" dir="${isFrench(bridge) ? 'ltr' : 'rtl'}">${translateMarkup(bridge, content)}</div>`);
@@ -500,7 +510,16 @@
       });
     requestChannel.subscribe();
     const oldCleanup = root._graduateNotifCleanup;
-    root._graduateNotifCleanup = () => { oldCleanup?.(); try { bridge.db.removeChannel(requestChannel); } catch (_) {} };
+    root._graduateNotifCleanup = () => { oldCleanup?.(); if (root._graduateRequestPoll) window.clearInterval(root._graduateRequestPoll); try { bridge.db.removeChannel(requestChannel); } catch (_) {} };
+    root._graduateRequestPoll = window.setInterval(async () => {
+      if (!canManageFinance || !document.body.contains(root)) return;
+      const latest = await loadPendingSubscriptionRequests(bridge, promotionId).catch(() => ({ data: [] }));
+      const visible = root.querySelectorAll('[data-request]').length;
+      if ((latest.data || []).length > visible) {
+        notify(bridge, isFrench(bridge) ? 'Nouvelle demande de paiement reçue.' : 'وصل طلب اشتراك مالي جديد.', 'success');
+        root._graduateNotifCleanup?.(); root.remove(); openGraduateAdmin(bridge).catch(() => {});
+      }
+    }, 10000);
     const canAssignStaff = isHead || isPlatformAdmin;
     const [financeData, staffResult] = await Promise.all([
       canManageFinance ? Promise.all([

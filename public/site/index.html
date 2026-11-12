@@ -5514,6 +5514,8 @@ async function loadVapidPublicKey() {
 const NOTIF_DEVICE_KEY = "iscae-notif-device";
 const notifState = { on: false, busy: false };
 let notifRealtimeChannel = null;
+let notifPollingTimer = null;
+const notifSeenIds = new Set();
 let notifBannerDismissed = false;
 try { notifBannerDismissed = sessionStorage.getItem("iscae-notif-dismissed") === "1"; } catch (e) {}
 
@@ -5678,7 +5680,7 @@ function toggleNotifications() {
 
 /** \u0625\u0634\u0639\u0627\u0631 \u062f\u0627\u062e\u0644\u064a \u0641\u0648\u0631\u064a \u0639\u0646\u062f\u0645\u0627 \u064a\u0643\u0648\u0646 \u0627\u0644\u0645\u0648\u0642\u0639 \u0645\u0641\u062a\u0648\u062d\u0627\u064b */
 function subscribeNotifRealtime() {
-  if (notifRealtimeChannel) return;
+  if (notifRealtimeChannel || notifPollingTimer) return;
   try {
     notifRealtimeChannel = db.channel("iscae-notifications-live")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", ...(tenantOn() ? { filter: "promotion_id=eq." + TENANT.id } : {}) }, (payload) => {
@@ -5687,7 +5689,19 @@ function subscribeNotifRealtime() {
         toast((n.title || "") + (n.body ? " — " + n.body : ""));
         if (state.me && isSuper() && state.tab === "notifs") renderDash();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") console.warn("[Push] realtime unavailable; polling fallback enabled");
+      });
+    const pollNotifications = async () => {
+      const { data } = await db.from("notifications").select("id,title,body,created_at,promotion_id").order("created_at", { ascending: false }).limit(20);
+      for (const n of (data || []).reverse()) {
+        if (!n.id || notifSeenIds.has(n.id)) continue;
+        notifSeenIds.add(n.id);
+        if (Date.now() - new Date(n.created_at).getTime() < 60000) toast((n.title || "") + (n.body ? " — " + n.body : ""));
+      }
+    };
+    pollNotifications().catch(() => {});
+    notifPollingTimer = window.setInterval(() => pollNotifications().catch(() => {}), 10000);
   } catch (e) { notifRealtimeChannel = null; console.warn("[Push] realtime unavailable", e); }
 }
 
