@@ -5086,6 +5086,12 @@ function ceremonyCreateModal() {
     const originalText = saveButton?.textContent || t("btn_save");
     if (saveButton) { saveButton.disabled = true; saveButton.textContent = t("loading") || originalText; }
     try {
+      const { data: freshAuth } = await db.auth.getSession();
+      if (!freshAuth?.session) {
+        toast("انتهت جلسة المشرف. يرجى تسجيل الدخول من جديد قبل الحفظ.", "err");
+        loginModal({ platformOnly: true });
+        return;
+      }
       const request = db.rpc("create_ceremony_with_cards", {
         _promotion_id: TENANT.id,
         _name: f.name.trim(),
@@ -5160,6 +5166,12 @@ function ceremonyModal(cer) {
     else {
       /* إنشاء الحفل عبر RPC الذرية يمنع insert ثم select من الاصطدام بسياسة
          عرض الحفل الليلي العامة؛ كما يضمن أن الحفل لا يُحفظ دون توزيع البطاقات. */
+      const { data: freshAuth } = await db.auth.getSession();
+      if (!freshAuth?.session) {
+        toast("انتهت جلسة المشرف. يرجى تسجيل الدخول من جديد قبل الحفظ.", "err");
+        loginModal({ platformOnly: true });
+        return;
+      }
       const created = await Promise.race([
         db.rpc("create_ceremony_with_cards", {
           _promotion_id: TENANT.id,
