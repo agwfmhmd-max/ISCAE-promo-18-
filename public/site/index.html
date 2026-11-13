@@ -1797,7 +1797,7 @@ const I18N = {
   th_cards_count:{ar:"عدد البطاقات",fr:"Nombre de cartes"},
   err_cards_mismatch:{ar:"مجموع بطاقات الألوان ({sum}) لا يساوي إجمالي بطاقات الحفل ({total}). صحّح الأرقام قبل الحفظ.",fr:"La somme des cartes par couleur ({sum}) ne correspond pas au total de la cérémonie ({total}). Corrigez les nombres avant d'enregistrer."},
   err_cards_need_one_color:{ar:"أضف لوناً واحداً على الأقل مع اسمه وعدد بطاقاته.",fr:"Ajoutez au moins une couleur avec son nom et son nombre de cartes."},
-  cards_wizard_intro:{ar:"اختر نوع الحفل وضع إجمالي البطاقات، ثم وزّع هذا الإجمالي على الألوان — يجب أن يساوي مجموع الألوان الإجمالي قبل الحفظ.",fr:"Choisissez le type de cérémonie et saisissez le total des cartes, puis répartissez ce total entre les couleurs — la somme des couleurs doit être égale au total avant l'enregistrement."},
+  cards_wizard_intro:{ar:"اختر نوع الحفل. حفل التخرج يدعم ألوان البطاقات ويجب أن يساوي مجموعها الإجمالي، أما الحفل الليلي فيستخدم إجمالي بطاقات Scan فقط بدون ألوان.",fr:"Choisissez le type de cérémonie. La graduation accepte les couleurs et leur somme doit égaler le total ; la soirée utilise uniquement un total de cartes Scan, sans couleurs."},
   cards_running_sum:{ar:"مجموع الألوان الحالي",fr:"Somme actuelle des couleurs"},
   btn_add_color_row:{ar:"+ إضافة لون آخر",fr:"+ Ajouter une autre couleur"},
   cards_row_color:{ar:"اللون",fr:"Couleur"},
@@ -5060,6 +5060,13 @@ function ceremonyCreateModal() {
     const isGrad = typeSel.value === "graduation";
     colorsSec.style.display = isGrad ? "" : "none";
     nightNote.style.display = isGrad ? "none" : "";
+    // Hidden color inputs must be disabled for a night ceremony. Leaving
+    // their required attributes active makes mobile browsers block submit
+    // before the onsubmit handler runs, which looks like a frozen Save button.
+    $$("input", rowsWrap).forEach(input => {
+      input.disabled = !isGrad;
+      if (input.classList.contains("cr-name") || input.classList.contains("cr-count")) input.required = isGrad;
+    });
     totalInp.readOnly = false;
     if (isGrad && !rowsWrap.children.length) addRow();
     recalcSum();
