@@ -1770,7 +1770,7 @@ const I18N = {
   /* --- البطاقات / Cartes --- */
   nav_cards:{ar:"إدارة البطاقات",fr:"Gestion des cartes"},
   cards_title:{ar:"إدارة بطاقات الحفلات",fr:"Gestion des cartes des cérémonies"},
-  cards_intro:{ar:"يتم تقسيم بطاقات كل لون بشكل مستقل على جميع الطلاب، والباقي يذهب إلى أوّل طلاب الفئة A حسب الترتيب الحالي.",fr:"Les cartes de chaque couleur sont réparties indépendamment entre tous les étudiants ; le reste va aux premiers étudiants de la catégorie A selon l'ordre actuel."},
+  cards_intro:{ar:"يتم توزيع بطاقات حفل التخرج الملوّنة وبطاقات الحفل الليلي Scan على الخريجين الذين تم قبول اشتراكهم ودفعهم فقط. الحفل الليلي لا يقبل ألواناً.",fr:"Les cartes colorées de la graduation et les cartes Scan de la soirée sont réparties uniquement entre les diplômés dont l'abonnement est approuvé et payé. La soirée n'accepte aucune couleur."},
   cards_not_ready:{ar:"جداول البطاقات غير موجودة في قاعدة البيانات بعد. نفّذ الملف sql/cards-and-photos.sql في Supabase ثم أعد تحميل الصفحة.",fr:"Les tables des cartes n'existent pas encore. Exécutez sql/cards-and-photos.sql dans Supabase puis rechargez la page."},
   ceremony_graduation:{ar:"حفل التخرج",fr:"Cérémonie de graduation"},
   ceremony_night:{ar:"الحفل الليلي",fr:"Soirée"},
@@ -1823,9 +1823,9 @@ const I18N = {
   cards_not_set:{ar:"لم يحدد بعد",fr:"Non déterminé"},
   cards_unit:{ar:"بطاقة",fr:"carte(s)"},
   cards_preview_title:{ar:"معاينة التوزيع",fr:"Aperçu de la répartition"},
-  cards_preview_line:{ar:"{base} لكل طالب + بطاقة إضافية لأول {rem} طالباً من الفئة A",fr:"{base} par étudiant + 1 carte supplémentaire pour les {rem} premiers étudiants de la catégorie A"},
+  cards_preview_line:{ar:"{base} لكل خريج دافع + بطاقة إضافية لأول {rem} من ترتيب الدفع",fr:"{base} par diplômé payé + 1 carte supplémentaire aux {rem} premiers du classement de paiement"},
   msg_ceremony_deleted:{ar:"تم حذف الحفل",fr:"Cérémonie supprimée"},
-  cards_preview_line_norem:{ar:"{base} لكل طالب (بدون باقي)",fr:"{base} par étudiant (sans reste)"}
+  cards_preview_line_norem:{ar:"{base} لكل خريج دافع (بدون باقي)",fr:"{base} par diplômé payé (sans reste)"}
 };
 
 function t(key, vars) {
@@ -4875,7 +4875,16 @@ function renderCardsTab(panel) {
     return;
   }
 
-  const N = state.students.length;
+  const paymentRows = state.graduatePaymentStatusByPromotion?.[TENANT.id];
+  if (!Array.isArray(paymentRows) && state.graduatePaymentStatusLoading !== TENANT.id) {
+    state.graduatePaymentStatusLoading = TENANT.id;
+    db.rpc("get_graduate_student_payment_status", { _promotion_id: TENANT.id }).then(({ data, error }) => {
+      state.graduatePaymentStatusLoading = null;
+      if (!error) state.graduatePaymentStatusByPromotion[TENANT.id] = Array.isArray(data) ? data : [];
+      if (panel.isConnected) renderCardsTab(panel);
+    }).catch(() => { state.graduatePaymentStatusLoading = null; if (panel.isConnected) renderCardsTab(panel); });
+  }
+  const N = Array.isArray(paymentRows) ? paymentRows.filter(row => row.payment_status === "paid").length : 0;
   const cers = state.ceremonies.filter(c => nightEventEnabled() || c.type !== "night").slice().sort((a, b) => (a.type === "night") - (b.type === "night"));
 
   panel.innerHTML = `
@@ -4884,7 +4893,7 @@ function renderCardsTab(panel) {
       <button class="btn btn-primary btn-sm" id="addCer">${t("btn_add_ceremony")}</button>
     </div>
     <p class="muted" style="font-size:13px;margin-bottom:16px">${t("cards_intro")}</p>
-    ${cers.map(cer => cerAdminCard(cer, N)).join("") || `<div class="empty">${t("no_data")}</div>`}
+    ${Array.isArray(paymentRows) ? cers.map(cer => cerAdminCard(cer, N)).join("") : `<div class="empty">${state.lang === "fr" ? "Chargement des abonnements payés…" : "جارٍ تحميل قائمة المشتركين الذين دفعوا…"}</div>`}
   `;
 
   $("#addCer").onclick = () => ceremonyCreateModal();
