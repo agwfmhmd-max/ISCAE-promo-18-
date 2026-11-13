@@ -94,6 +94,12 @@
     const wrapper=doc.body.firstElementChild; return wrapper ? wrapper.innerHTML : html;
   }
   function notify(bridge, message, type = 'info') { if (isFrench(bridge)) for (const [ar,fr] of FR) message=String(message).split(ar).join(fr); bridge.toast?.(message, type); }
+  function graduateErrorMessage(bridge, error) {
+    const code=String(error?.message || error || '');
+    if (code.includes('NIGHT_EVENT_DETAILS_REQUIRED')) return isFrench(bridge) ? 'Le lieu et la date de la soirée doivent être complétés par l’administration avant l’émission des cartes Scan.' : 'يجب على الإدارة إدخال مكان وتاريخ الحفل الليلي قبل إصدار بطاقات QR.';
+    if (code.includes('PROMOTION_CONTEXT_REQUIRED')) return isFrench(bridge) ? 'La promotion active ne correspond pas à cette demande.' : 'الدفعة النشطة لا تطابق هذا الطلب.';
+    return code || (isFrench(bridge) ? 'Impossible de charger l’espace pour le moment.' : 'تعذر تحميل المساحة حالياً.');
+  }
   function subscribeGraduateNotifications(bridge, userId, onNotice) {
     if (!bridge?.db || !bridge?.tenant?.id || !userId) return () => {};
     const seen = new Set(); let pollTimer = null; let stopped = false;
@@ -527,7 +533,7 @@
       return;
     }
     const root = modal(bridge, `<div class="modal-head"><h3>مساحة الخريج</h3><button class="icon-btn" aria-label="إغلاق" data-close>×</button></div><div class="modal-body graduate-content"><p class="graduate-muted">جاري التحميل...</p></div>`);
-    try { await renderSpace(bridge, root, acc); } catch (e) { root.querySelector('.graduate-content').innerHTML = `<p class="graduate-muted">تعذر تحميل المساحة: ${esc(e.message)}</p>`; }
+    try { await renderSpace(bridge, root, acc); } catch (e) { root.querySelector('.graduate-content').innerHTML = `<p class="graduate-muted">${esc(graduateErrorMessage(bridge, e))}</p>`; }
   }
   async function loadPendingSubscriptionRequests(bridge, promotionId) {
     const rows=[]; let offset=0; const pageSize=1000;
