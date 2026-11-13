@@ -1694,6 +1694,9 @@ const I18N = {
   field_promotion_name:{ar:"اسم الدفعة",fr:"Nom de la promotion"},
   field_graduation_date:{ar:"تاريخ حفل التخرج",fr:"Date de la cérémonie de remise des diplômes"},
   field_night_date:{ar:"تاريخ الحفل الليلي",fr:"Date de la soirée de gala"},
+  field_night_venue_ar:{ar:"مكان الحفل الليلي (عربي)",fr:"Lieu de la soirée (arabe)"},
+  field_night_venue_fr:{ar:"مكان الحفل الليلي (فرنسي)",fr:"Lieu de la soirée (français)"},
+  night_venue_note:{ar:"ستظهر هذه المعلومات داخل بطاقة الحفل ورمز QR.",fr:"Ces informations apparaîtront sur la carte et dans le QR."},
   field_night_disabled_note:{ar:"الحفل الليلي مخفي لهذه الدفعة؛ تاريخ الحفل محفوظ ويمكن استعادته عند إعادة تفعيله.",fr:"La soirée est masquée pour cette promotion ; sa date est conservée et réapparaîtra si vous la réactivez."},
   categories_limits_title:{ar:"حدود الفئات",fr:"Limites des catégories"},
   categories_limits_note:{ar:"لكل فئة A/B/C/D سعة قصوى مستقلة. قبل اعتماد أول دفع يظهر التوزيع الإجمالي فقط دون ترتيب أو تعيين فئة لطالب؛ وبعدها يُسند الترتيب والفئة حسب أسبقية اعتماد الدفع على مستوى الدفعة. إذا تجاوز عدد الطلاب مجموع السعات، يبقى الزائد بلا فئة حتى تعديل الحدود.",fr:"Chaque catégorie A/B/C/D a sa propre capacité maximale. Avant le premier paiement approuvé, seule la répartition globale est affichée, sans rang ni catégorie individuelle ; ensuite, le rang et la catégorie suivent l'ordre d'approbation des paiements dans la promotion. Si l'effectif dépasse la somme des capacités, les étudiants excédentaires restent sans catégorie jusqu'à modification des limites."},
@@ -5157,7 +5160,7 @@ function ceremonyModal(cer) {
             ${cer?.type === "graduation" ? "readonly" : ""} />
           ${cer?.type === "graduation" ? `<p class="muted" style="font-size:12px;margin-top:6px">${t("cards_total_auto")}</p>` : ""}
         </div>
-        ${cer?.type === "night" ? `<p class="muted" style="font-size:12px">${t("cards_no_colors_note")}</p>` : ""}
+        ${cer?.type === "night" ? `<div class="grid-2"><div class="field"><label>${t("field_night_venue_ar")}</label><input name="night_venue_ar" maxlength="240" value="${esc(cer?.night_venue_ar || "")}" /></div><div class="field"><label>${t("field_night_venue_fr")}</label><input name="night_venue_fr" maxlength="240" value="${esc(cer?.night_venue_fr || "")}" /></div></div><p class="muted" style="font-size:12px">${t("night_venue_note")}</p><p class="muted" style="font-size:12px">${t("cards_no_colors_note")}</p>` : ""}
         <button class="btn btn-primary btn-block" type="submit">${t("btn_save")}</button>
       </form>
       <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div>
@@ -5203,6 +5206,14 @@ function ceremonyModal(cer) {
       error = created.error; newId = created.data?.ceremony_id;
     }
     if (error) { toast(t("err_save_failed", { msg: error.message }), "err"); return; }
+    if (type === "night" && newId) {
+      const details = await db.rpc("update_night_event_details", {
+        _ceremony_id: newId,
+        _venue_ar: String(f.night_venue_ar || "").trim() || null,
+        _venue_fr: String(f.night_venue_fr || "").trim() || null
+      });
+      if (details.error) { toast(t("err_save_failed", { msg: details.error.message }), "err"); return; }
+    }
     closeModals(); toast(t("msg_cards_saved"));
     await loadCeremonies();
     if (newId && changed && isEdit) await redistributeCeremony(newId, true);
