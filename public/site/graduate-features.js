@@ -313,7 +313,7 @@
   }
   function renderNightCardQrs(bridge, root, cards) {
     cards.forEach((card) => {
-      const target = root.querySelector(`[data-night-card="${CSS.escape(card.token || '')}"]`);
+      const target = root.querySelector(`[data-night-qr="${CSS.escape(card.token || '')}"]`);
       if (!target || !card.token) return;
       if (window.QRCode?.toCanvas) {
         const canvas = document.createElement('canvas');
