@@ -54,7 +54,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="./qrcode.min.js"></script>
+  <script src="/site/qrcode.min.js"></script>
 <style>
 /* ==========================================================================
    1. DESIGN TOKENS
@@ -5518,7 +5518,7 @@ if ("serviceWorker" in navigator) {
     try { sessionStorage.removeItem(SW_REFRESH_KEY); } catch (e) {}
   });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" })
+    navigator.serviceWorker.register("/site/service-worker.js", { updateViaCache: "none" })
       .then((registration) => {
         registration.update().catch(err => console.warn("[Service Worker] Update check failed:", err));
         console.log('[Service Worker] Registered/updated successfully');
@@ -5596,7 +5596,7 @@ function subKey(sub, name) {
 async function swRegistration() {
   if (!("serviceWorker" in navigator)) return null;
   try {
-    const registration = await navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" });
+    const registration = await navigator.serviceWorker.register("/site/service-worker.js", { updateViaCache: "none" });
     await registration.update().catch(() => {});
     return registration;
   } catch (e) {
