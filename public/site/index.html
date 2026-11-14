@@ -5160,7 +5160,7 @@ function ceremonyModal(cer) {
             ${cer?.type === "graduation" ? "readonly" : ""} />
           ${cer?.type === "graduation" ? `<p class="muted" style="font-size:12px;margin-top:6px">${t("cards_total_auto")}</p>` : ""}
         </div>
-        ${cer?.type === "night" ? `<div class="grid-2"><div class="field"><label>${t("field_night_venue_ar")}</label><input name="night_venue_ar" maxlength="240" value="${esc(cer?.night_venue_ar || "")}" /></div><div class="field"><label>${t("field_night_venue_fr")}</label><input name="night_venue_fr" maxlength="240" value="${esc(cer?.night_venue_fr || "")}" /></div></div><p class="muted" style="font-size:12px">${t("night_venue_note")}</p><p class="muted" style="font-size:12px">${t("cards_no_colors_note")}</p>` : ""}
+        ${cer?.type === "night" ? `<div class="grid-2"><div class="field"><label>${t("field_night_date")}</label><input name="night_event_date" type="datetime-local" required value="${esc(localDateTimeInput(cer?.night_event_date))}" /></div><div class="field"><label>${t("field_night_venue_ar")}</label><input name="night_venue_ar" maxlength="240" value="${esc(cer?.night_venue_ar || "")}" /></div><div class="field"><label>${t("field_night_venue_fr")}</label><input name="night_venue_fr" maxlength="240" value="${esc(cer?.night_venue_fr || "")}" /></div></div><p class="muted" style="font-size:12px">${t("night_venue_note")}</p><p class="muted" style="font-size:12px">${t("cards_no_colors_note")}</p>` : ""}
         <button class="btn btn-primary btn-block" type="submit">${t("btn_save")}</button>
       </form>
       <div class="modal-foot"><button class="btn btn-ghost" data-close>${t("btn_cancel")}</button></div>
@@ -5210,7 +5210,8 @@ function ceremonyModal(cer) {
       const details = await db.rpc("update_night_event_details", {
         _ceremony_id: newId,
         _venue_ar: String(f.night_venue_ar || "").trim() || null,
-        _venue_fr: String(f.night_venue_fr || "").trim() || null
+        _venue_fr: String(f.night_venue_fr || "").trim() || null,
+        _event_date: f.night_event_date ? new Date(f.night_event_date).toISOString() : null
       });
       if (details.error) { toast(t("err_save_failed", { msg: details.error.message }), "err"); return; }
     }
