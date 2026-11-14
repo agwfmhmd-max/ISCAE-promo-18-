@@ -54,7 +54,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="/qrcode.min.js"></script>
+  <script src="./qrcode.min.js"></script>
 <style>
 /* ==========================================================================
    1. DESIGN TOKENS
@@ -5638,19 +5638,22 @@ function refreshNotifButton() {
   }
 }
 
+function enableRealtimeNotificationsFallback() {
+  if (!realtimeNotifSupported()) return false;
+  subscribeNotifRealtime();
+  notifState.on = true;
+  notifBannerDismissed = true;
+  try { sessionStorage.setItem("iscae-notif-dismissed", "1"); } catch (e) {}
+  refreshNotifButton();
+  toast(t("msg_notif_enabled"));
+  return true;
+}
+
 /** \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0644\u0644\u0632\u0627\u0626\u0631 (\u0628\u062f\u0648\u0646 \u062a\u0633\u062c\u064a\u0644 \u062f\u062e\u0648\u0644) */
 async function enablePush() {
   if (notifState.busy) return;
   if (!pushSupported()) {
-    if (realtimeNotifSupported()) {
-      subscribeNotifRealtime();
-      notifState.on = true;
-      notifBannerDismissed = true;
-      try { sessionStorage.setItem("iscae-notif-dismissed", "1"); } catch (e) {}
-      refreshNotifButton();
-      toast(t("msg_notif_enabled"));
-      return;
-    }
+    if (enableRealtimeNotificationsFallback()) return;
     toast(isIOSDevice && !isStandaloneMode() ? t("err_notif_ios") : t("err_notif_unsupported"), "err");
     return;
   }
@@ -5660,7 +5663,11 @@ async function enablePush() {
     if (perm !== "granted") { toast(t("err_notif_denied"), "err"); return; }
 
     const reg = await swRegistration();
-    if (!reg || !reg.pushManager) { toast(t("err_notif_unsupported"), "err"); return; }
+    if (!reg || !reg.pushManager) {
+      if (enableRealtimeNotificationsFallback()) return;
+      toast(t("err_notif_unsupported"), "err");
+      return;
+    }
 
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
@@ -5688,6 +5695,7 @@ async function enablePush() {
     toast(t("msg_notif_enabled"));
   } catch (err) {
     console.error("[Push] enable failed:", err);
+    if (enableRealtimeNotificationsFallback()) return;
     toast(err && err.message ? err.message : t("err_notif_generic"), "err");
   } finally {
     notifState.busy = false;
