@@ -50,10 +50,13 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="preconnect" href="https://httwzwtyjucqtjpjsvuh.supabase.co" crossorigin />
+<link rel="dns-prefetch" href="https://unpkg.com" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Almarai:wght@300;400;700;800&family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <script src="/site/qrcode.min.js"></script>
 <style>
 /* ==========================================================================
@@ -4879,14 +4882,22 @@ function renderCardsTab(panel) {
     return;
   }
 
-  const paymentRows = state.graduatePaymentStatusByPromotion?.[TENANT.id];
+  state.graduatePaymentStatusByPromotion ||= {};
+  const paymentRows = state.graduatePaymentStatusByPromotion[TENANT.id];
   if (!Array.isArray(paymentRows) && state.graduatePaymentStatusLoading !== TENANT.id) {
     state.graduatePaymentStatusLoading = TENANT.id;
-    db.rpc("get_graduate_student_payment_status", { _promotion_id: TENANT.id }).then(({ data, error }) => {
+    const finishPaymentRows = (rows) => {
       state.graduatePaymentStatusLoading = null;
-      if (!error) state.graduatePaymentStatusByPromotion[TENANT.id] = Array.isArray(data) ? data : [];
+      state.graduatePaymentStatusByPromotion[TENANT.id] = rows;
       if (panel.isConnected) renderCardsTab(panel);
-    }).catch(() => { state.graduatePaymentStatusLoading = null; if (panel.isConnected) renderCardsTab(panel); });
+    };
+    Promise.race([
+      db.rpc("get_graduate_student_payment_status", { _promotion_id: TENANT.id }),
+      new Promise(resolve => setTimeout(() => resolve({ data: null, error: new Error("timeout") }), 15000))
+    ]).then(({ data, error }) => {
+      if (error) { console.warn("[Cards] payment status unavailable", error); toast(state.lang === "fr" ? "Impossible de charger la liste des abonnés payants." : "تعذر تحميل قائمة المشتركين الذين دفعوا.", "err"); }
+      finishPaymentRows(!error && Array.isArray(data) ? data : []);
+    }).catch(() => finishPaymentRows([]));
   }
   const N = Array.isArray(paymentRows) ? paymentRows.filter(row => row.payment_status === "paid").length : 0;
   const cers = state.ceremonies.filter(c => nightEventEnabled() || c.type !== "night").slice().sort((a, b) => (a.type === "night") - (b.type === "night"));
@@ -5830,6 +5841,7 @@ async function renderNotifsTab(panel) {
     <div class="notif-list">
       ${rows.length ? rows.map(n => `
         <div class="notif-item">
+          <button type="button" class="btn btn-ghost btn-sm" data-del-notif="${esc(n.id)}" style="float:inline-end" aria-label="${state.lang === "fr" ? "Supprimer" : "حذف"}">🗑</button>
           <b>${esc(n.title)}</b>
           <p>${esc(n.body)}</p>
           <div class="nmeta">
@@ -5838,7 +5850,50 @@ async function renderNotifsTab(panel) {
             ${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.url)}</a>` : ""}
           </div>
         </div>`).join("") : `<div class="empty">${t("no_notifs")}</div>`}
-    </div>`;
+    </div>
+    <section id="pushAdmin" class="stack" style="margin-top:24px;gap:10px">
+      <h3 style="font-weight:900">${state.lang === "fr" ? "Gestion des enregistrements d’envoi et d’abonnement" : "إدارة سجلات الإرسال والاشتراك"}</h3>
+      <p class="muted" style="font-size:13px">${state.lang === "fr" ? "Supprimez les journaux d’envoi et les appareils abonnés de cette promotion uniquement." : "احذف سجلات الإرسال والأجهزة المشتركة الخاصة بهذه الدفعة فقط."}</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-ghost btn-sm" id="pmDelLogs">${state.lang === "fr" ? "Supprimer tout l’historique d’envoi" : "حذف كل سجلات الإرسال"}</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="pmDelSubsInactive">${state.lang === "fr" ? "Supprimer les abonnements inactifs" : "حذف الاشتراكات غير النشطة"}</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="pmDelSubsStale">${state.lang === "fr" ? "Supprimer les abonnements de plus de 30 jours" : "حذف الاشتراكات الأقدم من 30 يوماً"}</button>
+        <button type="button" class="btn btn-danger btn-sm" id="pmDelSubsAll">${state.lang === "fr" ? "Supprimer tous les abonnements" : "حذف كل الاشتراكات"}</button>
+      </div>
+      ${isPlatform() ? `<label style="font-size:13px"><input type="checkbox" id="pmAllPromos" /> ${state.lang === "fr" ? "Appliquer à toutes les promotions (administrateur général)" : "تطبيق على كل الدفعات (المشرف العام فقط)"}</label>` : ""}
+      <div id="pmSubRecords" class="muted" style="font-size:13px">…</div>
+    </section>`;
+
+  const pmScope = () => (isPlatform() && panel.querySelector("#pmAllPromos")?.checked) ? null : (tenantOn() ? TENANT.id : null);
+  const pmL = (ar, fr) => state.lang === "fr" ? fr : ar;
+  const pmRun = async (fn, args, confirmText) => {
+    if (!window.confirm(confirmText)) return;
+    const { data, error } = await db.rpc(fn, args);
+    if (error) { toast(error.message || t("toast_db_error"), "err"); return; }
+    toast(pmL("تم حذف ", "Supprimé : ") + (data ?? 0));
+    renderNotifsTab(panel);
+  };
+  panel.querySelector("#pmDelLogs").onclick = () => pmRun("purge_notification_records", { p_promo: pmScope(), p_kind: "notifications" }, pmL("حذف كل سجلات الإرسال؟ لا يمكن التراجع.", "Supprimer tout l’historique d’envoi ? Action irréversible."));
+  panel.querySelector("#pmDelSubsInactive").onclick = () => pmRun("purge_push_subscription_records", { p_promo: pmScope(), p_mode: "inactive", p_days: 30 }, pmL("حذف الاشتراكات غير النشطة؟", "Supprimer les abonnements inactifs ?"));
+  panel.querySelector("#pmDelSubsStale").onclick = () => pmRun("purge_push_subscription_records", { p_promo: pmScope(), p_mode: "stale", p_days: 30 }, pmL("حذف الاشتراكات التي لم تتحدّث منذ 30 يوماً؟", "Supprimer les abonnements non mis à jour depuis 30 jours ?"));
+  panel.querySelector("#pmDelSubsAll").onclick = () => pmRun("purge_push_subscription_records", { p_promo: pmScope(), p_mode: "all", p_days: 30 }, pmL("حذف كل الاشتراكات؟ سيحتاج المستخدمون إلى إعادة تفعيل الإشعارات.", "Supprimer tous les abonnements ? Les utilisateurs devront réactiver les notifications."));
+  panel.querySelectorAll("[data-del-notif]").forEach(b => { b.onclick = async () => {
+    if (!window.confirm(pmL("حذف هذا السجل؟", "Supprimer cet enregistrement ?"))) return;
+    const { error } = await db.rpc("purge_notification_records", { p_promo: tenantOn() ? TENANT.id : null, p_kind: "notifications", p_ids: [b.dataset.delNotif] });
+    if (error) toast(error.message || t("toast_db_error"), "err"); else renderNotifsTab(panel);
+  }; });
+  db.rpc("list_push_subscription_records", { p_promo: tenantOn() ? TENANT.id : null }).then(({ data, error }) => {
+    const box = panel.querySelector("#pmSubRecords"); if (!box) return;
+    if (error) { box.textContent = pmL("تعذر تحميل سجلات الاشتراك.", "Impossible de charger les abonnements."); return; }
+    const list = data || [];
+    const active = list.filter(r => r.is_active).length;
+    box.innerHTML = `<b>${pmL("الأجهزة المسجلة", "Appareils enregistrés")}: ${list.length}</b> · ${pmL("نشطة", "actifs")}: ${active}` + (list.length ? `<div style="max-height:220px;overflow:auto;margin-top:8px">` + list.slice(0, 100).map(r => `<div class="row" style="gap:8px;justify-content:space-between;border-bottom:1px solid var(--stroke,#ddd);padding:4px 0"><span dir="ltr" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${esc(String(r.user_agent || r.device_id || r.id).slice(0, 70))}</span><span>${r.is_active ? "✅" : "⛔"} ${esc(String(r.updated_at || "").slice(0, 10))}</span><button type="button" class="btn btn-ghost btn-sm" data-del-sub="${esc(r.id)}">🗑</button></div>`).join("") + `</div>` : "");
+    box.querySelectorAll("[data-del-sub]").forEach(b => { b.onclick = async () => {
+      if (!window.confirm(pmL("حذف هذا الاشتراك؟", "Supprimer cet abonnement ?"))) return;
+      const { error: e2 } = await db.rpc("delete_push_subscriptions", { p_ids: [b.dataset.delSub] });
+      if (e2) toast(e2.message || t("toast_db_error"), "err"); else renderNotifsTab(panel);
+    }; });
+  });
 
   const btn = panel.querySelector("#notif-send");
   btn.onclick = async () => {
@@ -5865,6 +5920,10 @@ async function renderNotifsTab(panel) {
         throw new Error((data && data.error) || t("err_notif_send"));
       }
       toast(t("notif_sent_ok", { n: (data && data.sent) ?? 0 }));
+      if (data && data.failed > 0) {
+        const why = data.errors && data.errors[0] ? ` (${data.errors[0].status || ""} ${String(data.errors[0].error || "").slice(0, 80)})` : "";
+        toast((state.lang === "fr" ? "Échec d’envoi sur " : "فشل الإرسال إلى ") + data.failed + (state.lang === "fr" ? " appareil(s)" : " جهاز") + why, "err");
+      }
       renderDash();
     } catch (err) {
       console.error("[Push] send failed:", err);
@@ -6711,6 +6770,6 @@ db.auth.onAuthStateChange((event, session) => {
   if (event === "SIGNED_OUT") { state.session = null; state.me = null; syncHeader(); }
 });
 </script>
-<script src="/site/graduate-features.js" defer></script>
+<script src="/site/graduate-loader.js" defer></script>
 </body>
 </html>
