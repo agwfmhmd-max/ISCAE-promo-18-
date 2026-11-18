@@ -108,12 +108,14 @@
     } catch (e) {}
   }
   var pend = false;
-  new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; decorate(); addButton(); }); }).observe(document.documentElement, { childList: true, subtree: true });
+  new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; decorate(); addButton(); labelButton(); }); }).observe(document.documentElement, { childList: true, subtree: true });
 
   function addButton() {
     var g = document.getElementById('graduateEntryButton'); if (!g || document.getElementById('pmNightPageBtn')) return;
-    var b = document.createElement('button'); b.id = 'pmNightPageBtn'; b.type = 'button'; b.className = g.className; b.textContent = '🌙 ' + T('بطاقات الحفل الليلي', 'Cartes soirée'); b.onclick = openPage; g.insertAdjacentElement('afterend', b);
+    var b = document.createElement('button'); b.id = 'pmNightPageBtn'; b.type = 'button'; b.className = g.className; b.setAttribute('data-pm-notr', '1'); b.onclick = openPage; g.insertAdjacentElement('afterend', b); labelButton();
   }
+  function labelButton() { var b = document.getElementById('pmNightPageBtn'); if (!b) return; var t = '🌙 ' + T('بطاقات الحفل الليلي', 'Cartes de la soirée'); if (b.textContent !== t) b.textContent = t; }
+  new MutationObserver(labelButton).observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'dir'] });
   window.PromoMRNightCards = { open: openPage };
   try { if (new URL(location.href).searchParams.get('night-cards')) { var n = 0, iv = setInterval(function () { if ((br() && br().openModal) || ++n > 60) { clearInterval(iv); if (br() && br().openModal) openPage(); } }, 500); } } catch (e) {}
 
@@ -290,7 +292,7 @@
   var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, INPUT: 1, NOSCRIPT: 1 };
   function walk(root) {
     if (!root) return;
-    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { var p = n.parentNode; return (p && !SKIP[p.nodeName] && AR.test(n.nodeValue)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } });
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { var p = n.parentNode; return (p && !SKIP[p.nodeName] && AR.test(n.nodeValue) && !(p.closest && p.closest('[data-pm-notr]'))) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } });
     var nodes = [], n; while ((n = w.nextNode())) nodes.push(n);
     nodes.forEach(function (node) { var v = tr(node.nodeValue); if (v !== node.nodeValue) { orig.set(node, [node.nodeValue, v]); node.nodeValue = v; } });
     if (root.querySelectorAll) root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(function (el) { ['placeholder', 'title', 'aria-label'].forEach(function (a) { var cur = el.getAttribute(a); if (cur && AR.test(cur)) { var v = tr(cur); if (v !== cur) el.setAttribute(a, v); } }); });

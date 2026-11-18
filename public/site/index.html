@@ -1268,6 +1268,8 @@ const tenantOn = () => !!TENANT.id && !TENANT.legacy;
 
 let db;
 let tenantTokenCache = { key: "", token: "", until: 0 };
+let tenantTokenInflight = null;   /* يمنع تكرار طلب الرمز عند تشغيل عدة استعلامات بالتوازي */
+let tenantWriteEpoch = 0;         /* يزداد عند أي كتابة؛ يُبطل التخزين المؤقت لبيانات لوحة المشرف العام */
 async function getTenantAccessToken() {
   if (!db) throw new Error("تعذر تحديد الجامعة والدفعة.");
   const selector = tenantSelector();
@@ -1275,20 +1277,28 @@ async function getTenantAccessToken() {
   const bearer = data?.session?.access_token || "";
   const key = `${selector || "host"}:${bearer}`;
   if (tenantTokenCache.key === key && tenantTokenCache.until > Date.now() + 15000) return tenantTokenCache.token;
-  const headers = bearer ? { Authorization: `Bearer ${bearer}` } : {};
-  const response = await fetch(tenantTokenUrl(), { headers, credentials: "same-origin", cache: "no-store" });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload.token) {
-    const error = new Error(payload.error || "تعذر التحقق من نطاق الدفعة.");
-    error.status = response.status;
-    throw error;
-  }
-  tenantTokenCache = { key, token: payload.token, until: Number(payload.expires_at || 0) * 1000 };
-  return payload.token;
+  if (tenantTokenInflight && tenantTokenInflight.key === key) return tenantTokenInflight.promise;
+  const promise = (async () => {
+    const headers = bearer ? { Authorization: `Bearer ${bearer}` } : {};
+    const response = await fetch(tenantTokenUrl(), { headers, credentials: "same-origin", cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.token) {
+      const error = new Error(payload.error || "تعذر التحقق من نطاق الدفعة.");
+      error.status = response.status;
+      throw error;
+    }
+    tenantTokenCache = { key, token: payload.token, until: Number(payload.expires_at || 0) * 1000 };
+    return payload.token;
+  })();
+  tenantTokenInflight = { key, promise };
+  try { return await promise; }
+  finally { if (tenantTokenInflight && tenantTokenInflight.promise === promise) tenantTokenInflight = null; }
 }
 async function tenantFetch(input, init = {}) {
   const requestUrl = new URL(typeof input === "string" ? input : input.url, location.href);
   if (!/\/rest\/v1\/|\/storage\/v1\//.test(requestUrl.pathname)) return fetch(input, init);
+  const method = String(init.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
+  if (method !== "GET" && method !== "HEAD" && !/\/rpc\/(get_|list_|count_|public_|search_|can_|platform_promotions_overview)/.test(requestUrl.pathname) && !/\/storage\/v1\/object\/sign\//.test(requestUrl.pathname)) tenantWriteEpoch++;
   const token = await getTenantAccessToken();
   const headers = new Headers(input instanceof Request ? input.headers : undefined);
   new Headers(init.headers || {}).forEach((value, name) => headers.set(name, value));
@@ -6174,7 +6184,15 @@ async function createPromoHead(p) {
   if (r.error) throw r.error;
   return { ok: true, user_id: u.id };
 }
+let promosDataCache = null;
 async function loadPromosData() {
+  if (promosDataCache && promosDataCache.epoch === tenantWriteEpoch && Date.now() - promosDataCache.at < 20000) return promosDataCache.data;
+  const epoch0 = tenantWriteEpoch;
+  const data = await loadPromosDataFresh();
+  promosDataCache = { data, at: Date.now(), epoch: epoch0 };
+  return data;
+}
+async function loadPromosDataFresh() {
   const [pr, ov, hd, ir] = await Promise.all([
     rawFrom("promotions").select("*").order("number"),
     db.rpc("platform_promotions_overview"),
