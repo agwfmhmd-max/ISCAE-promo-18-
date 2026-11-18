@@ -183,6 +183,8 @@
 (function () {
   'use strict';
   var EXTRA = {
+    'تم التحقق من رابط البريد الإلكتروني. أدخل كلمة المرور الجديدة؛ ستبقى جميع بيانات حسابك كما هي.': 'Le lien e-mail a été vérifié. Saisissez le nouveau mot de passe ; toutes les données de votre compte restent inchangées.',
+    'تتطلب هذه العملية تفعيلًا مسبقًا من المشرف الرئيسي. أدخل رقم التسجيل والبريد الإلكتروني المسجل؛ إذا تطابقت البيانات فسيصلك رابط تحقق، وبعد فتحه ستضع كلمة مرور جديدة. لن تُحذف معلومات حسابك.': 'Cette opération nécessite une activation préalable par l’administrateur principal. Saisissez le numéro d’inscription et l’e-mail enregistré ; si les données correspondent, vous recevrez un lien de vérification, puis vous définirez un nouveau mot de passe. Aucune information de votre compte ne sera supprimée.',
     'متابعة التحقق وإنشاء الحساب': 'Vérifier et créer le compte', 'إنشاء الحساب': 'Créer mon compte', 'نسيت كلمة المرور؟': 'Mot de passe oublié ?',
     'أدخل رقم تسجيل صالحًا.': 'Saisissez un numéro d’inscription valide.', 'جارٍ التحقق…': 'Vérification…',
     'رقم التسجيل غير متاح لإنشاء الحساب. تحقق منه أو تواصل مع الإدارة.': 'Numéro d’inscription indisponible pour créer un compte. Vérifiez-le ou contactez l’administration.',
