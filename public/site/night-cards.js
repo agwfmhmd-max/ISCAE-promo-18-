@@ -3,7 +3,7 @@
   'use strict';
   if (window.__pmNightV2) return; window.__pmNightV2 = true;
   var br = function () { return window.PromoMRFeatureBridge || null; };
-  var isFr = function () { try { return (br() && br().lang && br().lang()) === 'fr' || document.documentElement.lang === 'fr'; } catch (e) { return false; } };
+  var isFr = function () { try { var b = br(), l = b && b.lang; if (typeof l === 'function') l = l.call(b); return String(l || document.documentElement.lang || '').toLowerCase().indexOf('fr') === 0; } catch (e) { return String(document.documentElement.lang || '').toLowerCase().indexOf('fr') === 0; } };
   var T = function (ar, fr) { return isFr() ? fr : ar; };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var dbc = function () { var b = br(); return b && b.db ? b.db : (typeof db !== 'undefined' ? db : null); };
@@ -16,6 +16,7 @@
   }
   function cardUrl(token) { try { var u = new URL(location.href); u.hash = ''; u.searchParams.delete('night-cards'); u.searchParams.set('graduate', '1'); u.searchParams.set('night-card', token); return u.toString(); } catch (e) { return token; } }
   function qrSvg(token) { try { return window.PromoMRQR.toSvg(cardUrl(token), { margin: 2 }); } catch (e) { return '<div class="pm-qr-err">' + esc(token) + '</div>'; } }
+  function cname(c) { return isFr() ? (c.ceremony_name_fr || 'Soirée de gala') : (c.ceremony_name || c.ceremony_name_fr || 'الحفل الليلي'); }
   function pick(c, k) { return isFr() ? (c[k + '_fr'] || c[k + '_ar'] || '') : (c[k + '_ar'] || c[k + '_fr'] || ''); }
 
   function css() {
@@ -45,7 +46,7 @@
   }
   function cardHTML(c, i) {
     var used = !!c.used_at;
-    return '<div class="pm-card" data-pm-card="' + esc(c.token) + '"><h4>' + esc(c.ceremony_name || T('الحفل الليلي', 'Soirée')) + ' #' + (i + 1) + '</h4><div class="pm-sub"><span class="pm-badge' + (used ? ' used' : '') + '">' + (used ? T('مستعملة', 'Utilisée') : T('صالحة', 'Valide')) + '</span></div>' +
+    return '<div class="pm-card" data-pm-card="' + esc(c.token) + '"><h4>' + esc(cname(c)) + ' #' + (i + 1) + '</h4><div class="pm-sub"><span class="pm-badge' + (used ? ' used' : '') + '">' + (used ? T('مستعملة', 'Utilisée') : T('صالحة', 'Valide')) + '</span></div>' +
       '<div class="pm-qr" style="' + (used ? 'opacity:.35' : '') + '">' + qrSvg(c.token) + '</div><div class="pm-info">' + infoRows(c) + '</div>' +
       '<div class="pm-acts"><button data-pm-share>' + T('مشاركة', 'Partager') + '</button><button data-pm-png>' + T('حفظ QR', 'Enregistrer QR') + '</button>' + (used ? '' : '<button data-pm-ben>' + T('تعديل المستفيد', 'Bénéficiaire') + '</button>') + '</div></div>';
   }
@@ -71,12 +72,12 @@
         var sess = await dbc().auth.getSession(); if (!sess.data || !sess.data.session) { body.innerHTML = '<div class="pm-empty">' + T('سجّل الدخول إلى مساحة الخريج لعرض بطاقاتك.', 'Connectez-vous à l’espace diplômé.') + '<br><br><button class="pm-btn" id="pmLogin">' + T('فتح مساحة الخريج', 'Ouvrir l’espace') + '</button></div>'; var lb = body.querySelector('#pmLogin'); if (lb) lb.onclick = function () { close(); var g = document.getElementById('graduateEntryButton'); if (g) g.click(); }; return; }
         var rows = await loadOwn(force), ov = await staffOverview(), html = '';
         if (ov && ov.length) {
-          html += '<h3>' + T('إدارة الحفل', 'Gestion') + '</h3>' + ov.map(function (o) { return '<div class="pm-ev"><h3>' + esc(o.ceremony_name || '') + '</h3><div class="pm-meta"><div>📍 ' + esc(isFr() ? (o.venue_fr || o.venue_ar || '') : (o.venue_ar || o.venue_fr || '')) + '</div><div>📅 ' + esc(fmtDate(o.event_date)) + '</div></div><div class="pm-stats"><span>' + T('الإجمالي', 'Total') + ': ' + o.total_cards + '</span><span>' + T('مستعملة', 'Utilisées') + ': ' + o.used_cards + '</span><span>' + T('متبقية', 'Restantes') + ': ' + o.remaining_cards + '</span></div></div>'; }).join('');
+          html += '<h3>' + T('إدارة الحفل', 'Gestion') + '</h3>' + ov.map(function (o) { return '<div class="pm-ev"><h3>' + esc(cname(o)) + '</h3><div class="pm-meta"><div>📍 ' + esc(isFr() ? (o.venue_fr || o.venue_ar || '') : (o.venue_ar || o.venue_fr || '')) + '</div><div>📅 ' + esc(fmtDate(o.event_date)) + '</div></div><div class="pm-stats"><span>' + T('الإجمالي', 'Total') + ': ' + o.total_cards + '</span><span>' + T('مستعملة', 'Utilisées') + ': ' + o.used_cards + '</span><span>' + T('متبقية', 'Restantes') + ': ' + o.remaining_cards + '</span></div></div>'; }).join('');
         }
         var groups = {}, order = []; rows.forEach(function (c) { var k = c.ceremony_id || c.ceremony_name; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(c); });
         html += '<h3>' + T('بطاقاتي', 'Mes cartes') + '</h3>';
         if (!order.length) html += '<div class="pm-empty">' + T('لا توجد بطاقات حفل ليلي مخصّصة لك حالياً.', 'Aucune carte pour le moment.') + '</div>';
-        order.forEach(function (k) { var g = groups[k], f = g[0]; html += '<div class="pm-ev"><h3>🌙 ' + esc(f.ceremony_name || T('الحفل الليلي', 'Soirée')) + '</h3><div class="pm-meta">' + infoRows(Object.assign({}, f, { beneficiary_name: undefined })) + '</div><div class="pm-stats"><span>' + T('عدد البطاقات', 'Cartes') + ': ' + g.length + '</span></div>' + g.map(cardHTML).join('') + '</div>'; });
+        order.forEach(function (k) { var g = groups[k], f = g[0]; html += '<div class="pm-ev"><h3>🌙 ' + esc(cname(f)) + '</h3><div class="pm-meta">' + infoRows(Object.assign({}, f, { beneficiary_name: undefined })) + '</div><div class="pm-stats"><span>' + T('عدد البطاقات', 'Cartes') + ': ' + g.length + '</span></div>' + g.map(cardHTML).join('') + '</div>'; });
         body.innerHTML = html;
       } catch (e) { body.innerHTML = '<div class="pm-empty">' + T('تعذر تحميل البطاقات.', 'Chargement impossible.') + '</div>'; }
     }
