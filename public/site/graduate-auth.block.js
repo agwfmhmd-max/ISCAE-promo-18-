@@ -107,6 +107,11 @@
           showTab('login'); $('#gLoginId').value = registration; $('#gLoginPass').focus();
           return notify(bridge, L('لديك حساب بالفعل بهذا الرقم. سجّل دخولك مباشرة.', 'Vous avez déjà un compte avec ce numéro. Connectez-vous directement.'), 'info');
         }
+        if (bridge.state?.promo?.graduate_editing_locked === true) {
+          verified = null; $('#gDetails').hidden = true; $('#gIdentity').hidden = true;
+          $('#gRegMsg').textContent = L('إنشاء الحسابات وتعديل بيانات الخريجين مغلق حالياً من طرف إدارة هذه الدفعة. تواصل مع الإدارة.', 'La création de comptes et la modification des informations des diplômés sont verrouillées par l’administration de cette promotion. Contactez-la.');
+          return;
+        }
         verified = { registration, student: payload.student || {} };
         const student = verified.student, identity = $('#gIdentity');
         identity.innerHTML = `<strong>${esc(isFrench(bridge) ? (student.full_name_fr || student.full_name || '') : (student.full_name || student.full_name_fr || ''))}</strong><br><span>${esc(isFrench(bridge) ? (student.specialty_name_fr || student.specialty_name || '') : (student.specialty_name || student.specialty_name_fr || ''))}</span><br><small dir="ltr">${esc(student.registration_number || registration)}</small>`;
