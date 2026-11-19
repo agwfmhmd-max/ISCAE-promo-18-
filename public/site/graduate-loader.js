@@ -9,8 +9,9 @@
     "  function __pmTr(text, pairs) {\n" +
     "    const raw = String(text == null ? '' : text); const t = raw.trim(); if (!t) return raw;\n" +
     "    let c = __pmPairCache.get(pairs);\n" +
-    "    if (!c) { const exact = new Map(); const long = []; for (const [a, b] of pairs) { if (!exact.has(a)) exact.set(a, b); if (a.length >= 14) long.push([a, b]); } long.sort((x, y) => y[0].length - x[0].length); c = { exact, long }; __pmPairCache.set(pairs, c); }\n" +
+    "    if (!c) { const exact = new Map(); const long = []; const labels = []; for (const [a, b] of pairs) { if (!exact.has(a)) exact.set(a, b); if (a.length >= 14) long.push([a, b]); else if (/[:：]$/.test(a) && a.length >= 4) labels.push([a, b]); } long.sort((x, y) => y[0].length - x[0].length); c = { exact, long, labels }; __pmPairCache.set(pairs, c); }\n" +
     "    if (c.exact.has(t)) return raw.replace(t, c.exact.get(t));\n" +
+    "    for (const [a, b] of c.labels) if (t.startsWith(a)) return raw.replace(a, b);\n" +
     "    let out = raw; for (const [a, b] of c.long) if (out.includes(a)) out = out.split(a).join(b); return out;\n" +
     "  }\n";
 

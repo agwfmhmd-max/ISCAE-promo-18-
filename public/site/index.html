@@ -2246,6 +2246,26 @@ function applyStaticI18n() {
   applyRegistrationFormatUI();
 }
 
+/* ترجمة نص كامل: التطابق التام للمفاتيح القصيرة، والاستبدال الجزئي للعبارات الطويلة فقط (14 حرفاً فأكثر).
+   يمنع هذا خلط العربية بالفرنسية داخل الجملة الواحدة (كان «من» و«الاسم» تُستبدل داخل أي نص). */
+const pmDynCache = new WeakMap();
+function pmTranslateText(text, entries) {
+  const raw = String(text == null ? "" : text), trimmed = raw.trim();
+  if (!trimmed) return raw;
+  let c = pmDynCache.get(entries);
+  if (!c) {
+    const exact = new Map(), long = [], labels = [];
+    for (const [from, to] of entries) { if (!exact.has(from)) exact.set(from, to); if (from.length >= 14) long.push([from, to]); else if (/[:：]$/.test(from) && from.length >= 4) labels.push([from, to]); }
+    long.sort((a, b) => b[0].length - a[0].length);
+    c = { exact, long, labels }; pmDynCache.set(entries, c);
+  }
+  if (c.exact.has(trimmed)) return raw.replace(trimmed, c.exact.get(trimmed));
+  for (const [from, to] of c.labels) if (trimmed.startsWith(from)) return raw.replace(from, to);
+  let out = raw;
+  for (const [from, to] of c.long) if (out.includes(from)) out = out.split(from).join(to);
+  return out;
+}
+
 /** Translate legacy dynamic nodes that were rendered without data-i18n. */
 function applyDynamicI18n() {
   const entries = Object.values(I18N).filter(x => x && x.ar && x.fr)
@@ -2257,15 +2277,13 @@ function applyDynamicI18n() {
     if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA'].includes(parent.tagName)) nodes.push(node);
   }
   for (const node of nodes) {
-    let value = node.nodeValue;
-    for (const [from, to] of entries) if (value.includes(from)) value = value.split(from).join(to);
-    node.nodeValue = value;
+    const value = pmTranslateText(node.nodeValue, entries);
+    if (value !== node.nodeValue) node.nodeValue = value;
   }
   document.querySelectorAll('[placeholder],[aria-label],[title]').forEach(el => ['placeholder','aria-label','title'].forEach(attr => {
     if (!el.hasAttribute(attr)) return;
-    let value = el.getAttribute(attr);
-    for (const [from, to] of entries) if (value.includes(from)) value = value.split(from).join(to);
-    el.setAttribute(attr, value);
+    const current = el.getAttribute(attr), value = pmTranslateText(current, entries);
+    if (value !== current) el.setAttribute(attr, value);
   }));
 }
 
